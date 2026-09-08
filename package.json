@@ -52,7 +52,7 @@
     "data:seed:hdem-all": "npm run data:seed:hdem && npm run data:seed:hdem-docs",
     "dev:cswind": "vite --config vite.node.config.ts --configLoader native --port 5176 --strictPort",
     "db:migrate:cswind": "node scripts/migrate-cswind.mjs",
-    "test:cswind": "node --import tsx --test tests/customer-data.test.mjs"
+    "prepare:cswind": "node scripts/prepare-cswind.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -64,7 +64,6 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
-    "@electric-sql/pglite": "0.5.8",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/pg": "^8.15.5",
@@ -76,7 +75,6 @@
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "4.2.1",
-    "tsx": "4.23.13",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "8.0.13",

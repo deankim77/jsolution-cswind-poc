@@ -41,3 +41,7 @@ cad-worker/
 
 # Local backup patches
 workflow-route-backup.diff
+
+# CS WIND database recovery copies and private files
+.cswind-recovery/
+storage-cswind/

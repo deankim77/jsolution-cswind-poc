@@ -53,10 +53,9 @@ DB 저장 실패 시 새로 올린 파일을 정리하고, 관계의 회사·프
 npm run check:architecture
 npm run check:v2-ui
 npm run audit:react-dom
-npm run test:cswind
 ```
 
-`test:cswind`는 PGlite의 격리된 PostgreSQL 엔진에서 전체 SQL 마이그레이션과 실제 Drizzle Repository/Service를 테스트한다. Z440 DB에 접속하지 않는다.
+테스트용으로 추가했던 PGlite와 직접 tsx 의존성 및 해당 테스트 명령은 사전 합의한 개발환경을 유지하기 위해 제거했다. 아래 최초 검증 결과는 당시 수행한 이력이며 현재 설치에 해당 환경을 추가하지 않는다.
 기존 저장소 전체에는 TypeScript 오류와 과거 DOM bridge 기술부채가 있다. 이번 변경에서 오류나 DOM 위험 패턴을 늘리지 않는지 비교한다.
 기존 Node Vite 설정의 production build는 잔존 Wrangler 설정 때문에 Cloudflare plugin을 요구한다. 이번 작업은 해당 배포 설정을 변경하지 않으며 `dev:cswind` 실행 경로로 화면을 검증한다.
 
