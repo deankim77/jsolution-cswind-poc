@@ -1,0 +1,1 @@
+J SOLUTION AI PMS GitHub 동기화 테스트

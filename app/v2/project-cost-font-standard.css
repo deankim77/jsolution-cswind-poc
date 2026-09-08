@@ -1,0 +1,22 @@
+/* Project cost typography is defined directly in project-cost-workspace.css using the shared V2 UI tokens.
+   Keep only compact-layout adjustments here because this file loads after the main workspace stylesheet. */
+.pcw-shell{gap:10px;padding:14px 16px}
+.pcw-project-bar{padding:7px 10px}
+.pcw-kpis{gap:8px}
+.pcw-kpis article{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label value" "hint hint";align-items:center;column-gap:10px;row-gap:2px;min-height:54px;padding:8px 11px}
+.pcw-kpis span{grid-area:label;white-space:nowrap}
+.pcw-kpis b{grid-area:value;white-space:nowrap;text-align:right}
+.pcw-kpis small{grid-area:hint;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcw-tabs{height:36px}
+.pcw-tabs button{height:35px}
+.pcw-summary,.pcw-bom,.pcw-entries{gap:9px}
+.pcw-group-grid{gap:8px}
+.pcw-group-grid article{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head amount" "bar bar";align-items:center;column-gap:10px;row-gap:5px;min-height:58px;padding:9px 11px}
+.pcw-group-grid header{grid-area:head;min-width:0;gap:8px}
+.pcw-group-grid header span{white-space:nowrap}
+.pcw-group-grid header b{margin-left:auto;white-space:nowrap}
+.pcw-group-grid strong{grid-area:amount;white-space:nowrap;text-align:right;font-size:var(--v2-font-size-card-title)}
+.pcw-group-grid i{grid-area:bar;height:5px}
+.pcw-group-grid>article>small{display:none}
+.pcw-budget-table>header,.pcw-entries>header{padding:9px 12px}
+@media(max-width:1200px){.pcw-kpis,.pcw-group-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

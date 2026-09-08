@@ -1,0 +1,227 @@
+/*
+ * V2 UI Foundation enforcement layer.
+ *
+ * Cross-workspace visual invariants live here so individual modules cannot
+ * drift into different surface, tab, table-header or panel-control styles.
+ * The .wv2 prefix intentionally gives Foundation rules higher specificity than
+ * module-local CSS without resorting to !important.
+ */
+
+/*
+ * Workspace surface
+ * One visual canvas is used across the whole V2 center area. Module-local CSS
+ * must not create its own white/gray page background. White is reserved for
+ * actual content surfaces such as tables, cards and forms.
+ */
+.wv2,
+.wv2 .wv2-content,
+.wv2 .wv2-project-workspace,
+.wv2 .wv2-module,
+.wv2 .wv2-document-workspace,
+.wv2 .wv2-system-suite,
+.wv2 .wv2-settings-workspace,
+.wv2 .pbw-shell,
+.wv2 .pcw-shell {
+  background: var(--v2-surface-workspace);
+}
+
+/* Screen/module headers are part of the workspace canvas, not separate cards. */
+.wv2 .wv2-module-head,
+.wv2 .wv2-system-suite > header,
+.wv2 .pbw-head,
+.wv2 .pcw-head {
+  background: transparent;
+}
+
+/*
+ * Workspace Header Foundation
+ * All top-level center-workspace headers use one typography hierarchy:
+ * kicker 12 / title 22 / description 12 with the same family, weights,
+ * colors and spacing. Module-local header typography must not drift.
+ */
+.wv2 .wv2-module-head,
+.wv2 .wv2-system-suite > header,
+.wv2 .pbw-head,
+.wv2 .pcw-head {
+  font-family: var(--v2-font-family);
+  color: var(--v2-color-ink);
+}
+
+.wv2 .wv2-module-head small,
+.wv2 .wv2-system-suite > header small,
+.wv2 .pbw-head small,
+.wv2 .pcw-head small {
+  color: var(--v2-color-primary-dark);
+  font-family: var(--v2-font-family);
+  font-size: var(--v2-font-size-caption);
+  font-weight: var(--v2-font-weight-bold);
+  line-height: var(--v2-line-height-body);
+  letter-spacing: .12em;
+}
+
+.wv2 .wv2-module-head h1,
+.wv2 .wv2-system-suite > header h1,
+.wv2 .pbw-head h1,
+.wv2 .pcw-head h1 {
+  margin: 4px 0;
+  color: var(--v2-color-ink);
+  font-family: var(--v2-font-family);
+  font-size: var(--v2-font-size-screen-title);
+  font-weight: var(--v2-font-weight-bold);
+  line-height: 1.3;
+}
+
+.wv2 .wv2-module-head p,
+.wv2 .wv2-system-suite > header p,
+.wv2 .pbw-head p,
+.wv2 .pcw-head p {
+  margin: 0;
+  color: var(--v2-color-muted);
+  font-family: var(--v2-font-family);
+  font-size: var(--v2-font-size-caption);
+  font-weight: var(--v2-font-weight-regular);
+  line-height: var(--v2-line-height-body);
+}
+
+/* WBS project identity: project name is primary, project code follows as metadata. */
+.wv2 .wv2-project-head > div:first-child h1 { order: 1; }
+.wv2 .wv2-project-head > div:first-child .wv2-project-code { order: 2; }
+.wv2 .wv2-project-head > div:first-child > button { order: 3; }
+
+/*
+ * Central view tabs
+ * - no ribbon/fill active state
+ * - teal text/icon + 2px underline
+ * - same 38px height and horizontal overflow behavior
+ */
+.wv2 .v2-foundation-tabs,
+.wv2 .wv2-view-tabs,
+.wv2 .wv2-preview-tabs,
+.wv2 .wv2-system-suite > nav,
+.wv2 .pbw-tabs,
+.wv2 .pcw-tabs {
+  min-height: var(--v2-tab-height);
+  height: var(--v2-tab-height);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 6px;
+  margin-bottom: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--v2-border-color);
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.wv2 .v2-foundation-tabs button,
+.wv2 .wv2-view-tabs button,
+.wv2 .wv2-preview-tabs > button,
+.wv2 .wv2-system-suite > nav > button,
+.wv2 .pbw-tabs button,
+.wv2 .pcw-tabs button {
+  height: calc(var(--v2-tab-height) - 1px);
+  min-height: calc(var(--v2-tab-height) - 1px);
+  flex: none;
+  border: 0;
+  border-bottom: var(--v2-tab-active-border-width) solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v2-color-muted);
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--v2-font-size-control);
+  font-weight: var(--v2-font-weight-medium);
+  white-space: nowrap;
+}
+
+.wv2 .v2-foundation-tabs button.active,
+.wv2 .wv2-view-tabs button.active,
+.wv2 .wv2-preview-tabs > button.active,
+.wv2 .wv2-system-suite > nav > button.active,
+.wv2 .pbw-tabs button.active,
+.wv2 .pcw-tabs button.active {
+  background: var(--v2-tab-active-background);
+  border-color: transparent;
+  border-bottom-color: var(--v2-color-primary);
+  color: var(--v2-color-primary-dark);
+  font-weight: var(--v2-font-weight-bold);
+}
+
+.wv2 .v2-foundation-tabs button em,
+.wv2 .wv2-preview-tabs > button em {
+  font-size: var(--v2-font-size-caption);
+  font-style: normal;
+}
+
+/* Common right-panel expand/collapse control. */
+.wv2 .v2-panel-expand-button {
+  width: var(--v2-action-height);
+  height: var(--v2-action-height);
+  border: 1px solid var(--v2-border-color);
+  border-radius: var(--v2-radius-sm);
+  background: var(--v2-surface-content);
+  color: var(--v2-color-muted);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+.wv2 .v2-panel-expand-button:hover {
+  color: var(--v2-color-primary-dark);
+  background: var(--v2-surface-subtle);
+}
+
+/* Standard list/table header surface. */
+.wv2 .wv2-document-table > header,
+.wv2 .wv2-preview-document-table > header,
+.wv2 .wv2-issue-table > header,
+.wv2 .wv2-master-table > header,
+.wv2 .wv2-holiday-table > header,
+.wv2 .pbw-part-table > header,
+.wv2 .pbw-tree-head,
+.wv2 .pcw-budget-table .th,
+.wv2 .pcw-bom-table .th,
+.wv2 .pcw-entry-table .th,
+.wv2 .wv2-advanced-wbs-editor th {
+  background: var(--v2-surface-table-header);
+  color: var(--v2-color-muted);
+}
+
+/*
+ * Actual content surfaces stay white. These are intentionally different from
+ * the workspace canvas so hierarchy is consistent on every screen.
+ */
+.wv2 .wv2-document-table,
+.wv2 .wv2-preview-document-table,
+.wv2 .wv2-issue-table,
+.wv2 .wv2-master-data,
+.wv2 .wv2-master-table,
+.wv2 .wv2-settings-grid,
+.wv2 .wv2-workweek,
+.wv2 .wv2-holidays,
+.wv2 .wv2-advanced-wbs-editor,
+.wv2 .pbw-part-table,
+.wv2 .pbw-editor-grid,
+.wv2 .pbw-reuse,
+.wv2 .pbw-reference,
+.wv2 .pbw-current,
+.wv2 .pcw-project-bar,
+.wv2 .pcw-budget-table,
+.wv2 .pcw-bom-table-wrap,
+.wv2 .pcw-entry-table,
+.wv2 .pcw-kpis article,
+.wv2 .pcw-entry-summary article,
+.wv2 .pcw-bom-summary,
+.wv2 .pcw-bom-rootbar {
+  background: var(--v2-surface-content);
+}
+
+/* Subtle helper/header surfaces use only the shared subtle token. */
+.wv2 .pbw-tree-head,
+.wv2 .pcw-bom-group > header,
+.wv2 .pcw-budget-table .tr.total {
+  background: var(--v2-surface-subtle);
+}

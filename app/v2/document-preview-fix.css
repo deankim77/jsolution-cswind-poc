@@ -1,0 +1,29 @@
+/* Text/Office preview canvas: keep extracted content inside a paper-like surface.
+   This file intentionally only overrides preview geometry; loading/cache behavior stays unchanged. */
+.wv2-document-preview>main:has(>pre){
+  display:block;
+}
+
+.wv2-document-preview>main>pre{
+  box-sizing:border-box;
+  display:block;
+  width:min(794px,100%);
+  min-height:1123px;
+  height:auto;
+  max-height:none;
+  margin:0 auto;
+  overflow:visible;
+  flex:none;
+  background:#fff;
+  padding:56px 64px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+
+@media(max-width:900px){
+  .wv2-document-preview>main>pre{
+    min-height:900px;
+    padding:38px 34px;
+  }
+}

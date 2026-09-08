@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+.vinext/
+.output/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Cloudflare local data
+.wrangler/
+.dev.vars
+
+# Local/NAS storage root
+storage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+.sites-runtime/
+build/
+.demo-generated/
+cad-worker/

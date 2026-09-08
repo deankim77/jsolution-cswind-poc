@@ -1,0 +1,119 @@
+/* Document library list: prioritize document identity, WBS context, author/date, revision and actions. */
+.wv2-preview-document-table>header,
+.wv2-preview-document-table>article{
+  min-width:1220px;
+  grid-template-columns:32px minmax(245px,1.1fr) minmax(330px,1.4fr) 132px minmax(190px,.9fr) 84px 82px 82px!important;
+  column-gap:8px;
+}
+
+/* The document/drawing libraries no longer use summary KPI cards. */
+.wv2-document-workspace .wv2-module-summary{display:none!important}
+
+/* Keep Drawing registration visually aligned with Additional Deliverable registration. */
+.wv2-document-workspace .wv2-module-head-actions>button{
+  box-sizing:border-box;
+  width:132px;
+  min-width:132px;
+  height:34px;
+  min-height:34px;
+  padding:0 12px;
+  font-size:var(--v2-font-size-control);
+  font-weight:800;
+  border-color:var(--teal);
+  background:var(--teal);
+  color:#fff;
+}
+
+/* Keep the existing drawing-library tab visible; legacy preview bridge may set inline display:none. */
+.wv2-document-workspace .wv2-preview-tabs>button:nth-child(2){display:inline-flex!important}
+
+.wv2-preview-document-table>header>span:nth-child(3){
+  position:static!important;
+  left:auto!important;
+}
+.wv2-preview-document-table>article>.wv2-document-task{
+  position:static!important;
+  left:auto!important;
+  width:100%!important;
+  min-width:0;
+  cursor:pointer;
+}
+
+.wv2-preview-document-table>article{position:relative;cursor:pointer}
+.wv2-preview-document-table>article>.select{cursor:default}
+
+.wv2-preview-document-table>article>.name,
+.wv2-preview-document-table>article>.wv2-document-task,
+.wv2-preview-document-table>article>.wv2-revision-link{
+  min-width:0;
+}
+.wv2-preview-document-table>article>.name span,
+.wv2-preview-document-table>article>.wv2-document-task,
+.wv2-preview-document-table>article>.wv2-revision-link,
+.wv2-preview-document-table>article>.wv2-document-author{
+  overflow:hidden;
+}
+.wv2-preview-document-table>article>.name b,
+.wv2-preview-document-table>article>.name small,
+.wv2-preview-document-table>article>.wv2-document-task b,
+.wv2-preview-document-table>article>.wv2-document-task small,
+.wv2-preview-document-table>article>.wv2-revision-link b,
+.wv2-preview-document-table>article>.wv2-revision-link small,
+.wv2-preview-document-table>article>.wv2-document-author b,
+.wv2-preview-document-table>article>.wv2-document-author small{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.wv2-preview-document-table>article>.wv2-document-author{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  justify-content:center;
+  gap:3px;
+  color:var(--text);
+}
+.wv2-preview-document-table>article>.wv2-document-author b{
+  font-size:var(--v2-font-size-control);
+  font-weight:700;
+}
+.wv2-preview-document-table>article>.wv2-document-author small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* WBS and preview are the only row-level actions; every other cell opens detail. */
+.wv2-preview-document-table>article>.wv2-document-wbs-link,
+.wv2-preview-document-table>article>.wv2-document-preview-link{
+  position:static!important;
+  right:auto!important;
+  width:78px;
+  min-width:78px;
+  height:32px;
+  margin:0!important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  justify-self:center;
+  align-self:center;
+  grid-row:1!important;
+  border:1px solid #c9d7dc;
+  border-radius:6px;
+  background:#fff;
+  color:var(--teal-dark);
+  padding:0 8px;
+  font-size:var(--v2-font-size-control);
+  font-weight:700;
+  line-height:1;
+  text-align:center;
+  white-space:nowrap;
+  cursor:pointer;
+  z-index:auto;
+}
+.wv2-preview-document-table>article>.wv2-document-wbs-link{grid-column:7!important}
+.wv2-preview-document-table>article>.wv2-document-preview-link{grid-column:8!important}
+.wv2-preview-document-table>article>.wv2-document-wbs-link:hover,
+.wv2-preview-document-table>article>.wv2-document-preview-link:hover{background:#f3f8f7;border-color:#9fc2be}
+
+.wv2-preview-document-table>header>span:last-child{grid-column:7 / 9}

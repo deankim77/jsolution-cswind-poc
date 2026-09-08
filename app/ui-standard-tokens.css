@@ -1,0 +1,47 @@
+:root {
+  --v2-font-family: Pretendard, "Noto Sans KR", Inter, Arial, sans-serif;
+  --v2-font-size-screen-title: 22px;
+  --v2-font-size-section-title: 18px;
+  --v2-font-size-card-title: 16px;
+  --v2-font-size-panel-title: 16px;
+  --v2-font-size-body: 14px;
+  --v2-font-size-control: 14px;
+  --v2-font-size-table-header: 13px;
+  --v2-font-size-caption: 12px;
+  --v2-font-size-min: 12px;
+  --v2-font-size-gantt-progress: 10px;
+  --v2-icon-size: 18px;
+  --v2-icon-size-primary: 20px;
+  --v2-font-weight-regular: 400;
+  --v2-font-weight-medium: 600;
+  --v2-font-weight-bold: 700;
+  --v2-line-height-body: 1.5;
+
+  --v2-global-rail-width: 62px;
+  --v2-context-nav-width: 228px;
+  --v2-topbar-height: 60px;
+  --v2-work-tabs-height: 38px;
+  --v2-right-panel-width: 560px;
+  --v2-right-panel-wide-width: 760px;
+
+  --v2-control-height: 34px;
+  --v2-action-height: 32px;
+  --v2-wbs-header-height: 34px;
+  --v2-wbs-row-height: 44px;
+  --v2-radius-sm: 5px;
+  --v2-radius-md: 8px;
+  --v2-border-color: #dfe6ec;
+  --v2-color-ink: #192b3f;
+  --v2-color-muted: #6d7b8d;
+  --v2-color-primary: #0d918c;
+  --v2-color-primary-dark: #087772;
+
+  /* V2 UI Foundation surfaces: workspace, content and table headers must use these tokens. */
+  --v2-surface-workspace: #f6f8fa;
+  --v2-surface-content: #ffffff;
+  --v2-surface-subtle: #f7f9fa;
+  --v2-surface-table-header: #edf2f4;
+  --v2-tab-height: 38px;
+  --v2-tab-active-border-width: 2px;
+  --v2-tab-active-background: transparent;
+}

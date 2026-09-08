@@ -1,0 +1,6 @@
+import { getLegacyDbCompat } from "../../../db/postgres-d1-compat";
+import {ensureProjectDataFoundation,type RuntimeD1} from "../../../db/project-data-foundation";
+import {contextErrorResponse,resolveRequestContext} from "../../../db/request-context";
+
+async function runtimeDb():Promise<RuntimeD1>{return getLegacyDbCompat() as RuntimeD1;}
+export async function GET(request:Request){const db=await runtimeDb();await ensureProjectDataFoundation(db);const columns=await db.prepare("PRAGMA table_info(users)").all();if(!(columns.results??[] as Array<{name?:string}>).some(column=>column.name==="avatar_key"))await db.prepare("ALTER TABLE users ADD COLUMN avatar_key text DEFAULT 'avatar-01'").run();try{const context=await resolveRequestContext(request,db);const profile=await db.prepare("SELECT COALESCE(avatar_key,'avatar-01') AS avatarKey FROM users WHERE id=? AND company_id=?").bind(context.userId,context.companyId).first();return Response.json({user:{id:context.userId,name:context.name||context.email||"사용자",email:context.email,avatarKey:profile?.avatarKey||"avatar-01",systemRoles:context.systemRoles},companyId:context.companyId})}catch(reason){return contextErrorResponse(reason)??Response.json({error:"로그인이 필요합니다."},{status:401})}}

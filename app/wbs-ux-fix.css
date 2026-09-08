@@ -1,0 +1,42 @@
+/* Small WBS UX corrections: keep the new dense grid, improve balance. */
+.unified-grid{min-width:1080px!important}
+.unified-operate-grid{grid-template-columns:40px minmax(190px,220px) 68px 76px 80px 80px 56px 60px 68px 76px 48px 46px 86px 60px 62px!important}
+.unified-grid-row,.unified-gantt-row{height:44px!important}
+.unified-grid-row{font-size:12px!important}
+.unified-grid-head{font-size:11px!important}
+.unified-task-cell>b{font-size:11px!important;min-width:34px!important}
+.unified-task-cell>strong{font-size:12px!important}
+.kind-badge,.state-badge{font-size:10px!important}
+.unified-grid-row>span{font-size:11px!important;padding-left:3px!important;padding-right:3px!important}
+.unified-project-info>small,.unified-ai-summary small,.unified-kpis small{font-size:11px!important}
+.unified-project-info>strong{font-size:18px!important}
+.unified-wbs-tabs button{font-size:12px!important}
+.unified-task-cell{max-width:220px!important;padding-right:5px!important}
+.unified-task-cell>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Freeze selection + WBS/Task name. Everything from 구분 onward may scroll. */
+.unified-operate-grid .select-cell{position:sticky;left:0;z-index:5;background:inherit}
+.unified-operate-grid .unified-task-cell{position:sticky;left:40px;z-index:4;background:inherit;box-shadow:1px 0 0 #dfe6ea}
+.unified-operate-grid.unified-grid-head>span:nth-child(1){position:sticky;left:0;z-index:11;background:#f6f8fa}
+.unified-operate-grid.unified-grid-head>span:nth-child(2){position:sticky;left:40px;z-index:10;background:#f6f8fa;box-shadow:1px 0 0 #dfe6ea}
+
+/* Remove excess air around owner/output/issue columns. */
+.unified-operate-grid>span:nth-child(10),
+.unified-operate-grid>span:nth-child(11),
+.unified-operate-grid>span:nth-child(12){justify-content:flex-start!important;gap:2px!important}
+.metric-link{padding-left:1px!important;padding-right:1px!important}
+
+/* Gantt uses the same frozen left-side rhythm. */
+.unified-gantt-head{grid-template-columns:40px 220px minmax(760px,1fr)!important;min-width:1020px!important}
+.unified-gantt-row{grid-template-columns:40px 220px minmax(760px,1fr)!important;min-width:1020px!important}
+.unified-gantt-row>.select-cell{position:sticky;left:0;z-index:5;background:inherit}
+.unified-gantt-row>span:nth-child(2){position:sticky;left:40px;z-index:4;background:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:1px 0 0 #dfe6ea}
+.unified-gantt-head>span:nth-child(1){position:sticky;left:0;z-index:11;background:#f6f8fa}
+.unified-gantt-head>span:nth-child(2){position:sticky;left:40px;z-index:10;background:#f6f8fa;box-shadow:1px 0 0 #dfe6ea}
+
+@media(max-width:1400px){
+  .unified-grid{min-width:1020px!important}
+  .unified-operate-grid{grid-template-columns:38px minmax(180px,205px) 64px 72px 76px 76px 52px 56px 64px 72px 46px 44px 80px 56px 58px!important}
+  .unified-operate-grid .unified-task-cell{left:38px;max-width:205px!important}
+  .unified-operate-grid.unified-grid-head>span:nth-child(2){left:38px}
+}

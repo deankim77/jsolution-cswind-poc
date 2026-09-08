@@ -1,0 +1,52 @@
+.pcw-shell{gap:8px!important;padding-top:14px!important}
+.pcw-project-bar{padding:7px 10px!important}
+.pcw-tabs{margin-top:0!important}
+
+.pcw-bom-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 10px;border:1px solid #dbe4e7;border-radius:7px;background:#fff}
+.pcw-bom-toolbar>div{display:flex;align-items:center;gap:12px;min-width:0}
+.pcw-bom-toolbar b{font-size:var(--v2-font-size-card-title)}
+.pcw-bom-toolbar span{font-size:var(--v2-font-size-caption);color:#71838c;white-space:nowrap}
+.pcw-bom-toolbar-actions{display:flex!important;align-items:center;gap:6px!important;flex:0 0 auto}
+.pcw-bom-toolbar .primary,.pcw-bom-toolbar .secondary{height:var(--v2-control-height);padding:0 11px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:6px;font-size:var(--v2-font-size-control);font-weight:800;cursor:pointer;white-space:nowrap}
+.pcw-bom-toolbar .primary{border:0;background:var(--teal);color:#fff}
+.pcw-bom-toolbar .secondary{border:1px solid #d5dfe3;background:#fff;color:#506670}
+
+.pcw-bom-group{display:grid;margin:0}
+.pcw-bom-group>header{min-height:42px;padding:5px 8px!important;border-radius:7px 7px 0 0!important;background:#f5f9f9!important}
+.pcw-bom-group.collapsed>header{border-bottom:1px solid #cfdde0!important;border-radius:7px!important}
+.pcw-bom-group-main,.pcw-bom-group-meta{display:flex!important;align-items:center;gap:7px;min-width:0}
+.pcw-bom-group-main{flex:1 1 auto}
+.pcw-bom-group-main>b{white-space:nowrap}
+.pcw-bom-group-main>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcw-bom-group-meta{flex:0 0 auto}
+.pcw-bom-group-meta label{display:flex;align-items:center;gap:5px}
+.pcw-bom-group-meta label small{font-size:var(--v2-font-size-caption);color:#71838c;white-space:nowrap}
+.pcw-bom-group-meta select{width:150px;height:var(--v2-action-height);border:1px solid #d5dfe3;border-radius:5px;background:#fff;padding:0 6px;font-size:var(--v2-font-size-control)}
+.pcw-bom-group-meta strong{font-size:var(--v2-font-size-body);font-weight:700;white-space:nowrap}
+.pcw-bom-group-meta>.danger{width:var(--v2-action-height);height:var(--v2-action-height);border:0;border-radius:5px;background:#fff1f0;color:#b42318;display:grid;place-items:center;cursor:pointer}
+.pcw-collapse-button{width:28px;height:28px;border:0;border-radius:5px;background:transparent;color:#49636d;display:grid;place-items:center;cursor:pointer}
+.pcw-collapse-button:hover{background:#eaf3f2}
+.pcw-root-order{display:flex;gap:3px}
+.pcw-root-order button{width:28px;height:28px;border:1px solid #d8e1e4;border-radius:5px;background:#fff;display:grid;place-items:center;color:#60737c;cursor:pointer}
+.pcw-root-order button:disabled{opacity:.3;cursor:default}
+
+.pcw-root-quick-cost{display:grid;grid-template-columns:150px minmax(145px,.7fr) minmax(145px,.7fr) minmax(260px,1.4fr) 64px;align-items:end;gap:8px;padding:8px 10px;border:1px solid #dbe4e7;border-top:0;border-radius:0 0 7px 7px;background:#fff}
+.pcw-root-quick-cost>span{display:grid;gap:3px;min-width:0}
+.pcw-root-quick-cost small{font-size:var(--v2-font-size-caption);color:#75868e}
+.pcw-root-quick-cost b{font-size:var(--v2-font-size-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcw-root-quick-cost input,.pcw-root-quick-cost select{height:var(--v2-action-height);box-sizing:border-box;border:1px solid #d5dfe3;border-radius:5px;background:#fff;padding:0 7px;font-size:var(--v2-font-size-control)}
+.pcw-root-quick-cost input{text-align:right}
+.pcw-root-quick-cost>button{height:var(--v2-action-height);border:1px solid #b9d8d4;border-radius:5px;background:#eff9f7;color:var(--teal-dark);font-size:var(--v2-font-size-control);font-weight:800;cursor:pointer}
+
+.pcw-entries>header{padding:9px 11px!important}
+.pcw-entries>header>div{display:flex!important;align-items:center;gap:12px!important;min-width:0}
+.pcw-entries>header>div>b{white-space:nowrap}
+.pcw-entries>header>div>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:1100px){
+  .pcw-bom-toolbar>div:first-child{display:grid;gap:2px}
+  .pcw-bom-group>header{align-items:flex-start!important;flex-direction:column}
+  .pcw-bom-group-meta{width:100%;justify-content:flex-end}
+  .pcw-root-quick-cost{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pcw-root-quick-cost>button{grid-column:2}
+}

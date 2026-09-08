@@ -1,0 +1,18 @@
+/* Shared V2 issue-upload and quality-create layout styles.
+ * DOM-injected issue helper blocks were removed with RightPanelDefaults.
+ */
+.wv2-issue-editor .wv2-panel-create input[type="file"]{box-sizing:border-box;width:100%;min-height:84px;border:1px dashed #9ab8bf;border-radius:7px;background:#f7fafb;padding:24px 16px;color:#526875;cursor:pointer;font-size:var(--v2-font-size-control)}
+.wv2-issue-editor .wv2-panel-create input[type="file"]::file-selector-button{height:32px;margin-right:10px;border:1px solid #b7cfcc;border-radius:6px;background:#fff;padding:0 10px;color:var(--teal-dark);font:inherit;font-size:var(--v2-font-size-control);font-weight:800;cursor:pointer}
+.wv2-issue-editor .wv2-panel-create input[type="file"]:hover{border-color:var(--teal);background:#effaf8}
+
+/* Quality create form: 2-column header fields, single-column detail fields */
+.wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form>.two:first-child{grid-column:1/-1}
+.wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form>.three{display:contents}
+.wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form>.three+label+label{grid-column:1/-1}
+.wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form>.three~.two{grid-column:1/-1;grid-template-columns:1fr}
+
+@media(max-width:760px){
+  .wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form{grid-template-columns:1fr}
+  .wv2-workflow-create.source:not(:has(#ecr-drawing-options)) .wv2-workflow-form>.two{grid-template-columns:1fr}
+}

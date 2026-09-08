@@ -1,0 +1,59 @@
+.wv2-gate-customer-matrix>.wv2-gate-matrix-table{display:block;min-height:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--v2-radius-sm);padding:0;font-size:var(--v2-font-size-body);background:#fff}
+.wv2-gate-matrix-table>header,.wv2-gate-matrix-table>.row{display:grid;grid-template-columns:minmax(180px,1.45fr) repeat(6,minmax(118px,1fr)) minmax(110px,.9fr);align-items:stretch;gap:0;min-width:1040px;min-height:38px;padding:0}
+.wv2-gate-matrix-table>header{background:var(--surface-soft);color:var(--muted);font-size:var(--v2-font-size-caption);font-weight:800}
+.wv2-gate-matrix-table>header>* ,.wv2-gate-matrix-table>.row>*{min-width:0;padding:6px 9px;text-align:center;border-right:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wv2-gate-matrix-table>header>*{display:flex;align-items:center;justify-content:center}
+.wv2-gate-matrix-table>header>*:first-child,.wv2-gate-matrix-table>.row>*:first-child{text-align:left;font-weight:800}
+.wv2-gate-matrix-table>header>*:first-child{justify-content:flex-start}
+.wv2-gate-matrix-table>header>*:last-child,.wv2-gate-matrix-table>.row>*:last-child{border-right:0}
+.wv2-gate-matrix-table>.row{border-top:1px solid var(--line);background:#fff}
+.wv2-gate-matrix-table>.row>b{display:flex;align-items:center}
+.wv2-gate-matrix-table>.row>span{font-weight:700}
+.wv2-gate-status-cell{display:flex!important;align-items:center;justify-content:center;gap:5px;padding-block:5px!important;white-space:nowrap!important;font-size:var(--v2-font-size-body)}
+.wv2-gate-status-cell>b{font-size:var(--v2-font-size-body);color:var(--ink);font-weight:900}
+.wv2-gate-status-cell>small{display:contents}
+.wv2-gate-status-cell>small>em{color:var(--teal-dark);font-size:var(--v2-font-size-body);font-style:normal;font-weight:800;white-space:nowrap}
+.wv2-gate-status-cell>small>em:first-child::after{content:","}
+.wv2-gate-status-cell>small>em.risk{color:#b42318}
+
+.wv2-gate-health{grid-template-columns:repeat(6,minmax(145px,1fr));gap:10px;padding:12px}
+.wv2-gate-health>div{min-height:108px;gap:8px;padding:11px 12px}
+.wv2-gate-health .health-score{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.wv2-gate-health .health-score strong{font-size:var(--v2-font-size-title)}
+.wv2-gate-health .health-meter{height:12px;border-radius:999px;background:#e7edef;overflow:hidden}
+.wv2-gate-health .health-meter>span{display:block;height:100%;background:var(--teal)}
+.wv2-gate-health>div>small{color:#41535f;font-size:var(--v2-font-size-body);font-weight:800;line-height:1.45;white-space:normal}
+.wv2-gate-health-guide{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap;color:var(--muted);font-size:var(--v2-font-size-caption);line-height:1.35;text-align:right}
+.wv2-gate-health-guide>b{color:var(--ink)}
+
+.wv2-issue-risk-chart-section{grid-column:1/-1;overflow:hidden}
+.wv2-issue-risk-histogram{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));align-items:end;gap:10px;min-height:282px;padding:18px 12px 10px;overflow:hidden}
+.wv2-issue-risk-histogram-item{min-width:0;border:0;background:transparent;padding:0 3px;display:grid;grid-template-rows:24px 190px 34px;gap:5px;align-items:end;text-align:center;cursor:pointer}
+.wv2-issue-risk-histogram-item::before{content:"총 " attr(data-total);align-self:center;justify-self:center;border-radius:999px;background:#eef3f5;padding:3px 8px;color:var(--ink);font-size:var(--v2-font-size-body);font-weight:900;line-height:1.2}
+.wv2-issue-risk-histogram-item:hover{background:var(--surface-soft);border-radius:8px}
+.wv2-issue-risk-bar-group{height:190px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;align-items:end;border-bottom:1px solid var(--line);padding:0 2px}
+.wv2-issue-risk-bar{height:100%;display:grid;grid-template-rows:20px minmax(0,1fr) 18px;align-items:end;gap:3px}
+.wv2-issue-risk-bar>strong{align-self:end;font-size:var(--v2-font-size-caption);color:var(--ink)}
+.wv2-issue-risk-bar>i{justify-self:center;width:86%;height:145px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-radius:4px 4px 0 0;background:#f4f6f7}
+.wv2-issue-risk-bar>i>span{display:block;width:100%;min-height:0;border-radius:4px 4px 0 0;background:var(--teal)}
+.wv2-issue-risk-bar.risk>i>span{background:#d97706}
+.wv2-issue-risk-bar.collaboration>i>span{background:#4f7db8}
+.wv2-issue-risk-bar>small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted);font-weight:700}
+.wv2-issue-risk-histogram-item>b{align-self:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--v2-font-size-caption);font-weight:800}
+
+/* Portfolio dashboard customer Gate matrix: match the card system used above */
+.wv2-gate-customer-matrix{overflow:hidden;border:1px solid var(--line);border-radius:var(--v2-radius-md);background:#fff}
+.wv2-gate-customer-matrix>header{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}
+.wv2-gate-customer-matrix>header>b{font-size:0}
+.wv2-gate-customer-matrix>header>b::after{content:"거래처 별 프로젝트 Gate 현황";font-size:var(--v2-font-size-section-title);font-weight:900;color:var(--ink)}
+.wv2-gate-customer-matrix>header>span{color:var(--muted);font-size:var(--v2-font-size-caption)}
+.wv2-gate-customer-matrix>.wv2-gate-matrix-table{margin:10px 12px 12px;width:calc(100% - 24px)}
+
+/* Dashboard spacing only: preserve the existing layout and scroll behavior */
+.wv2-portfolio-dashboard>header{margin-bottom:12px}
+.wv2-portfolio-dashboard>.wv2-gate-customer-matrix{margin-top:12px}
+.wv2-project-dashboard>header{margin-bottom:12px}
+.wv2-project-dashboard>.wv2-project-gate-panel{margin-top:12px}
+
+@media(max-width:1280px){.wv2-gate-health{grid-template-columns:repeat(3,minmax(145px,1fr))}.wv2-issue-risk-histogram{overflow-x:auto;grid-template-columns:repeat(10,minmax(105px,1fr))}}
+@media(max-width:720px){.wv2-gate-matrix-table>header,.wv2-gate-matrix-table>.row{min-width:1040px}.wv2-gate-health{grid-template-columns:repeat(2,minmax(140px,1fr))}.wv2-gate-health-guide{justify-content:flex-start;text-align:left}.wv2-issue-risk-histogram{min-height:265px;grid-template-columns:repeat(10,minmax(98px,1fr))}.wv2-gate-customer-matrix>header{align-items:flex-start;flex-direction:column}}

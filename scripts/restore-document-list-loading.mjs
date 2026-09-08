@@ -1,0 +1,13 @@
+import fs from "node:fs";
+
+const path="app/v2/document-preview-workspace-impl.tsx";
+let source=fs.readFileSync(path,"utf8");
+
+const current='const load=useCallback(()=>{if(!workspaceStateReady)return()=>{};const controller=new AbortController();requestKeyRef.current=requestKey;setLoading(true);setLoadingMore(false);loadedHistory.current.clear();historyRequests.current.clear();fetch(`/api/deliverables?${requestKey}`,{cache:"no-store",signal:controller.signal}).then(async response=>{const data=await response.json() as ListResponse;if(!response.ok)throw new Error(data.error||"산출물을 불러오지 못했습니다.");return data}).then(data=>{setItems(data.deliverables??[]);setVersions(data.versions??[]);setTotal(Number(data.total||0));setRegisteredCount(Number(data.registeredCount||0));setMissingRequiredCount(Number(data.missingRequiredCount||0));setTotalRevisionCount(Number(data.totalRevisionCount||0));setHasMore(Boolean(data.hasMore));setCategories(data.categories??[]);setNotice("")}).catch(reason=>{if(!(reason instanceof DOMException&&reason.name==="AbortError")){setItems([]);setVersions([]);setTotal(0);setRegisteredCount(0);setMissingRequiredCount(0);setTotalRevisionCount(0);setHasMore(false);setNotice(reason instanceof Error?reason.message:"산출물을 불러오지 못했습니다.")}}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});return()=>controller.abort()},[workspaceStateReady,requestKey]);';
+
+const restored='const load=useCallback(()=>{if(!workspaceStateReady)return()=>{};const controller=new AbortController();requestKeyRef.current=requestKey;setLoading(true);setLoadingMore(false);loadedHistory.current.clear();historyRequests.current.clear();fetchList(0,controller.signal).then(data=>{setItems(data.deliverables??[]);setVersions(data.versions??[]);setTotal(Number(data.total||0));setRegisteredCount(Number(data.registeredCount||0));setMissingRequiredCount(Number(data.missingRequiredCount||0));setTotalRevisionCount(Number(data.totalRevisionCount||0));setHasMore(Boolean(data.hasMore));setCategories(data.categories??[]);setNotice("")}).catch(reason=>{if(!(reason instanceof DOMException&&reason.name==="AbortError")){setItems([]);setVersions([]);setTotal(0);setRegisteredCount(0);setMissingRequiredCount(0);setTotalRevisionCount(0);setHasMore(false);setNotice(reason instanceof Error?reason.message:"산출물을 불러오지 못했습니다.")}}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});return()=>controller.abort()},[workspaceStateReady,requestKey,fetchList]);';
+
+if(!source.includes(current))throw new Error("Current document loading block not found; source may have changed.");
+source=source.replace(current,restored);
+fs.writeFileSync(path,source,"utf8");
+console.log("Document list loading restored to the last known working fetchList path.");

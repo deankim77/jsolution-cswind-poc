@@ -1,0 +1,21 @@
+{
+  "name": "jsolution-ai-pms-local",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-22",
+  "vars": {
+    "DWG_CONVERTER_URL": "http://127.0.0.1:8791/convert/dwg-to-pdf"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "site-creator-d1",
+      "database_id": "00000000-0000-4000-8000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "jsolution-ai-pms-files"
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+/* J SOLUTION AI PMS - Central Workspace Typography System
+   13 = module label / 12 = primary row title & primary action / 11 = table headers & normal data / 10 = metadata & badges
+   Interactive search/select/filter controls = 12px / toolbar controls = 12px 700
+   Operational UI minimum font size: 10px / standard UI icon: 16px */
+:root{
+  --ws-font-module:13px;
+  --ws-font-primary:12px;
+  --ws-font-control:12px;
+  --ws-font-normal:11px;
+  --ws-font-meta:10px;
+  --ws-icon:16px;
+  --ws-color-module:#12a58f;
+  --ws-color-primary:#26384f;
+  --ws-color-normal:#526477;
+  --ws-color-head:#657287;
+  --ws-color-meta:#7f8b9a;
+}
+
+/* Module labels */
+.module-compact-heading{align-items:center!important;margin-bottom:12px!important;min-height:40px!important}
+.module-compact-heading .eyebrow{margin:0!important;font-size:var(--ws-font-module)!important;font-weight:800!important;color:var(--ws-color-module)!important;line-height:1.2!important;letter-spacing:.03em!important;gap:6px!important}
+.module-compact-heading .eyebrow svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important;color:var(--ws-color-module)!important;stroke-width:2!important}
+.module-compact-heading .document-actions{margin-left:auto}
+.project-list-heading.module-compact-heading>button{margin-left:auto}
+
+/* Primary create/register actions */
+.content .new-work{font-size:var(--ws-font-primary)!important;font-weight:700!important}
+.content .new-work svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important}
+
+/* Shared list/grid controls: all visible toolbar controls use 12px / 700 */
+.module-list-toolbar,
+.project-list-toolbar,
+.work-tabs button{font-size:var(--ws-font-control)!important;font-weight:700!important;color:var(--ws-color-normal)!important}
+.module-list-toolbar button,
+.project-list-toolbar button,
+.module-list-toolbar select,
+.project-list-toolbar select,
+.module-list-toolbar input,
+.project-list-toolbar input,
+.work-tabs button,
+.analysis-kind-tabs button,
+.conversation-organize-tabs button,
+.ai-workspace-view-tabs button{
+  font-size:var(--ws-font-control)!important;
+  font-weight:700!important;
+}
+.module-list-toolbar button.active,
+.project-list-toolbar button.active,
+.work-tabs button.active,
+.analysis-kind-tabs button.active,
+.conversation-organize-tabs button.active,
+.ai-workspace-view-tabs button.active{font-weight:800!important}
+.module-list-toolbar em,.module-list-toolbar b,.filter-button b{font-size:var(--ws-font-meta)!important;font-weight:700!important}
+.module-list-toolbar svg,.project-list-toolbar svg,.work-search svg,.filter-button svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important}
+
+/* Global central-workspace interactive control rule
+   Search / Select / filter / refresh = 12px / 700 */
+.content input[placeholder*="검색"],
+.content .work-search input,
+.content .ai-conversation-search input,
+.content .analysis-list-toolbar input,
+.content .ai-results-toolbar input,
+.content .copy-project-search input,
+.content .selection-panel-search input,
+.content .project-list-toolbar input,
+.content .module-list-toolbar input{
+  font-size:var(--ws-font-control)!important;
+  font-weight:700!important;
+  color:var(--ws-color-normal)!important;
+}
+.content input[placeholder*="검색"]::placeholder,
+.content .work-search input::placeholder,
+.content .ai-conversation-search input::placeholder,
+.content .analysis-list-toolbar input::placeholder,
+.content .ai-results-toolbar input::placeholder,
+.content .copy-project-search input::placeholder,
+.content .selection-panel-search input::placeholder{
+  font-size:var(--ws-font-control)!important;
+  font-weight:700!important;
+  color:#657287!important;
+  opacity:1!important;
+}
+.content select,
+.content .project-select,
+.content .module-list-toolbar select,
+.content .project-list-toolbar select{
+  font-size:var(--ws-font-control)!important;
+  font-weight:700!important;
+  color:var(--ws-color-normal)!important;
+}
+.content .filter-button,
+.content .project-filter-button,
+.content .wbs-filter-wrap>.filter-button,
+.content button[aria-label*="필터"],
+.content button[title*="필터"]{
+  font-size:var(--ws-font-control)!important;
+  font-weight:700!important;
+  color:var(--ws-color-normal)!important;
+}
+.content .filter-button svg,
+.content .project-filter-button svg,
+.content .work-search svg,
+.content .ai-conversation-search svg,
+.content .analysis-list-toolbar svg,
+.content .ai-results-toolbar svg{
+  width:var(--ws-icon)!important;
+  height:var(--ws-icon)!important;
+}
+
+/* Table/grid headers */
+.issue-table-head,
+.document-table-head,
+.project-list-head,
+.template-grid-head,
+.project-editor-head,
+.unified-grid-head,
+.unified-gantt-head,
+.ai-results-head{font-size:var(--ws-font-normal)!important;font-weight:700!important;color:var(--ws-color-head)!important}
+
+/* Issue/document row hierarchy */
+.issue-board .issue-name strong,.document-board .document-name strong{font-size:var(--ws-font-primary)!important;font-weight:700!important;color:var(--ws-color-primary)!important}
+.issue-board .issue-link b,.document-board .document-link b,.issue-board .issue-impact,.document-board .document-project b,.issue-board .wbs-owner,.document-board .wbs-owner,.issue-board time,.document-board time,.issue-board .wbs-state,.document-board .wbs-state{font-size:var(--ws-font-normal)!important;color:var(--ws-color-normal)}
+.issue-board .issue-name small,.document-board .document-name small,.issue-board .issue-link small,.document-board .document-link small,.issue-board .issue-project small,.document-board .document-project small{font-size:var(--ws-font-meta)!important;color:var(--ws-color-meta)!important}
+
+/* Template workspace */
+.admin-heading.module-compact-heading .eyebrow{font-size:var(--ws-font-module)!important}
+.template-main h2,.template-main h3,.template-list article strong,.template-tree>button strong,.task-property>header strong{font-size:var(--ws-font-primary)!important;font-weight:700!important;color:var(--ws-color-primary)!important}
+.template-list button,.template-detail button,.template-config button,.tree-toolbar button,.property-grid input,.property-grid textarea,.property-grid summary,.template-tree>header,.task-property>header,.template-grid-row>input{font-size:var(--ws-font-normal)!important}
+.property-grid select,.template-grid-row>select{font-size:var(--ws-font-control)!important;font-weight:700!important}
+.template-main small,.template-main p,.template-list article small,.template-list em,.template-detail small,.template-config small,.template-config em,.tree-code,.template-tree>button small{font-size:var(--ws-font-meta)!important;color:var(--ws-color-meta)}
+.template-grid-head{font-size:var(--ws-font-normal)!important;font-weight:700!important;color:var(--ws-color-head)!important}
+.template-main svg,.template-list svg,.template-detail svg,.tree-toolbar svg,.template-tree svg,.task-property svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important}
+
+/* AI conversation workspace */
+.ai-conversation-room>header h2{font-size:var(--ws-font-primary)!important;font-weight:700!important;color:var(--ws-color-primary)!important}
+.ai-conversation-room>header p,
+.ai-conversation-room>header em,
+.ai-conversation-browser-head small,
+.conversation-open small,
+.conversation-open time{font-size:var(--ws-font-meta)!important;color:var(--ws-color-meta)!important}
+.conversation-open strong{font-size:var(--ws-font-primary)!important;font-weight:700!important;color:var(--ws-color-primary)!important}
+.conversation-room-actions button,
+.conversation-room-actions em,
+.ai-conversation-artifact-actions button,
+.ai-artifact-continue{font-size:var(--ws-font-control)!important;font-weight:700!important}
+.ai-conversation-messages article p,
+.ai-conversation-composer textarea{font-size:var(--ws-font-primary)!important}
+.ai-conversation-browser svg,
+.conversation-organize-tabs svg,
+.conversation-room-actions svg,
+.ai-conversation-artifact-actions svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important}
+
+/* AI library / saved analysis workspace */
+.integrated-ai-results-head h2,
+.ai-results-toolbar>div strong{font-size:var(--ws-font-module)!important;font-weight:800!important;color:var(--ws-color-primary)!important}
+.integrated-ai-results-head>button,
+.analysis-kind-tabs button{font-size:var(--ws-font-control)!important;font-weight:700!important}
+.ai-result-main strong{font-size:var(--ws-font-primary)!important;font-weight:700!important;color:var(--ws-color-primary)!important}
+.ai-result-main p,
+.ai-result-location b,
+.ai-result-meta b{font-size:var(--ws-font-normal)!important;color:var(--ws-color-normal)!important}
+.ai-result-main small,
+.ai-result-location small,
+.ai-result-meta small,
+.ai-results-toolbar>div span,
+.integrated-ai-results-head p,
+.integrated-ai-results-head>div>span{font-size:var(--ws-font-meta)!important;color:var(--ws-color-meta)!important}
+.ai-results-head{font-size:var(--ws-font-normal)!important;font-weight:700!important;color:var(--ws-color-head)!important}
+.integrated-ai-results svg,
+.ai-results-panel svg,
+.analysis-list-toolbar svg{width:var(--ws-icon)!important;height:var(--ws-icon)!important}
+
+/* Shared popup/dialog typography
+   Applies only to real modal roots discovered in the current source. */
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor){color:var(--ws-color-primary)}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) > header h1,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) > header h2,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) > header strong,
+.document-register-dialog .dialog-title,
+.wbs-dialog .dialog-title{
+  font-size:var(--ws-font-module)!important;
+  font-weight:800!important;
+  color:var(--ws-color-primary)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .eyebrow,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) > header span:first-child{
+  font-size:var(--ws-font-meta)!important;
+  font-weight:800!important;
+  color:var(--ws-color-module)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) h3,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) legend,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .section-title{
+  font-size:var(--ws-font-primary)!important;
+  font-weight:700!important;
+  color:var(--ws-color-primary)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) label,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) label>span,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) dt,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .field-label{
+  font-size:var(--ws-font-normal)!important;
+  font-weight:700!important;
+  color:var(--ws-color-normal)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) input,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) select,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) textarea{
+  font-size:var(--ws-font-primary)!important;
+  font-weight:600!important;
+  color:var(--ws-color-primary)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) input::placeholder,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) textarea::placeholder{
+  font-size:var(--ws-font-normal)!important;
+  font-weight:500!important;
+  color:var(--ws-color-meta)!important;
+  opacity:1!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) button{
+  font-size:var(--ws-font-primary)!important;
+  font-weight:700!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) small,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .field-help,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .helper-text,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) .wizard-subtitle,
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) p.help{
+  font-size:var(--ws-font-meta)!important;
+  font-weight:500!important;
+  color:var(--ws-color-meta)!important;
+}
+:is(.document-register-dialog,.wbs-dialog,.project-wizard,.template-editor) svg{
+  width:var(--ws-icon)!important;
+  height:var(--ws-icon)!important;
+}
+
+/* Template editor metadata form: align with common project/create form pattern */
+.template-editor .wizard-form.compact{
+  display:grid!important;
+  grid-template-columns:180px 140px minmax(260px,1fr) minmax(360px,1.35fr)!important;
+  gap:12px!important;
+  align-items:end!important;
+  margin:0 0 14px!important;
+  padding:14px 16px!important;
+  border:1px solid #e2e8ee!important;
+  border-radius:10px!important;
+  background:#f8fafb!important;
+}
+.template-editor .wizard-form.compact label{
+  display:grid!important;
+  gap:6px!important;
+  min-width:0!important;
+  margin:0!important;
+  color:var(--ws-color-normal)!important;
+  font-size:var(--ws-font-normal)!important;
+  font-weight:700!important;
+}
+.template-editor .wizard-form.compact label>span{
+  margin:0!important;
+  color:var(--ws-color-normal)!important;
+  font-size:var(--ws-font-normal)!important;
+  font-weight:700!important;
+  line-height:1.2!important;
+}
+.template-editor .wizard-form.compact input,
+.template-editor .wizard-form.compact select,
+.template-editor .wizard-form.compact textarea{
+  width:100%!important;
+  min-width:0!important;
+  height:40px!important;
+  padding:0 12px!important;
+  border:1px solid #d8e1e8!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  color:var(--ws-color-primary)!important;
+  font-size:var(--ws-font-primary)!important;
+  font-weight:600!important;
+  outline:none!important;
+}
+.template-editor .wizard-form.compact input:focus,
+.template-editor .wizard-form.compact select:focus,
+.template-editor .wizard-form.compact textarea:focus{
+  border-color:#7fcbbf!important;
+  box-shadow:0 0 0 2px rgba(18,165,143,.08)!important;
+}
+.template-editor .wizard-form.compact input::placeholder,
+.template-editor .wizard-form.compact textarea::placeholder{
+  color:var(--ws-color-meta)!important;
+  font-size:var(--ws-font-normal)!important;
+  font-weight:500!important;
+  opacity:1!important;
+}
+@media(max-width:1100px){
+  .template-editor .wizard-form.compact{
+    grid-template-columns:140px 120px minmax(220px,1fr)!important;
+  }
+  .template-editor .wizard-form.compact label:last-child{grid-column:1/-1!important}
+}
+@media(max-width:760px){
+  .template-editor .wizard-form.compact{grid-template-columns:1fr 1fr!important}
+  .template-editor .wizard-form.compact label:nth-child(n+3){grid-column:1/-1!important}
+}
+
+/* Common operational badges/status/meta: never below 10px */
+.content .wbs-state,.content .status,.content .mini-owner,.content .progress-meta,.content .field-help,.content .project-issues em,.content .applied-filters em,.content .project-applied-filters em{font-size:var(--ws-font-meta)!important}
