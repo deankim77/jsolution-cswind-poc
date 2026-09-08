@@ -5,6 +5,8 @@ import { createReadStream } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { parseEnv } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { createInterface } from 'node:readline/promises';
+import { Writable } from 'node:stream';
 import pg from 'pg';
 
 const TARGET = 'jsolution_cswind_poc';
@@ -24,6 +26,31 @@ export async function config(root) {
   return result;
 }
 function connection(url, database) { const result = new URL(url); result.pathname = '/' + database; return result.toString(); }
+export function adminConnection(url, username, password) {
+  const result = new URL(connection(url, 'postgres'));
+  // Credentials in URL query parameters would override the prompted credentials in pg.
+  for (const key of ['user', 'password', 'dbname']) result.searchParams.delete(key);
+  result.username = encodeURIComponent(username);
+  result.password = encodeURIComponent(password);
+  return result.toString();
+}
+async function promptAdmin(url) {
+  invariant(process.stdin.isTTY && process.stdout.isTTY, 'Run --admin in an interactive terminal. Do not put the password in a command or config file.');
+  let hidden = false;
+  const output = new Writable({ write(chunk, encoding, callback) { if (!hidden) process.stdout.write(chunk, encoding); callback(); } });
+  const input = createInterface({ input: process.stdin, output, terminal: true });
+  const controller = new AbortController();
+  input.on('SIGINT', () => controller.abort());
+  try {
+    console.log('Use an EXISTING PostgreSQL administrator account for this copy only. No role permissions will be changed.');
+    const username = (await input.question('PostgreSQL administrator [postgres]: ', { signal: controller.signal })).trim() || 'postgres';
+    process.stdout.write('Password (hidden, not saved): ');
+    hidden = true;
+    const password = await input.question('', { signal: controller.signal });
+    invariant(password.length > 0, 'An administrator password is required.');
+    return adminConnection(url, username, password);
+  } finally { input.close(); output.end(); process.stdout.write('\n'); }
+}
 async function connect(url) { const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 10000 }); await client.connect(); return client; }
 async function tools() {
   const roots = [];
@@ -117,14 +144,15 @@ export async function prepare() {
   let source, target, stage, admin, switched = false;
   try {
     console.log('[1/6] Checking databases and permissions (AI PLM is read-only).');
-    source = await connect(sourceUrl); target = await connect(url); admin = await connect(connection(url, 'postgres'));
-    const role = (await admin.query('SELECT rolcreatedb,rolsuper FROM pg_roles WHERE rolname=current_user')).rows[0];
-    invariant(role.rolcreatedb || role.rolsuper, 'Current PostgreSQL account cannot create an isolated copy. No permissions were changed.');
+    source = await connect(sourceUrl); target = await connect(url);
     await checkEmpty(target);
     const openSessions = await target.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid()');
     invariant(openSessions.rows[0].n === 0, 'Stop the CS WIND server before running this copy.');
-    const owner = (await target.query('SELECT pg_get_userbyid(datdba)=current_user AS owned FROM pg_database WHERE datname=current_database()')).rows[0];
-    invariant(role.rolsuper || owner.owned, 'Current PostgreSQL account must own the CS WIND database. No permissions were changed.');
+    const owner = (await target.query('SELECT current_user AS app_user, pg_get_userbyid(datdba)=current_user AS owned FROM pg_database WHERE datname=current_database()')).rows[0];
+    admin = await connect(process.argv.includes('--admin') ? await promptAdmin(url) : connection(url, 'postgres'));
+    const role = (await admin.query('SELECT current_user AS admin_user,rolcreatedb,rolsuper FROM pg_roles WHERE rolname=current_user')).rows[0];
+    invariant(role.rolcreatedb || role.rolsuper, 'Current PostgreSQL account cannot create an isolated copy. Use --admin with an existing PostgreSQL administrator. No permissions were changed.');
+    invariant(role.rolsuper || (owner.owned && role.admin_user === owner.app_user), 'Use an existing PostgreSQL superuser with --admin, or the owning application account with CREATEDB. No permissions were changed.');
     await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const expected = await counts(source);
     invariant(Number(expected.companies) > 0 && Number(expected.users) > 0 && Number(expected.projects) > 0, 'Source database has no expected business data.');
@@ -133,7 +161,7 @@ export async function prepare() {
     await run(binaries.dump, ['--format=custom', '--no-owner', '--no-privileges', '--snapshot=' + snapshot, '--file=' + dumpFile], envFor(sourceUrl), path.join(recovery, 'dump.log'));
     await source.query('COMMIT'); await source.end(); source = null;
     console.log('[3/6] Restoring to a NEW staging database.');
-    await admin.query(`CREATE DATABASE ${quote(stageName)} TEMPLATE template0`);
+    await admin.query(`CREATE DATABASE ${quote(stageName)} OWNER ${quote(owner.app_user)} TEMPLATE template0`);
     await run(binaries.restore, ['--dbname=' + stageName, '--no-owner', '--no-privileges', '--exit-on-error', dumpFile], { ...envFor(stageUrl), PGHOST: new URL(stageUrl).hostname, PGPORT: new URL(stageUrl).port || '5432', PGUSER: decodeURIComponent(new URL(stageUrl).username), PGPASSWORD: decodeURIComponent(new URL(stageUrl).password) }, path.join(recovery, 'restore.log'));
     stage = await connect(stageUrl);
     const copied = await counts(stage);

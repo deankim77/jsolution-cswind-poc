@@ -18,6 +18,16 @@ npm.cmd run dev:cswind
 
 The script uses the existing `pg` package and PostgreSQL's installed `pg_dump`/`pg_restore`. It searches PATH and `C:\Program Files\PostgreSQL\<version>\bin`. If these are absent or account permissions are insufficient, it stops; it does not install software or grant permissions. `PG_BIN` can point to an existing PostgreSQL bin folder if needed.
 
+If the application account cannot create a database, use an **existing PostgreSQL administrator** (not a Windows administrator):
+
+```powershell
+node scripts/prepare-cswind.mjs --admin
+```
+
+Enter the administrator username (Enter defaults to `postgres`) and its password in the local terminal. The password is invisible while typing, is kept in this process only, and is not saved in configuration, logs, or child-process environment variables. Ctrl+C cancels. The connection uses the same configured PostgreSQL server. A separate administrator must already be a PostgreSQL superuser; the script never grants permissions or resets passwords. If those credentials are unavailable, ask the PostgreSQL administrator to run this command locally.
+
+The administrator connection creates the staging database and renames the CS WIND databases only. The staging database is owned by the existing application account; source backup, restore, migrations and application access still use the configured application credentials. AI PLM data and account permissions remain unchanged.
+
 The configured target must be `jsolution_cswind_poc`. Source is `jsolution_ai_plm` on the same server, as confirmed in this session. All public target tables must be empty. Stop CS WIND before running; the script does not terminate AI PLM connections.
 
 1. Check target emptiness, ownership, CREATE DATABASE permission and local storage separation.

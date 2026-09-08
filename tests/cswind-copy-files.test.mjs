@@ -3,7 +3,21 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { config, copyFiles } from '../scripts/prepare-cswind.mjs';
+import pg from 'pg';
+import { adminConnection, config, copyFiles } from '../scripts/prepare-cswind.mjs';
+
+test('temporary admin credentials preserve server settings and handle reserved password characters', () => {
+  const original = 'postgresql://app:old@localhost:5433/jsolution_cswind_poc?sslmode=disable&user=app&password=old&dbname=other';
+  const secret = 'a@:/?#% 한국어';
+  const client = new pg.Client({ connectionString: adminConnection(original, 'copy admin', secret) });
+  assert.equal(client.connectionParameters.user, 'copy admin');
+  assert.equal(client.connectionParameters.password, secret);
+  assert.equal(client.connectionParameters.database, 'postgres');
+  assert.equal(client.connectionParameters.host, 'localhost');
+  assert.equal(client.connectionParameters.port, 5433);
+  assert.equal(client.connectionParameters.ssl, false);
+  assert.equal(new URL(original).username, 'app');
+});
 
 test('CS WIND config matches .dev.vars precedence without exposing credentials', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(),'cswind-config-test-'));
