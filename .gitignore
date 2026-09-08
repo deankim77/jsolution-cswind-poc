@@ -38,3 +38,6 @@ Thumbs.db
 build/
 .demo-generated/
 cad-worker/
+
+# Local backup patches
+workflow-route-backup.diff
