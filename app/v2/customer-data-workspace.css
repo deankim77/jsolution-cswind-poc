@@ -1,0 +1,27 @@
+.cswind-data-workspace { color: var(--v2-color-ink); background: var(--v2-surface-workspace); font-size: var(--v2-font-size-body); }
+.cswind-data-workspace .v2-foundation-tabs { margin-bottom: 16px; }
+.cswind-data-card { background: var(--v2-surface-content); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-md); padding: 20px; margin-bottom: 16px; }
+.cswind-data-card h2 { font-size: var(--v2-font-size-section-title); margin: 0 0 12px; }
+.cswind-data-card p, .cswind-data-table small { color: var(--v2-color-muted); font-size: var(--v2-font-size-caption); }
+.cswind-data-id { overflow-wrap: anywhere; }
+.cswind-data-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin: 16px 0; }
+.cswind-data-workspace button, .cswind-data-actions a { font: inherit; min-height: var(--v2-control-height); }
+.cswind-data-actions button, .cswind-data-actions a, .cswind-data-relations button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); background: var(--v2-surface-content); color: var(--v2-color-ink); text-decoration: none; cursor: pointer; }
+.cswind-data-workspace button:disabled { cursor: default; opacity: .55; }
+.cswind-data-actions .primary { color: var(--v2-surface-content); background: var(--v2-color-primary); }
+.cswind-data-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.cswind-data-details dt { color: var(--v2-color-muted); font-size: var(--v2-font-size-caption); margin-bottom: 4px; }
+.cswind-data-details dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.cswind-data-relations { display: flex; gap: 8px; flex-direction: column; align-items: start; }
+.cswind-data-form fieldset { display: grid; gap: 16px; border: 0; padding: 0; }
+.cswind-data-form label, .cswind-data-actions label { display: grid; gap: 6px; }
+.cswind-data-workspace input, .cswind-data-workspace select, .cswind-data-workspace textarea { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; max-width: 100%; background: var(--v2-surface-content); color: var(--v2-color-ink); }
+.cswind-data-form small { font-size: var(--v2-font-size-caption); color: var(--v2-color-muted); }
+.cswind-data-count { margin-left: auto; white-space: nowrap; }
+.cswind-data-table { overflow-x: auto; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-md); background: var(--v2-surface-content); }
+.cswind-data-table table { width: 100%; min-width: 1000px; border-collapse: collapse; text-align: left; }
+.cswind-data-table th { background: var(--v2-surface-table-header); font-size: var(--v2-font-size-table-header); }
+.cswind-data-table th, .cswind-data-table td { padding: 12px; border-bottom: 1px solid var(--v2-border-color); }
+.cswind-data-table td { max-width: 320px; overflow-wrap: anywhere; }
+.cswind-data-table td button { color: var(--v2-color-primary); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.cswind-data-table small { display: block; margin-top: 4px; }

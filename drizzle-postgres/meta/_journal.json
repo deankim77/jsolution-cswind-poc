@@ -50,6 +50,13 @@
       "when": 1788880800000,
       "tag": "0006_optional_source_project",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788900000000,
+      "tag": "0007_cswind_customer_data",
+      "breakpoints": true
     }
   ]
 }

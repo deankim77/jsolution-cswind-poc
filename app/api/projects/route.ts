@@ -44,7 +44,7 @@ async function nextProjectCode(db:D1,companyId:string){
 }
 async function readProjects(db:D1,companyId:string){
   const result = await db.prepare(
-    `SELECT p.id, p.code, p.name, p.customer_name AS customerName,p.partner_id AS partnerId,p.project_type_id AS projectTypeId,partner.name AS partnerName,pt.name AS projectTypeName,profile.description,profile.reference_code AS referenceCode,profile.visibility,
+    `SELECT p.id, p.code, p.name, p.customer_name AS customerName,p.partner_id AS partnerId,p.project_type_id AS projectTypeId,partner.name AS partnerName,pt.name AS projectTypeName,pt.code AS projectTypeCode,profile.description,profile.reference_code AS referenceCode,profile.visibility,
             p.start_date AS startDate, p.end_date AS endDate, p.status,p.updated_at AS updatedAt,
             tv.version AS templateVersion,
             COALESCE(t.name, json_extract(p.template_snapshot, '$.templateName'), '연결 정보 확인 필요') AS templateName,
@@ -188,8 +188,8 @@ export async function PATCH(request:Request) {
     invalidateProjectList(context.companyId);
     const stored=await db.prepare("SELECT code,status FROM projects WHERE id=? AND company_id=?").bind(input.id,context.companyId).first<{code:string;status:string}>();
     const partner=input.partnerId?await db.prepare("SELECT name FROM partners WHERE id=? AND company_id=?").bind(input.partnerId,context.companyId).first<{name:string}>():null;
-    const projectType=input.projectTypeId?await db.prepare("SELECT name FROM project_types WHERE id=? AND company_id=?").bind(input.projectTypeId,context.companyId).first<{name:string}>():null;
-    return Response.json({project:{id:input.id,code:stored?.code||"",name:input.name.trim(),customerName:input.customerName?.trim()||undefined,partnerId:input.partnerId,partnerName:partner?.name,projectTypeId:input.projectTypeId,projectTypeName:projectType?.name,description:input.description?.trim()||undefined,referenceCode:input.referenceCode?.trim()||undefined,visibility:input.visibility||"company",sharedOrganizationIds:organizationIds,startDate:input.startDate,endDate:input.endDate,status:stored?.status||access.project.status,updatedAt:now}});
+    const projectType=input.projectTypeId?await db.prepare("SELECT name,code FROM project_types WHERE id=? AND company_id=?").bind(input.projectTypeId,context.companyId).first<{name:string;code:string}>():null;
+    return Response.json({project:{id:input.id,code:stored?.code||"",name:input.name.trim(),customerName:input.customerName?.trim()||undefined,partnerId:input.partnerId,partnerName:partner?.name,projectTypeId:input.projectTypeId,projectTypeName:projectType?.name,projectTypeCode:projectType?.code,description:input.description?.trim()||undefined,referenceCode:input.referenceCode?.trim()||undefined,visibility:input.visibility||"company",sharedOrganizationIds:organizationIds,startDate:input.startDate,endDate:input.endDate,status:stored?.status||access.project.status,updatedAt:now}});
   } catch(error) {
     const contextResponse=contextErrorResponse(error);if(contextResponse)return contextResponse;
     console.error("Project update failed",error);
