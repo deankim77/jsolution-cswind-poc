@@ -52,6 +52,13 @@ async function promptAdmin(url) {
   } finally { input.close(); output.end(); process.stdout.write('\n'); }
 }
 async function connect(url) { const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 10000 }); await client.connect(); return client; }
+export function postgresToolEnv(value, inherited = process.env) {
+  const env = { ...inherited, PGDATABASE: value, PGAPPNAME: 'cswind-copy', PGCONNECT_TIMEOUT: '10', LC_ALL: 'C', LC_MESSAGES: 'C', LANGUAGE: 'C' };
+  // An empty PGSERVICE still requests a service named "" in libpq.
+  // Omit service settings altogether when using the explicit connection URL.
+  for (const key of Object.keys(env)) if (['PGSERVICE', 'PGSERVICEFILE'].includes(key.toUpperCase())) delete env[key];
+  return env;
+}
 async function tools() {
   const roots = [];
   if (process.env.PG_BIN) roots.push(process.env.PG_BIN);
@@ -140,7 +147,7 @@ export async function prepare() {
   const dumpFile = path.join(recovery, 'source.dump');
   const url = settings.DATABASE_URL;
   const sourceUrl = connection(url, SOURCE), stageUrl = connection(url, stageName);
-  const envFor = value => ({ ...process.env, PGDATABASE: value, PGAPPNAME: 'cswind-copy', PGCONNECT_TIMEOUT: '10', PGSERVICE: '', PGSERVICEFILE: '' });
+  const envFor = postgresToolEnv;
   let source, target, stage, admin, switched = false;
   try {
     console.log('[1/6] Checking databases and permissions (AI PLM is read-only).');

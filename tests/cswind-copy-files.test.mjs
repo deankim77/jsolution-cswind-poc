@@ -4,7 +4,20 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
-import { adminConnection, config, copyFiles } from '../scripts/prepare-cswind.mjs';
+import { adminConnection, config, copyFiles, postgresToolEnv } from '../scripts/prepare-cswind.mjs';
+
+test('PostgreSQL tools omit inherited or empty service selectors without changing the parent environment', () => {
+  for (const service of ['', 'unrelated-service']) {
+    const inherited = { PATH: 'existing-tools', PGSERVICE: service, PgServiceFile: 'old-service.conf' };
+    const env = postgresToolEnv('postgresql://app@localhost/source', inherited);
+    assert.equal(Object.keys(env).some(key => ['PGSERVICE', 'PGSERVICEFILE'].includes(key.toUpperCase())), false);
+    assert.equal(env.PGDATABASE, 'postgresql://app@localhost/source');
+    assert.equal(env.PATH, inherited.PATH);
+    assert.equal(env.LC_ALL, 'C');
+    assert.equal(inherited.PGSERVICE, service);
+    assert.equal(inherited.PgServiceFile, 'old-service.conf');
+  }
+});
 
 test('temporary admin credentials preserve server settings and handle reserved password characters', () => {
   const original = 'postgresql://app:old@localhost:5433/jsolution_cswind_poc?sslmode=disable&user=app&password=old&dbname=other';
