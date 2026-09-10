@@ -57,3 +57,5 @@
 - 새 코드가 기존 전용 구현을 중복 생성하지 않는가?
 
 위 항목 중 하나라도 어긋나면 구현 전에 구조를 다시 검토한다.
+
+- 프로젝트 타임라인과 PBOM은 공통 ColumnVisibilityMenu 및 HierarchyActions를 사용한다. 표시 열 체크·기본값 복원, Columns3·ChevronsUp·ChevronsDown 아이콘과 버튼 크기를 공유한다. PBOM 품번은 계층 탐색을 위해 고정 표시하며 열 숨김은 데이터에 영향을 주지 않는다.

@@ -2,7 +2,9 @@
 
 import {useCallback,useEffect,useMemo,useState,type CSSProperties} from "react";
 import {createPortal} from "react-dom";
-import {ChevronDown,ChevronRight,ChevronsDown,ChevronsUp} from "lucide-react";
+import {ChevronDown,ChevronRight} from "lucide-react";
+
+import {HierarchyActions} from "./table-view-controls";
 
 export type WbsHierarchyItem={id:string;kind:"summary"|"task";level:number;wbsCode:string;parentId?:string|null};
 export type WbsScheduleZoom="week"|"month"|"fit";
@@ -58,7 +60,7 @@ export function WbsHierarchyControls({collapseAll,expandAll}:{collapseAll:()=>vo
     return()=>{if(mount?.isConnected&&mount.childElementCount===0)mount.remove()};
   },[]);
   if(!slot)return null;
-  return createPortal(<><button type="button" title="모든 WBS 그룹 접기" style={actionStyle} onClick={event=>{event.stopPropagation();collapseAll()}}><ChevronsUp size={18}/>모두 접기</button><button type="button" title="모든 WBS 그룹 펼치기" style={actionStyle} onClick={event=>{event.stopPropagation();expandAll()}}><ChevronsDown size={18}/>모두 펼치기</button></>,slot);
+  return createPortal(<HierarchyActions onCollapseAll={collapseAll} onExpandAll={expandAll}/>,slot);
 }
 
 export function WbsScheduleToolbarControls({zoom,onZoom,showPeriod=true}:{zoom?:WbsScheduleZoom;onZoom?:(zoom:WbsScheduleZoom)=>void;showPeriod?:boolean}){
