@@ -1,3 +1,4 @@
+import {defaultDocumentRootQuantity} from '../../lib/pbom-contract';
 import {applyConfirmedPbom,withdrawConfirmedPbom,lockPbomCompany} from './pbom-repository';
 import {randomUUID} from 'node:crypto';
 import {and,eq,desc,inArray} from 'drizzle-orm';
@@ -25,7 +26,7 @@ export function createCustomerReviewRepository(db=getDb()) {
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 확정할 수 있습니다.',403);
  const [review]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!review||review.version!==version)throw new CustomerDataError('검토 결과가 변경되었습니다. 다시 확인하세요.',409);
- const items=review.draft.items.filter(i=>itemIds.includes(i.id));if(!items.length||items.length!==new Set(itemIds).size)throw new CustomerDataError('확정할 항목을 선택하세요.');
+ const items=review.draft.items.filter(i=>itemIds.includes(i.id)).map(defaultDocumentRootQuantity);if(!items.length||items.length!==new Set(itemIds).size)throw new CustomerDataError('확정할 항목을 선택하세요.');
  const bomItems=items.filter(i=>i.area==='pbom');
  if(bomItems.length){const allBom=review.draft.items.filter(i=>i.area==='pbom');if(bomItems.length!==allBom.length)throw new CustomerDataError('이 문서의 전체 BOM 구조를 함께 선택하세요.',422);await applyConfirmedPbom(tx,s,recordId,version,bomItems);}
  const now=Math.floor(Date.now()/1000);

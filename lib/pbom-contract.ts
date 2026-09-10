@@ -7,6 +7,11 @@ export type BomRow=BomInput & {sourceRecordIds?:string[];bom:BomFact;level:numbe
 export type BomIdentity={key:string;partId:string;partNumber:string;revision:string};
 export type ProjectPbom={root:{id:string;partNumber:string;name:string}|null;rows:BomRow[];identities:BomIdentity[]};
 export function bomIdentity(b:BomFact){return b.customerItemNumber.trim()?`ITEM:${b.customerItemNumber.trim()}`:b.drawingNumber.trim()?`DRAWING:${b.drawingNumber.trim()}`:'';}
+/** Default only an unspecified document-root assembly quantity; preserve all explicit quantities. */
+export function defaultDocumentRootQuantity<T extends BomInput>(item:T):T {
+ const b=item.bom;
+ return b?.parentId===null&&b.partType==='ASSEMBLY'&&b.quantity===null?{...item,bom:{...b,quantity:1}}:item;
+}
 export function validateBomFacts(items:BomInput[]){
  const entries=items.filter((i):i is BomInput&{bom:BomFact}=>Boolean(i.bom)),byId=new Map(entries.map(i=>[i.id,i]));
  const identities=new Map<string,BomFact>();
@@ -24,7 +29,7 @@ export function validateBomFacts(items:BomInput[]){
  }
 }
 export function buildBomRows(items:BomInput[],identities:BomIdentity[]=[]):BomRow[]{
- validateBomFacts(items);const all=items.filter((i):i is BomInput&{bom:BomFact}=>Boolean(i.bom));const result:BomRow[]=[];
+ validateBomFacts(items);const all=items.map(defaultDocumentRootQuantity).filter((i):i is BomInput&{bom:BomFact}=>Boolean(i.bom));const result:BomRow[]=[];
  const weight=(i:typeof all[number]):{value:number|null;source:typeof WEIGHT_SOURCES[number]}=>{
   if(i.bom.weight!==null)return {value:i.bom.weight,source:i.bom.weightSource};
   const children=all.filter(x=>x.bom.parentId===i.id);

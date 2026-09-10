@@ -20,3 +20,15 @@ test('document depth presets handle three levels and multiple root assemblies',(
  assert.deepEqual(visible(Infinity),rows.map(r=>r.id));
  assert.deepEqual(rows.map(r=>r.level),[1,2,3,1,2]);
 });
+
+test('missing document root quantity defaults to one without mutating raw input',()=>{
+ const t=tree();t[0].bom.quantity=null;
+ const r=buildBomRows(t);
+ assert.equal(r[0].bom.quantity,1);assert.equal(r[2].totalQuantity,12);
+ assert.equal(t[0].bom.quantity,null);
+});
+test('explicit root quantities remain authoritative and missing child quantities remain unknown',()=>{
+ const t=tree();t[0].bom.quantity=5;t[1].bom.quantity=null;
+ const r=buildBomRows(t);assert.equal(r[0].bom.quantity,5);assert.equal(r[1].bom.quantity,null);assert.equal(r[2].totalQuantity,null);
+ t[0].bom.quantity=0;assert.throws(()=>buildBomRows(t));
+});
