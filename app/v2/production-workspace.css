@@ -71,3 +71,5 @@
 .requirements-table { table-layout: fixed; }
 .requirements-table td button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .requirements-table th:has(input) { width: 44px; }
+
+.customer-source-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

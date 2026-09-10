@@ -15,7 +15,7 @@ export const MAX_CUSTOMER_FILE_BYTES = 50 * 1024 * 1024;
 export type CustomerDocumentType = keyof typeof CUSTOMER_DOCUMENT_TYPES;
 export type CustomerImpactTarget = keyof typeof CUSTOMER_IMPACT_TARGETS;
 export type CustomerDataRecord = {
-  id: string; projectId: string; rawDataId: string; revision: number;
+  id: string; projectId: string; receiptNumber?: number; rawDataId: string; revision: number;
   intakeGroup?:CustomerIntakeGroup;sourcePurpose?:CustomerSourcePurpose;
   title: string; documentType: CustomerDocumentType; impactTarget: CustomerImpactTarget;
   fileName: string; fileSize: number; checksum: string; note: string | null;
@@ -33,4 +33,9 @@ export type CustomerDataList = {
 };
 export class CustomerDataError extends Error {
   constructor(message: string, public status = 400) { super(message); }
+}
+
+/** Stable receipt number belongs to one uploaded file version, independent of AI review versions. */
+export function customerReceiptId(record: Pick<CustomerDataRecord, "id" | "receiptNumber">): string {
+  return record.receiptNumber ? `DOC-${String(record.receiptNumber).padStart(6, "0")}` : record.id;
 }

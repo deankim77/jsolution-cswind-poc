@@ -7,6 +7,7 @@ export const customerRawData = pgTable("customer_raw_data", {
   id: text("id").primaryKey(),
   companyId: text("company_id").notNull(),
   projectId: text("project_id").notNull().references(() => projectsDb.id, { onDelete: "restrict" }),
+  receiptNumber: integer("receipt_number").notNull().default(sql`nextval('customer_raw_data_receipt_seq')`),
   rawDataId: text("raw_data_id").notNull(),
   revision: integer("revision").notNull(),
   intakeGroup:text("intake_group").$type<CustomerIntakeGroup>().notNull().default("unclassified"),
@@ -29,6 +30,7 @@ export const customerRawData = pgTable("customer_raw_data", {
 }, table => [
   check("customer_raw_data_intake_ck",sql`${table.intakeGroup} IN ('unclassified','a_bt','a_wt','a_im','a_common','b_initial','b_change','b_missing','b_parts','common')`),
   check("customer_raw_data_purpose_ck",sql`${table.sourcePurpose} IN ('input','template','example')`),
+  uniqueIndex("customer_raw_data_receipt_uq").on(table.receiptNumber),
   uniqueIndex("customer_raw_data_revision_uq").on(table.projectId, table.rawDataId, table.revision),
   uniqueIndex("customer_raw_data_scope_uq").on(table.companyId, table.projectId, table.id),
   index("customer_raw_data_project_idx").on(table.companyId, table.projectId, table.createdAt),
