@@ -12,30 +12,32 @@ const labels={NEW:'NEW · 신규',EXISTING:'기존 부품',NEED_REVIEW:'확인 �
 const columns=[
  {key:'part',label:'품번',locked:true},
  {key:'status',label:'구분 / 변경'},
- {key:'section',label:'SECTION',full:true},
- {key:'level',label:'LEVEL',full:true},
+ {key:'section',label:'SECTION'},
+ {key:'level',label:'LEVEL'},
  {key:'description',label:'Item Description'},
  {key:'position',label:'POS'},
  {key:'item',label:'Item No.'},
  {key:'drawing',label:'Drawing No.'},
  {key:'revision',label:'CompRev'},
  {key:'quantity',label:'Qty Per Unit'},
- {key:'total',label:'Total Qty / Section',full:true},
+ {key:'total',label:'Total Qty / Section'},
  {key:'weight',label:'Weight'},
- {key:'weightSource',label:'Weight Source / Calculation Basis',full:true},
- {key:'availability',label:'Drawing Availability',full:true},
- {key:'source',label:'출처 자료',full:true},
+ {key:'weightSource',label:'Weight Source / Calculation Basis'},
+ {key:'availability',label:'Drawing Availability'},
+ {key:'source',label:'출처 자료'},
 ] as const;
 type ColumnKey=typeof columns[number]['key'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
+const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','description','item','drawing','revision','quantity'];
 const lockedColumnKeys:readonly ColumnKey[]=['part'];
 
 export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource}:{toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [columnMenuOpen,setColumnMenuOpen]=useState(false);
- const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,defaultColumnKeys,lockedColumnKeys);
  const review=variant==='review';
- const options=columns.filter(c=>!review||!('full' in c)).map(c=>({...c,label:review&&c.key==='description'?'품명 / ASSY 구조':review&&c.key==='item'?'고객 Item No.':c.label}));
+ const initialColumns=review?reviewDefaultColumnKeys:defaultColumnKeys;
+ const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,initialColumns,lockedColumnKeys,defaultColumnKeys);
+ const options=columns;
  const shown=options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const selected=rows.find(r=>r.id===editing);
  const hidden=(r:BomRow):boolean=>{let p=r.bom.parentId;const seen=new Set<string>();while(p&&!seen.has(p)){if(collapsed.includes(p))return true;seen.add(p);p=rows.find(x=>x.id===p)?.bom.parentId??null;}return false;};
@@ -53,11 +55,11 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
  const cell=(key:ColumnKey,row:BomRow,children:boolean):ReactNode=>{
   const b=row.bom;
   switch(key){
-   case 'part':return review?partLink(row):<span className="pbom-tree-label pbom-part-tree-label" title={row.path} style={{paddingInlineStart:`${Math.max(0,row.level-(root?0:1))*20}px`}}>{toggleSlot(row,children)}<span className={`pbom-part-dot ${b.partType==='ASSEMBLY'?'is-assembly':''}`} aria-hidden="true"/>{partLink(row)}</span>;
+   case 'part':return <span className="pbom-tree-label pbom-part-tree-label" title={row.path} style={{paddingInlineStart:`${Math.max(0,row.level-(root?0:1))*20}px`}}>{toggleSlot(row,children)}<span className={`pbom-part-dot ${b.partType==='ASSEMBLY'?'is-assembly':''}`} aria-hidden="true"/>{partLink(row)}</span>;
    case 'status':return <>{labels[row.match??'NEED_REVIEW']}{row.changed?` · ${row.changeLabel||'Revision 변경'}`:''}</>;
    case 'section':return bomSectionName(row,rows)||'미확인';
    case 'level':return row.level;
-   case 'description':return review?<span className="pbom-tree-label pbom-review-tree-label" style={{paddingInlineStart:`calc(${Math.max(0,row.level-1)} * var(--v2-action-height))`}}>{toggleSlot(row,children)}<span className="pbom-node-name">{b.itemDescription}</span></span>:b.itemDescription;
+   case 'description':return b.itemDescription;
    case 'position':return b.position||'—';
    case 'item':return b.customerItemNumber||'—';
    case 'drawing':return b.drawingNumber||'—';
@@ -71,7 +73,7 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
   }
  };
  const controls=<div className="pbom-view-controls" role="group" aria-label={review?"문서 BOM 보기 설정":"프로젝트 BOM 보기 설정"}>
-   <ColumnVisibilityMenu disabled={!columnsReady} options={options} visible={visibleColumns} onChange={setVisibleColumns} onReset={()=>setVisibleColumns(new Set(defaultColumnKeys))} open={columnMenuOpen} onOpenChange={setColumnMenuOpen}/>
+   <ColumnVisibilityMenu disabled={!columnsReady} options={options} visible={visibleColumns} onChange={setVisibleColumns} onReset={()=>setVisibleColumns(new Set(initialColumns))} open={columnMenuOpen} onOpenChange={setColumnMenuOpen}/>
    <HierarchyActions disabled={!rows.length} onCollapseAll={()=>{setRootCollapsed(Boolean(root&&!review));setCollapsed(collapsedBomIdsAtDepth(rows,1));}} onExpandAll={()=>{setRootCollapsed(false);setCollapsed([]);}}/>
   </div>;
  return <>

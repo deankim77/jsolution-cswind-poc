@@ -20,13 +20,13 @@ export async function readUserViewState(key:string,signal:AbortSignal){
  if(!response.ok)throw Error("보기 설정을 불러오지 못했습니다.");
  return response.json() as Promise<{value:unknown}>;
 }
-export function useColumnPreferences<K extends string>(key:string,defaults:readonly K[],locked:readonly K[]){
+export function useColumnPreferences<K extends string>(key:string,defaults:readonly K[],locked:readonly K[],available:readonly K[]=defaults){
  const [visible,setVisible]=useState<Set<K>>(()=>new Set(defaults));
  const [readyKey,setReadyKey]=useState(""),[error,setError]=useState(""),[reload,setReload]=useState(0);
  const activeKey=useRef(key);activeKey.current=key;
  const mounted=useRef(false),latest=useRef<Set<K>>(new Set(defaults));
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- const normalize=useCallback((values:unknown[])=>new Set<K>([...values.filter((v):v is K=>typeof v==="string"&&defaults.includes(v as K)),...locked]),[defaults,locked]);
+ const normalize=useCallback((values:unknown[])=>new Set<K>([...values.filter((v):v is K=>typeof v==="string"&&available.includes(v as K)),...locked]),[available,locked]);
  useEffect(()=>{
   const controller=new AbortController();setError("");
   readUserViewState(key,controller.signal).then(({value})=>{
