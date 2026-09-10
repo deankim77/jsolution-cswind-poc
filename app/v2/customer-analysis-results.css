@@ -1,3 +1,4 @@
+.review-draft:has(.customer-analysis-results) .review-confirm-actions>.review-save-actions{display:none}
 .customer-analysis-results .analysis-result-tabs{display:flex;gap:8px;border-bottom:1px solid var(--v2-border-color);margin-bottom:14px}
 .customer-analysis-results .analysis-result-tabs button{font-size:var(--v2-font-size-body);min-height:var(--v2-tab-height);border:0;border-bottom:var(--v2-tab-active-border-width) solid transparent;background:transparent;color:var(--v2-color-muted);padding:0 4px}
 .customer-analysis-results .analysis-result-tabs button.active{color:var(--v2-color-primary);border-bottom-color:var(--v2-color-primary)}
