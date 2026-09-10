@@ -25,6 +25,6 @@ export function applyDrawingRootRevision(draft:ReviewDraft,recordId:string):Revi
  const candidates=draft.items.filter(item=>item.recordId===recordId&&item.area==='pbom'&&item.bom?.parentId===null&&item.bom.partType==='ASSEMBLY'&&item.bom.drawingNumber.trim()===drawing);
  if(candidates.length!==1)return draft;
  const root=candidates[0];
- if(root.bom!.componentRevision.trim())return draft;
+ if(root.bom!.componentRevision.trim()&&!/^(미확인|unknown|n\/a|—|-)$/i.test(root.bom!.componentRevision.trim()))return draft;
  return {...draft,items:draft.items.map(item=>item.id===root.id?{...item,source:`${item.source} · 도면 표제란 Revision: ${revision}`,bom:{...item.bom!,componentRevision:revision}}:item)};
 }

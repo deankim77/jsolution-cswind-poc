@@ -11,7 +11,7 @@ type ChatMessage={id:string;role:"user"|"assistant";content:string;artifactType?
 type ConversationUpdatedDetail={id:string;title:string;context:string;source:string;contextItems:CommonAiContextItem[]};
 
 type Props={
-  requestContext?:{projectId:string;recordId:string};
+  requestContext?:{projectId:string;recordId:string;historyIds?:string[]};
   initialMessages?:{role:"user"|"assistant";content:string}[];
   onResponse?:(result:unknown)=>void;
   onSendingChange?:(sending:boolean)=>void;

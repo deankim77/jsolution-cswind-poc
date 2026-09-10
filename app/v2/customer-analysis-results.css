@@ -1,0 +1,7 @@
+.customer-analysis-results .analysis-result-tabs{display:flex;gap:8px;border-bottom:1px solid var(--v2-border-color);margin-bottom:12px}
+.customer-analysis-results .analysis-result-tabs button{font-size:var(--v2-font-size-body);min-height:var(--v2-tab-height);border:0;border-bottom:var(--v2-tab-active-border-width) solid transparent;background:transparent;color:var(--v2-color-muted)}
+.customer-analysis-results .analysis-result-tabs button.active{color:var(--v2-color-primary);border-bottom-color:var(--v2-color-primary)}
+.customer-analysis-results .wv2-doc-history-list article{display:flex;align-items:flex-start;gap:12px;padding:12px;border-bottom:1px solid var(--v2-border-color)}
+.customer-analysis-results .wv2-doc-history-list article>div{min-width:0;flex:1;overflow-wrap:anywhere}
+.customer-analysis-results .wv2-doc-history-selection{display:flex;align-items:center;justify-content:space-between;padding:12px}
+.customer-analysis-results .analysis-revision-changes{margin-top:16px}

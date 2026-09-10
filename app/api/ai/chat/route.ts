@@ -28,7 +28,7 @@ type R2Bucket = { get: (key: string) => Promise<R2Object | null> };
 
 type ContextItem = { id?: string; kind?: string; title?: string; meta?: string };
 type ChatInput = {
-  customerReview?:{projectId:string;recordId:string};
+  customerReview?:{projectId:string;recordId:string;historyIds?:string[]};
   conversationId?: string;
   projectName?: string;
   contextItems?: ContextItem[];
@@ -227,7 +227,7 @@ async function callOpenAI(projectName: string, contextItems: ContextItem[], cont
 export async function POST(request: Request) {
   const authenticated=await getChatGPTUser();
   const input = await request.json() as ChatInput;
-  if(input.customerReview){try{const scope=await customerDataScope(request,input.customerReview.projectId);return Response.json(await createCustomerReviewService().analyze(scope,input.customerReview.recordId,(input.contextItems||[]).map(i=>String(i.id||"")),input.message||""));}catch(e){return customerDataError(e);}}
+  if(input.customerReview){try{const scope=await customerDataScope(request,input.customerReview.projectId);if(input.customerReview.historyIds)return Response.json(await createCustomerReviewService().summarizeHistory(scope,input.customerReview.recordId,input.customerReview.historyIds,input.message||''));return Response.json(await createCustomerReviewService().analyze(scope,input.customerReview.recordId,(input.contextItems||[]).map(i=>String(i.id||"")),input.message||""));}catch(e){return customerDataError(e);}}
   const message = input.message?.trim();
   if (!message) return Response.json({ error: "질문을 입력해 주세요." }, { status: 400 });
 
