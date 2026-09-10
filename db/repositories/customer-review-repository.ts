@@ -7,43 +7,44 @@ import {customerReviews,customerConfirmedData} from '../customer-review-schema';
 import {auditLogs} from '../schema';
 import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
 import {CustomerDataError} from '../../lib/customer-data-contract';
-import type {ReviewArea,ReviewDraft,ReviewMessage} from '../../lib/customer-review-contract';
+import {normalizeReviewItem,normalizeStoredReviewDraft,type ReviewArea,type ReviewDraft,type ReviewMessage} from '../../lib/customer-review-contract';
 export function createCustomerReviewRepository(db=getDb()) {
  const where=(s:CustomerDataScope)=>and(eq(customerReviews.companyId,s.companyId),eq(customerReviews.projectId,s.projectId));
+ const normalizeConfirmed=<T extends {item:unknown}>(row:T)=>({...row,item:normalizeReviewItem(row.item as never)});
  return {
  async history(s:CustomerDataScope,recordId:string){
  await customerDataAccess(db,s);
  const logs=await db.select().from(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityType,'CUSTOMER_RAW_DATA'),eq(auditLogs.entityId,recordId),eq(auditLogs.action,'CUSTOMER_REVIEW_DRAFT_SAVED'))).orderBy(desc(auditLogs.createdAt));
- return logs.flatMap(log=>{try{const value=JSON.parse(log.detail||'{}');return value.kind!=='manual'&&value.draft&&Number.isInteger(value.version)&&(!value.projectId||value.projectId===s.projectId)?[{id:log.id,version:value.version,draft:value.draft as ReviewDraft,updatedBy:log.actorUserId||'',updatedAt:log.createdAt}]:[]}catch{return []}}).sort((a,b)=>b.version-a.version);
+ return logs.flatMap(log=>{try{const value=JSON.parse(log.detail||'{}');return value.kind!=='manual'&&value.draft&&Number.isInteger(value.version)&&(!value.projectId||value.projectId===s.projectId)?[{id:log.id,version:value.version,draft:normalizeStoredReviewDraft(value.draft as ReviewDraft),updatedBy:log.actorUserId||'',updatedAt:log.createdAt}]:[]}catch{return []}}).sort((a,b)=>b.version-a.version);
  },
- async list(s:CustomerDataScope){await customerDataAccess(db,s);return {reviews:await db.select().from(customerReviews).where(where(s)),confirmed:await db.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId))).orderBy(desc(customerConfirmedData.confirmedAt))};},
+ async list(s:CustomerDataScope){await customerDataAccess(db,s);const reviews=(await db.select().from(customerReviews).where(where(s))).map(row=>({...row,draft:normalizeStoredReviewDraft(row.draft)}));const confirmed=(await db.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId))).orderBy(desc(customerConfirmedData.confirmedAt))).map(normalizeConfirmed);return {reviews,confirmed};},
  async save(s:CustomerDataScope,recordId:string,version:number,draft:ReviewDraft,messages:ReviewMessage[],kind:'analysis'|'manual'='manual'){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 분석·수정할 수 있습니다.',403);
  const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if((old?.version??0)!==version)throw new CustomerDataError('다른 담당자가 수정했습니다. 최신 결과를 다시 불러오세요.',409);
- const values={companyId:s.companyId,projectId:s.projectId,recordId,version:version+1,draft,messages,updatedBy:s.userId,updatedAt:Math.floor(Date.now()/1000)};
+ const values={companyId:s.companyId,projectId:s.projectId,recordId,version:version+1,draft:normalizeStoredReviewDraft(draft),messages,updatedBy:s.userId,updatedAt:Math.floor(Date.now()/1000)};
  const [result]=await tx.insert(customerReviews).values(values).onConflictDoUpdate({target:customerReviews.recordId,set:values}).returning();
- await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DRAFT_SAVED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,kind,version:result.version,draft}),createdAt:values.updatedAt});return result;
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DRAFT_SAVED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,kind,version:result.version,draft:values.draft}),createdAt:values.updatedAt});return {...result,draft:normalizeStoredReviewDraft(result.draft)};
  });},
  async confirmDocumentType(s:CustomerDataScope,recordId:string,version:number,documentType:ReviewDraft['documentType']){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 문서 타입을 확정할 수 있습니다.',403);
  const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!old||old.version!==version)throw new CustomerDataError('분석 결과가 변경되었습니다. 다시 확인하세요.',409);
- const now=Math.floor(Date.now()/1000),draft={...old.draft,documentType,documentTypeConfirmed:true};
+ const now=Math.floor(Date.now()/1000),draft={...normalizeStoredReviewDraft(old.draft),documentType,documentTypeConfirmed:true};
  const [result]=await tx.update(customerReviews).set({draft,updatedBy:s.userId,updatedAt:now}).where(and(where(s),eq(customerReviews.recordId,recordId))).returning();
  await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DOCUMENT_TYPE_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,version,documentType}),createdAt:now});
- return result;
+ return {...result,draft:normalizeStoredReviewDraft(result.draft)};
  });},
  async confirm(s:CustomerDataScope,recordId:string,version:number,itemIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 확정할 수 있습니다.',403);
  const [review]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!review||review.version!==version)throw new CustomerDataError('검토 결과가 변경되었습니다. 다시 확인하세요.',409);
- const items=review.draft.items.filter(i=>itemIds.includes(i.id)).map(defaultDocumentRootQuantity);if(!items.length||items.length!==new Set(itemIds).size)throw new CustomerDataError('확정할 항목을 선택하세요.');
+ const draft=normalizeStoredReviewDraft(review.draft),items=draft.items.filter(i=>itemIds.includes(i.id)).map(defaultDocumentRootQuantity);if(!items.length||items.length!==new Set(itemIds).size)throw new CustomerDataError('확정할 항목을 선택하세요.');
  const bomItems=items.filter(i=>i.area==='pbom');
- if(bomItems.length){const allBom=review.draft.items.filter(i=>i.area==='pbom');if(bomItems.length!==allBom.length)throw new CustomerDataError('이 문서의 전체 BOM 구조를 함께 선택하세요.',422);await applyConfirmedPbom(tx,s,recordId,version,bomItems);}
+ if(bomItems.length){const allBom=draft.items.filter(i=>i.area==='pbom');if(bomItems.length!==allBom.length)throw new CustomerDataError('이 문서의 전체 BOM 구조를 함께 선택하세요.',422);await applyConfirmedPbom(tx,s,recordId,version,bomItems);}
  const now=Math.floor(Date.now()/1000);
  await tx.insert(customerConfirmedData).values(items.map(item=>({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,recordId,version,itemId:item.id,item,confirmedBy:s.userId,confirmedAt:now}))).onConflictDoNothing();
  await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({version,itemIds}),createdAt:now});return {ok:true};
@@ -51,11 +52,12 @@ export function createCustomerReviewRepository(db=getDb()) {
  async cancel(s:CustomerDataScope,recordId:string,area:ReviewArea,confirmationIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
  const permission=await customerDataAccess(tx,s,true);if(!permission.canReview)throw new CustomerDataError('PM 또는 PL만 확정을 취소할 수 있습니다.',403);
- const active=(await tx.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId)))).filter(row=>row.item.area===area);
+ const all=(await tx.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId))));
+ const active=all.filter(row=>normalizeReviewItem(row.item as never).area===area);
  if(!active.length)return {ok:true,retained:0};
  const expected=new Set(confirmationIds);if(expected.size!==active.length||active.some(row=>!expected.has(row.id)))throw new CustomerDataError('확정 내역이 변경되었습니다. 새로고침 후 다시 취소하세요.',409);
  const result=area==='pbom'?await withdrawConfirmedPbom(tx,s,recordId):{retained:0};
- await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMATION_CANCELLED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,area,confirmed:active}),createdAt:Math.floor(Date.now()/1000)});
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMATION_CANCELLED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,area,confirmed:active.map(normalizeConfirmed)}),createdAt:Math.floor(Date.now()/1000)});
  await tx.delete(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId),inArray(customerConfirmedData.id,active.map(row=>row.id))));
  return {ok:true,...result};
  });}
