@@ -14,17 +14,27 @@ export function createCustomerReviewRepository(db=getDb()) {
  async history(s:CustomerDataScope,recordId:string){
  await customerDataAccess(db,s);
  const logs=await db.select().from(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityType,'CUSTOMER_RAW_DATA'),eq(auditLogs.entityId,recordId),eq(auditLogs.action,'CUSTOMER_REVIEW_DRAFT_SAVED'))).orderBy(desc(auditLogs.createdAt));
- return logs.flatMap(log=>{try{const value=JSON.parse(log.detail||'{}');return value.draft&&Number.isInteger(value.version)&&(!value.projectId||value.projectId===s.projectId)?[{id:log.id,version:value.version,draft:value.draft as ReviewDraft,updatedBy:log.actorUserId||'',updatedAt:log.createdAt}]:[]}catch{return []}}).sort((a,b)=>b.version-a.version);
+ return logs.flatMap(log=>{try{const value=JSON.parse(log.detail||'{}');return value.kind!=='manual'&&value.draft&&Number.isInteger(value.version)&&(!value.projectId||value.projectId===s.projectId)?[{id:log.id,version:value.version,draft:value.draft as ReviewDraft,updatedBy:log.actorUserId||'',updatedAt:log.createdAt}]:[]}catch{return []}}).sort((a,b)=>b.version-a.version);
  },
  async list(s:CustomerDataScope){await customerDataAccess(db,s);return {reviews:await db.select().from(customerReviews).where(where(s)),confirmed:await db.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId))).orderBy(desc(customerConfirmedData.confirmedAt))};},
- async save(s:CustomerDataScope,recordId:string,version:number,draft:ReviewDraft,messages:ReviewMessage[]){return db.transaction(async tx=>{
+ async save(s:CustomerDataScope,recordId:string,version:number,draft:ReviewDraft,messages:ReviewMessage[],kind:'analysis'|'manual'='manual'){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 분석·수정할 수 있습니다.',403);
  const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if((old?.version??0)!==version)throw new CustomerDataError('다른 담당자가 수정했습니다. 최신 결과를 다시 불러오세요.',409);
  const values={companyId:s.companyId,projectId:s.projectId,recordId,version:version+1,draft,messages,updatedBy:s.userId,updatedAt:Math.floor(Date.now()/1000)};
  const [result]=await tx.insert(customerReviews).values(values).onConflictDoUpdate({target:customerReviews.recordId,set:values}).returning();
- await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DRAFT_SAVED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,version:result.version,draft}),createdAt:values.updatedAt});return result;
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DRAFT_SAVED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,kind,version:result.version,draft}),createdAt:values.updatedAt});return result;
+ });},
+ async confirmDocumentType(s:CustomerDataScope,recordId:string,version:number,documentType:ReviewDraft['documentType']){return db.transaction(async tx=>{
+ await lockPbomCompany(tx,s.companyId);
+ const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 문서 타입을 확정할 수 있습니다.',403);
+ const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
+ if(!old||old.version!==version)throw new CustomerDataError('분석 결과가 변경되었습니다. 다시 확인하세요.',409);
+ const now=Math.floor(Date.now()/1000),draft={...old.draft,documentType,documentTypeConfirmed:true};
+ const [result]=await tx.update(customerReviews).set({draft,updatedBy:s.userId,updatedAt:now}).where(and(where(s),eq(customerReviews.recordId,recordId))).returning();
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_REVIEW_DOCUMENT_TYPE_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,version,documentType}),createdAt:now});
+ return result;
  });},
  async confirm(s:CustomerDataScope,recordId:string,version:number,itemIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
