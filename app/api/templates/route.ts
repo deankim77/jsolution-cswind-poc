@@ -16,6 +16,7 @@ type WbsTemplateItem = {
 };
 
 type TemplateDefinition = {
+  projectTypeCode?: "RD" | "PRODUCTION";
   description?: string;
   roles: string[];
   wbs: WbsTemplateItem[];
@@ -70,6 +71,8 @@ export async function GET(request:Request) {
   const templates = (result.results as Array<Record<string,unknown>>).map(row => {
     const raw = parseDefinition(row.definition);
     const definition:TemplateDefinition = {
+      ...raw,
+      projectTypeCode: raw.projectTypeCode === "PRODUCTION" ? "PRODUCTION" : "RD",
       description:raw.description || "",
       roles:raw.roles || [],
       wbs:raw.wbs || [],
@@ -103,6 +106,7 @@ export async function POST(request:Request) {
   await ensureFoundation(db);
   let context;try{context=await resolveRequestContext(request,db)}catch(reason){return contextErrorResponse(reason)??Response.json({error:"사용자 정보를 확인하지 못했습니다."},{status:500})}
   const input = await request.json<TemplateInput>();
+  if (input.definition?.projectTypeCode && !["RD","PRODUCTION"].includes(input.definition.projectTypeCode)) return Response.json({error:"템플릿 유형을 확인하세요."},{status:400});
   if (!input.name?.trim() || !input.code?.trim() || !input.version?.trim() || !input.definition?.wbs?.length) {
     return Response.json({error:"템플릿명, 코드, 버전과 WBS를 입력해 주세요."},{status:400});
   }
@@ -125,6 +129,7 @@ export async function PATCH(request:Request) {
   await ensureFoundation(db);
   let context;try{context=await resolveRequestContext(request,db)}catch(reason){return contextErrorResponse(reason)??Response.json({error:"사용자 정보를 확인하지 못했습니다."},{status:500})}
   const input = await request.json<TemplateInput>();
+  if (input.definition?.projectTypeCode && !["RD","PRODUCTION"].includes(input.definition.projectTypeCode)) return Response.json({error:"템플릿 유형을 확인하세요."},{status:400});
   if (!input.id) return Response.json({error:"템플릿을 선택해 주세요."},{status:400});
   const existing = await db.prepare("SELECT id,code,name,status FROM templates WHERE id = ? AND company_id = ?").bind(input.id,context.companyId).first<{id:string;code:string;name:string;status:string}>();
   if (!existing) return Response.json({error:"템플릿을 찾을 수 없습니다."},{status:404});

@@ -1,0 +1,1684 @@
+{
+  "projectTypeCode": "PRODUCTION",
+  "productionModel": "TC800",
+  "description": "TC800 시연용 생산 표준: P1 생산준비단계, P2~P5 4개 Main ASSY / 12개 Sub ASSY, P6 FAT 및 출하. 소요일은 시연용 가정이며 회사 근무일·휴일을 적용합니다. P2~P5와 각 Sub ASSY는 병행 계획입니다.",
+  "roles": [
+    "PM",
+    "ENGINEERING",
+    "PRODUCTION",
+    "QUALITY"
+  ],
+  "wbs": [
+    {
+      "id": "1",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P1 생산준비단계",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "1.1",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "고객 도면·사양서·부품 목록 접수",
+      "durationDays": 1,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "고객 자료 접수 목록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "1.2",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "자료 식별 및 누락·Revision 확인",
+      "durationDays": 1,
+      "startOffsetDays": 1,
+      "role": "ENGINEERING",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "누락·Revision 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "1.3",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "ASSY 구조 및 PBOM 검토",
+      "durationDays": 1,
+      "startOffsetDays": 2,
+      "role": "ENGINEERING",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "통합 PBOM 검토서",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "1.4",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "기술검토 및 고객 요구사항 확인",
+      "durationDays": 1,
+      "startOffsetDays": 3,
+      "role": "ENGINEERING",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "TRR·요구사항 목록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "1.5",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "공정별 자료 할당안 검토·확정",
+      "durationDays": 1,
+      "startOffsetDays": 4,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "공정별 자료 할당 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "1.6",
+      "parentId": "1",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "자재·작업·검사 준비 확인 및 착수 승인",
+      "durationDays": 1,
+      "startOffsetDays": 5,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "생산 착수 확인서",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P2 MAST ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "2.1",
+      "parentId": "2",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "MAST FRAME SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-MAST-SUB01"
+    },
+    {
+      "id": "2.1.1",
+      "parentId": "2.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.1.2",
+      "parentId": "2.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.1.3",
+      "parentId": "2.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.1.4",
+      "parentId": "2.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.2",
+      "parentId": "2",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "CONNECTION SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-MAST-SUB02"
+    },
+    {
+      "id": "2.2.1",
+      "parentId": "2.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.2.2",
+      "parentId": "2.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.2.3",
+      "parentId": "2.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.2.4",
+      "parentId": "2.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.3",
+      "parentId": "2",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "ACCESS LADDER SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-MAST-SUB03"
+    },
+    {
+      "id": "2.3.1",
+      "parentId": "2.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.3.2",
+      "parentId": "2.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.3.3",
+      "parentId": "2.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.3.4",
+      "parentId": "2.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.4",
+      "parentId": "2",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "MAST ASSY 통합 조립",
+      "durationDays": 2,
+      "startOffsetDays": 12,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 조립 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "2.5",
+      "parentId": "2",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "MAST ASSY 검사 및 인계",
+      "durationDays": 1,
+      "startOffsetDays": 14,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 검사·인계 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P3 SLEWING PLATFORM ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "3.1",
+      "parentId": "3",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "PLATFORM FRAME SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-SLEW-SUB01"
+    },
+    {
+      "id": "3.1.1",
+      "parentId": "3.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.1.2",
+      "parentId": "3.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.1.3",
+      "parentId": "3.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.1.4",
+      "parentId": "3.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.2",
+      "parentId": "3",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "SLEWING DRIVE SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-SLEW-SUB02"
+    },
+    {
+      "id": "3.2.1",
+      "parentId": "3.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.2.2",
+      "parentId": "3.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.2.3",
+      "parentId": "3.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.2.4",
+      "parentId": "3.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.3",
+      "parentId": "3",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "MOUNTING SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-SLEW-SUB03"
+    },
+    {
+      "id": "3.3.1",
+      "parentId": "3.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.3.2",
+      "parentId": "3.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.3.3",
+      "parentId": "3.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.3.4",
+      "parentId": "3.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.4",
+      "parentId": "3",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "SLEWING PLATFORM ASSY 통합 조립",
+      "durationDays": 2,
+      "startOffsetDays": 12,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 조립 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "3.5",
+      "parentId": "3",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "SLEWING PLATFORM ASSY 검사 및 인계",
+      "durationDays": 1,
+      "startOffsetDays": 14,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 검사·인계 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P4 JIB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "4.1",
+      "parentId": "4",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "MAIN JIB SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-JIB-SUB01"
+    },
+    {
+      "id": "4.1.1",
+      "parentId": "4.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.1.2",
+      "parentId": "4.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.1.3",
+      "parentId": "4.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.1.4",
+      "parentId": "4.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.2",
+      "parentId": "4",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "TROLLEY RAIL SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-JIB-SUB02"
+    },
+    {
+      "id": "4.2.1",
+      "parentId": "4.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.2.2",
+      "parentId": "4.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.2.3",
+      "parentId": "4.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.2.4",
+      "parentId": "4.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.3",
+      "parentId": "4",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "SUPPORT BRACE SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-JIB-SUB03"
+    },
+    {
+      "id": "4.3.1",
+      "parentId": "4.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.3.2",
+      "parentId": "4.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.3.3",
+      "parentId": "4.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.3.4",
+      "parentId": "4.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.4",
+      "parentId": "4",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "JIB ASSY 통합 조립",
+      "durationDays": 2,
+      "startOffsetDays": 12,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 조립 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "4.5",
+      "parentId": "4",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "JIB ASSY 검사 및 인계",
+      "durationDays": 1,
+      "startOffsetDays": 14,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 검사·인계 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P5 COUNTER JIB & HOIST ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "5.1",
+      "parentId": "5",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "COUNTER JIB FRAME SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-CJH-SUB01"
+    },
+    {
+      "id": "5.1.1",
+      "parentId": "5.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.1.2",
+      "parentId": "5.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.1.3",
+      "parentId": "5.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.1.4",
+      "parentId": "5.1",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.2",
+      "parentId": "5",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "HOIST SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-CJH-SUB02"
+    },
+    {
+      "id": "5.2.1",
+      "parentId": "5.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.2.2",
+      "parentId": "5.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.2.3",
+      "parentId": "5.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.2.4",
+      "parentId": "5.2",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.3",
+      "parentId": "5",
+      "level": 2,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "DRIVE MOTOR MOUNT SUB ASSY 제작·조립",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": [],
+      "assemblyCode": "TC800-CJH-SUB03"
+    },
+    {
+      "id": "5.3.1",
+      "parentId": "5.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "적용 도면·BOM·자재 준비 확인",
+      "durationDays": 1,
+      "startOffsetDays": 6,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "작업 준비 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.3.2",
+      "parentId": "5.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "부품 제작·조달 및 입고 확인",
+      "durationDays": 2,
+      "startOffsetDays": 7,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "자재 확인 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.3.3",
+      "parentId": "5.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "Sub ASSY 조립 수행",
+      "durationDays": 2,
+      "startOffsetDays": 9,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "조립 실적 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.3.4",
+      "parentId": "5.3",
+      "level": 3,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "검사 및 조립 실적 등록",
+      "durationDays": 1,
+      "startOffsetDays": 11,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Sub ASSY 검사 결과",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.4",
+      "parentId": "5",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "COUNTER JIB & HOIST ASSY 통합 조립",
+      "durationDays": 2,
+      "startOffsetDays": 12,
+      "role": "PRODUCTION",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 조립 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "5.5",
+      "parentId": "5",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "COUNTER JIB & HOIST ASSY 검사 및 인계",
+      "durationDays": 1,
+      "startOffsetDays": 14,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Main ASSY 검사·인계 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "parentId": null,
+      "level": 1,
+      "kind": "summary",
+      "taskType": "normal",
+      "name": "P6 FAT 및 출하",
+      "durationDays": 0,
+      "startOffsetDays": 0,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "CHILD_COMPLETE",
+      "deliverables": []
+    },
+    {
+      "id": "6.1",
+      "parentId": "6",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "최종 조립 및 FAT 준비",
+      "durationDays": 1,
+      "startOffsetDays": 15,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "FAT 계획·조립 확인표",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "6.2",
+      "parentId": "6",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "FAT 수행 및 결과 기록",
+      "durationDays": 1,
+      "startOffsetDays": 16,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "FAT 결과서",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "6.3",
+      "parentId": "6",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "지적사항 조치 및 종료 확인",
+      "durationDays": 1,
+      "startOffsetDays": 17,
+      "role": "QUALITY",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "Punch List·조치 증빙",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "6.4",
+      "parentId": "6",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "최종 도면·BOM·검사 문서 패키지 확정",
+      "durationDays": 1,
+      "startOffsetDays": 18,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "최종 인계 문서 목록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    },
+    {
+      "id": "6.5",
+      "parentId": "6",
+      "level": 2,
+      "kind": "task",
+      "taskType": "normal",
+      "name": "포장·출하 및 고객 인계",
+      "durationDays": 1,
+      "startOffsetDays": 19,
+      "role": "PM",
+      "completionActor": "assignee",
+      "completionCriteria": "PROGRESS,REQUIRED_UPLOAD",
+      "deliverables": [
+        {
+          "name": "출하·인계 기록",
+          "type": "GENERAL",
+          "required": true,
+          "documentKind": "document"
+        }
+      ]
+    }
+  ]
+}

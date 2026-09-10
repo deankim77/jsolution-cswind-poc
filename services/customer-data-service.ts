@@ -22,7 +22,7 @@ export function createCustomerDataService(repository = createCustomerDataReposit
       const result = await repository.list(scope);
       return { ...result, records: result.records.map(publicRecord), relations: result.relations.map(({ companyId: _companyId, ...item }) => { void _companyId; return item; }) };
     },
-    async upload(scope: CustomerDataScope, form: FormData) {
+    async upload(scope: CustomerDataScope, form: FormData, importOnce = false) {
       const permissions = await repository.access(scope);
       if (!permissions.canUpload) throw new CustomerDataError("완료된 프로젝트는 수정할 수 없습니다.", 409);
       const file = form.get("file");
@@ -44,7 +44,9 @@ export function createCustomerDataService(repository = createCustomerDataReposit
       const checksum = createHash("sha256").update(Buffer.from(bytes)).digest("hex");
       try {
         await storage.put(fileKey, bytes, { httpMetadata: { contentType: "application/octet-stream" }, customMetadata: { originalName: fileName, checksum } });
-        return publicRecord(await repository.create(scope, { id, title, documentType, impactTarget, fileKey, fileName, fileSize: bytes.byteLength, checksum, note }, previousId, relatedId));
+        const stored = await repository.create(scope, { id, title, documentType, impactTarget, fileKey, fileName, fileSize: bytes.byteLength, checksum, note }, previousId, relatedId, importOnce);
+        if (stored.id !== id) await storage.delete(fileKey);
+        return publicRecord(stored);
       } catch (error) {
         // A failed DB write must not leave an untracked source binary behind.
         await storage.delete(fileKey).catch(cleanupError => console.error("Customer Data storage cleanup failed", { fileKey, cleanupError }));

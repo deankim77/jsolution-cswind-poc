@@ -1,3 +1,4 @@
+import { createProductionProjectService } from "../../../services/production-project-service";
 import { getLegacyDbCompat } from "../../../db/postgres-d1-compat";
 import { ensureProjectDataFoundation, type RuntimeD1 } from "../../../db/project-data-foundation";
 import {canManageProject,contextErrorResponse,requireProjectAccess,resolveRequestContext} from "../../../db/request-context";
@@ -19,7 +20,7 @@ type ProjectInput = {
   sharedOrganizationIds?: string[];
   members?: Array<{ userId: string; projectRole: string }>;
 };
-type TemplateDefinition={roles?:string[];wbs?:Array<{id?:string;parentId?:string;level?:number;kind?:string;name?:string;taskType?:string;durationDays?:number;predecessor?:string;role?:string;completionActor?:string;completionCriteria?:string;deliverable?:string;deliverableCategory?:string;deliverableRequired?:boolean;deliverableDocumentKind?:"document"|"drawing";deliverables?:Array<{name:string;type?:string;required?:boolean;documentKind?:"document"|"drawing"}>}>};
+type TemplateDefinition={projectTypeCode?:string;roles?:string[];wbs?:Array<{id?:string;parentId?:string;level?:number;kind?:string;name?:string;taskType?:string;durationDays?:number;predecessor?:string;role?:string;completionActor?:string;completionCriteria?:string;deliverable?:string;deliverableCategory?:string;deliverableRequired?:boolean;deliverableDocumentKind?:"document"|"drawing";deliverables?:Array<{name:string;type?:string;required?:boolean;documentKind?:"document"|"drawing"}>}>};
 type ProjectListCache={expiresAt:number;data:{projects:unknown[]}};
 
 // D1 statements are supplied by the Cloudflare runtime and intentionally kept opaque here.
@@ -35,9 +36,9 @@ async function runtimeDb():Promise<D1> {
 }
 function ensureProjectMasterLinks(_db:D1){return Promise.resolve()}
 const invalidateProjectList=(companyId:string)=>{projectListCache.delete(companyId)};
-async function nextProjectCode(db:D1,companyId:string){
+async function nextProjectCode(db:D1,companyId:string,production=false){
   const year=new Date().getUTCFullYear();
-  const prefix=`PJT-${year}-`;
+  const prefix=`${production?"PRD":"PJT"}-${year}-`;
   const latest=await db.prepare("SELECT code FROM projects WHERE company_id=? AND code LIKE ? ORDER BY CAST(SUBSTR(code, ?) AS INTEGER) DESC LIMIT 1").bind(companyId,`${prefix}%`,prefix.length+1).first<{code:string}>();
   const lastNumber=latest?.code?.match(/(\d+)$/)?.[1];
   return `${prefix}${String((lastNumber?Number(lastNumber):0)+1).padStart(4,"0")}`;
@@ -71,7 +72,8 @@ export async function GET(request:Request) {
   await ensureProjectMasterLinks(db);
   let context;try{context=await resolveRequestContext(request,db)}catch(reason){return contextErrorResponse(reason)??Response.json({error:"사용자 정보를 확인하지 못했습니다."},{status:500})}
   const url=new URL(request.url);
-  if(url.searchParams.get("action")==="next-code")return Response.json({code:await nextProjectCode(db,context.companyId)});
+  if(url.searchParams.get("action")==="next-code")return Response.json({code:await nextProjectCode(db,context.companyId,url.searchParams.get("projectTypeCode")==="PRODUCTION")});
+  if(url.searchParams.get("refresh")==="1")invalidateProjectList(context.companyId);
   const cached=projectListCache.get(context.companyId),now=Date.now();
   if(cached&&cached.expiresAt>now)return Response.json(cached.data,{headers:{"x-project-list-cache":"hit"}});
   const existing=projectListInflight.get(context.companyId);if(existing){const data=await existing;return Response.json(data,{headers:{"x-project-list-cache":"shared"}})}
@@ -103,6 +105,15 @@ export async function POST(request: Request) {
   ).bind(templateVersionId, context.companyId).first<{ id:string; definition:string; version:string; template_name:string }>();
   if (!version) return Response.json({ error: "사용 가능한 템플릿 버전을 찾을 수 없습니다." }, { status: 404 });
 
+  const templateDefinition = JSON.parse(version.definition) as TemplateDefinition;
+  const selectedType = input.projectTypeId ? await db.prepare("SELECT code FROM project_types WHERE id=? AND company_id=?").bind(input.projectTypeId,context.companyId).first() as {code:string} | null : null;
+  const production = selectedType?.code === "PRODUCTION";
+  if (production !== (templateDefinition.projectTypeCode === "PRODUCTION")) return Response.json({error:"프로젝트 유형과 템플릿 유형이 일치해야 합니다."},{status:400});
+  if (production) {
+    const project = await createProductionProjectService().create(context, {...input,name:input.name!,startDate:input.startDate!,templateVersionId:version.id});
+    invalidateProjectList(context.companyId);
+    return Response.json(project,{status:201});
+  }
   const projectCode=await nextProjectCode(db,context.companyId);
   const duplicate = await db.prepare("SELECT id FROM projects WHERE company_id = ? AND code = ?").bind(context.companyId,projectCode).first();
   if (duplicate) return Response.json({ error: "프로젝트 코드 생성이 충돌했습니다. 다시 시도해 주세요." }, { status: 409 });

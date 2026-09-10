@@ -28,6 +28,7 @@ import {
   type AiDraftRequest,type ArtifactPreviewData,type ContextItem,type IntegratedSearchResult,type PortfolioProjectPreset,
   type ReportAiRequest,type V2Project,
 } from "./deferred-workspaces";
+import ProductionWorkspace from "./production-workspace";
 import CustomerDataWorkspace from "./customer-data-workspace";
 import { PRODUCTION_PROJECT_CODE } from "../../lib/customer-data-contract";
 import {loadPinnedTabs,type PinnedView} from "./pinned-tabs-settings";
@@ -88,6 +89,7 @@ export default function NewWorkViewApp(){
   const [loading,setLoading]=useState(true);
   const [loadError,setLoadError]=useState("");
   const [view,setView]=useState<WorkView>("list");
+  const [productionOpen,setProductionOpen]=useState(false);
   const [contextOpen,setContextOpen]=useState(true);
   const [selectedId,setSelectedId]=useState("");
   const [panelOpen,setPanelOpen]=useState(false);
@@ -132,6 +134,7 @@ export default function NewWorkViewApp(){
   const closeConfirm=(value:boolean)=>{confirmResolver.current?.(value);confirmResolver.current=null;setConfirmDialog(null)};
   const openWorkspaceTab=(tab:WorkspaceTab)=>{setWorkspaceTabs(current=>current.some(item=>item.key===tab.key)?current:[...current,tab]);setActiveWorkspaceTab(tab.key);setWorkspaceViewState(tab.view)};
   const openBomCompare=(leftRootId:string,rightRootId?:string)=>{if(!leftRootId)return;const key=`bom-compare:${leftRootId}${rightRootId?`:${rightRootId}`:""}`;openWorkspaceTab({key,view:"bom-compare",entityId:leftRootId,editId:rightRootId,title:"BOM 비교"})};
+  useEffect(()=>{setProductionOpen(project?.projectTypeCode===PRODUCTION_PROJECT_CODE);setPanelOpen(false)},[project?.id,project?.projectTypeCode]);
   const setWorkspaceView=(next:WorkspaceView)=>{if(next==="customer-data"&&project){setPanelOpen(false);openWorkspaceTab({key:`customer-data:${project.id}`,view:next,entityId:project.id,title:`고객 Data · ${project.name}`});return}if(next==="issues")setIssueProjectPreset("");if(next==="wbs"&&project){openWorkspaceTab({key:`wbs:${project.id}`,view:"wbs",entityId:project.id,title:`WBS · ${project.name}`});return}openWorkspaceTab(genericWorkspaceTab(next))};
   const openTemplateEditor=(templateId?:string,templateName="새 템플릿")=>{const key=templateId?`template-editor:${templateId}`:`template-editor:new-${Date.now()}`;setTemplateEditorId(templateId);openWorkspaceTab({key,view:"template-editor",entityId:templateId,title:`템플릿 · ${templateName}`})};
   const openCreateWorkspace=(view:"create-workflow"|"create-ecr"|"create-quality",initialProjectId="")=>openWorkspaceTab({key:view,view,entityId:initialProjectId||undefined,title:workspaceLabels[view]});
@@ -193,7 +196,7 @@ export default function NewWorkViewApp(){
   useEffect(()=>{const controller=new AbortController();fetch("/api/dashboard",{cache:"no-store",signal:controller.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw new Error();setNotifications(data.notifications??[])}).catch(()=>{if(!controller.signal.aborted)setNotifications([])});return()=>controller.abort()},[]);
   const loadProjects=(preferredId?:string)=>{
     setLoading(true);
-    fetch("/api/projects",{cache:"no-store"}).then(async response=>{if(!response.ok)throw new Error();return response.json()}).then((data:{projects?:Project[]})=>{
+    fetch(preferredId?"/api/projects?refresh=1":"/api/projects",{cache:"no-store"}).then(async response=>{if(!response.ok)throw new Error();return response.json()}).then((data:{projects?:Project[]})=>{
       const next=data.projects??[];setProjects(next);setProject(current=>next.find(item=>item.id===preferredId)??next.find(item=>item.id===current?.id)??next[0]??null);setLoadError("");
     }).catch(()=>{setProjects([]);setProject(null);setTasks([]);setLoadError("프로젝트 데이터를 불러오지 못했습니다.")}).finally(()=>setLoading(false));
   };
@@ -325,8 +328,10 @@ export default function NewWorkViewApp(){
         </header>
         {statusNotice&&<p className="wv2-status-notice">{statusNotice}</p>}
         <nav className="wv2-view-tabs" aria-label="Work View">
-          {viewTabs.map(([key,label,Icon])=><button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={view===key?"active":""} onClick={()=>setView(key)}><Icon size={18}/>{label}</button>)}
+          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<button className={productionOpen?"active":""} onClick={()=>{setProductionOpen(true);setPanelOpen(false)}}><Workflow size={18}/>생산 작업공간</button>}
+          {viewTabs.map(([key,label,Icon])=><button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button>)}
         </nav>
+        {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?<section className="wv2-canvas production-canvas"><ProductionWorkspace key={project.id} project={project} onOpenFilter={openWorkspaceFilter}/></section>:<>
         <div className="wv2-toolbar">
           <button className="wv2-add" disabled={project.status!=="preparing"} onClick={()=>addTask()}><Plus size={18}/> 업무 추가 <ChevronDown size={18}/></button>
           <label><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="WBS, 업무, 담당자 검색"/></label>
@@ -344,6 +349,7 @@ export default function NewWorkViewApp(){
           {!loading&&!loadError&&tasks.length>0&&view==="calendar"&&<CalendarView tasks={tasks} onSelect={selectTask} onAdd={date=>addTask({plannedStart:date,plannedEnd:date})} canAdd={project.status==="preparing"}/>} 
           {!loading&&!loadError&&tasks.length>0&&view==="edit"&&<AdvancedWbsEditor tasks={visible} roles={roles} members={members} patchTask={patchTask} onAdd={addTask} onAddRelated={addRelatedTask} onMove={moveTask} onIndent={changeIndent} onDuplicate={duplicateTasks} onRemove={removeTask} onSave={saveWbs} saving={saving} notice={saveNotice}/>} 
         </section>
+        </>}
         </>}
         </>}
       </section>

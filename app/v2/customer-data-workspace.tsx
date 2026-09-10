@@ -21,14 +21,15 @@ async function readResponse(response: Response) {
   return result;
 }
 
-export default function CustomerDataWorkspace({ project, onOpenFilter }: {
+export default function CustomerDataWorkspace({ project, onOpenFilter, embedded, recordIds, onChanged }: {
+  embedded?: boolean; recordIds?: string[]; onChanged?: () => void;
   project: V2Project | null; onOpenFilter: (config: WorkspaceFilterConfig) => void;
 }) {
   if (!project || project.projectTypeCode !== PRODUCTION_PROJECT_CODE) return <section className="wv2-project-workspace"><h1>Production 프로젝트를 선택하세요.</h1><p>고객 Data는 Production 유형의 프로젝트에서 관리합니다.</p></section>;
-  return <CustomerDataContent key={project.id} project={project} onOpenFilter={onOpenFilter} />;
+  return <CustomerDataContent key={project.id} project={project} onOpenFilter={onOpenFilter} embedded={embedded} recordIds={recordIds} onChanged={onChanged} />;
 }
 
-function CustomerDataContent({ project, onOpenFilter }: { project: V2Project; onOpenFilter: (config: WorkspaceFilterConfig) => void }) {
+function CustomerDataContent({ project, onOpenFilter, embedded, recordIds, onChanged }: { embedded?: boolean; recordIds?: string[]; onChanged?: () => void; project: V2Project; onOpenFilter: (config: WorkspaceFilterConfig) => void }) {
   const [data, setData] = useState<CustomerDataList>(emptyData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,8 +50,8 @@ function CustomerDataContent({ project, onOpenFilter }: { project: V2Project; on
   useEffect(() => { const controller = new AbortController(); void load(controller.signal).catch(() => undefined); return () => controller.abort(); }, [load]);
   const selected = data.records.find(row => row.id === selectedId);
   const filtered = useCallback((value: typeof emptyFilters) => data.records.filter(row =>
-    (!value.documentType || row.documentType === value.documentType) && (!value.reviewStatus || row.reviewStatus === value.reviewStatus)
-    && `${row.rawDataId} ${row.title} ${row.fileName}`.toLowerCase().includes(query.trim().toLowerCase())), [data.records, query]);
+    (!recordIds || recordIds.includes(row.id)) && (!value.documentType || row.documentType === value.documentType) && (!value.reviewStatus || row.reviewStatus === value.reviewStatus)
+    && `${row.rawDataId} ${row.title} ${row.fileName}`.toLowerCase().includes(query.trim().toLowerCase())), [data.records, query, recordIds]);
   const visible = useMemo(() => filtered(filters), [filtered, filters]);
   const activeCount = Object.values(filters).filter(Boolean).length;
   useEffect(() => {
@@ -63,7 +64,7 @@ function CustomerDataContent({ project, onOpenFilter }: { project: V2Project; on
   }, [draft, filterOpen, filtered, onOpenFilter]);
   const mutate = async (action: () => Promise<unknown>, message: string) => {
     setBusy(true); setError(""); setNotice("");
-    try { await action(); setNotice(message); await load(); }
+    try { await action(); setNotice(message); await load(); onChanged?.(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "저장에 실패했습니다."); }
     finally { setBusy(false); }
   };
@@ -75,13 +76,13 @@ function CustomerDataContent({ project, onOpenFilter }: { project: V2Project; on
       {!upload && <button disabled={busy || loading} onClick={() => { setLoading(true); setError(""); void load().catch(() => undefined); }}><RefreshCw size={18} />새로고침</button>}
       {!upload && <button className="primary" disabled={!writable || busy || loading} onClick={() => { setUpload({}); setNotice(""); }}><Plus size={18} />원본 등록</button>}
     </div></header>
-    <V2ViewTabs value="customer-data" onChange={() => undefined} items={[
+    {!embedded && <V2ViewTabs value="customer-data" onChange={() => undefined} items={[
       { value: "customer-data", label: "Customer Data", icon: FileText },
       { value: "ai-review", label: "AI Data Review · 준비 중", disabled: true },
       { value: "pbom", label: "PBOM · 준비 중", disabled: true },
-      { value: "requirement", label: "TTR / Requirement · 준비 중", disabled: true },
+      { value: "requirement", label: "TRR / Requirement · 준비 중", disabled: true },
       { value: "process", label: "Process Readiness · 준비 중", disabled: true },
-    ]} />
+    ]} />}
     {error && <p className="wv2-form-error" role="alert">{error}</p>}
     {notice && <p className="wv2-template-notice" role="status">{notice}</p>}
     {upload ? <CustomerUploadForm key={upload.previous?.id || "new"} previous={upload.previous} records={data.records} busy={busy} onCancel={() => setUpload(null)} onSubmit={form => mutate(async () => {

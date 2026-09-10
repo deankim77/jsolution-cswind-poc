@@ -1,0 +1,182 @@
+[
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/c91d329e-e098-4f04-a0ad-d8e196003f61.png",
+    "sha256": "6b3fa757fd650419612512722d4c58b85033615b1318c38f86e4ceed2ae901d4",
+    "size": 1123373,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/ChatGPT Image 2026년 9월 4일 오전 03_13_57.png",
+    "sha256": "6f65b10b83344e3fcedf0d44d69e30d9376f26c1fa201b4f942182f8b00b47e0",
+    "size": 927546,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/ChatGPT Image 2026년 9월 4일 오전 03_14_06.png",
+    "sha256": "8d4c040881ca8a5a8210d50d75fd9fa96034db9f95c51b6d343edb36880f2e0b",
+    "size": 915220,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-CJH-SUB02-R00.png",
+    "sha256": "f79819a6814d0e335cb4d6b3f56c3faf7262ee6ce361d55179850cfb8e936c02",
+    "size": 1005626,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-CJH-SUB03-R00.png",
+    "sha256": "6a6edf5e7c7667c4e5b7b55f3cf9c0c079477b972bf811fe3b027339484e71a7",
+    "size": 955492,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-COUNTERJIB-HOIST-R00.png",
+    "sha256": "c9b755c60b2cc3263bc2cdba8a932ce6d53e58a035c886442f1c370fda2350a5",
+    "size": 1185742,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-JIB-ASSY-R00.png",
+    "sha256": "f99ac300ee38cd66a02021086d09d07c66cc67a9bbb1a79ec31b325445b773f9",
+    "size": 1423214,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-JIB-SUB01-R00.png",
+    "sha256": "088e8aa859a9249eb63cd4efd96e83d511409d5805b39e89160dc139932d8b2f",
+    "size": 1213829,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-JIB-SUB02-R00.png",
+    "sha256": "8f8469bc8c7db13bfcd0c4ecdfe56c3fda63654aa9909f25bfda7b86e6eeda46",
+    "size": 1228159,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-JIB-SUB03-R00.png",
+    "sha256": "ae77d08dc681c6b37bdcc20e57fe61ce36ff79ba432a2b1a2ac391f0aa828cc3",
+    "size": 1171462,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-JIB-TR-BRKT-R00.png",
+    "sha256": "d9e1990559fa6be4bd900237edd711a8945903d414a16c768c94f5d4a37242a1",
+    "size": 1037564,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-MAST-ASSY-R00.png",
+    "sha256": "b61b4ce89143c2b21ca1bfc2899dcae35ca3f50e19d00e4e350003391b8b861f",
+    "size": 1088753,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-MAST-CONN-PLATE-R00.png",
+    "sha256": "6cef4089aa6bff2f09bc5f405c81898b305ed8ebe5a6541c8060c035ed3e68ba",
+    "size": 1007141,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-MAST-SUB01-R00.png",
+    "sha256": "128ddd2d174a66996f17fcdfb8c2630bcdfd87b4ac2611cf524961e95e2b26e6",
+    "size": 1086040,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-MAST-SUB02-R00.png",
+    "sha256": "69ea3d08b67c0c83a59034f1fcba8359fa1962e0805234402cb479aaaafba72c",
+    "size": 1089936,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-MAST-SUB03-R00.png",
+    "sha256": "43b92ab03a14315d8d93df75bda6989f209ec8175ebab43dece0258869aeda36",
+    "size": 1182929,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-1301.png",
+    "sha256": "2246113f9c639328c75a4ca49b04da4fa5212c9588c83878074452ce7bd0abfd",
+    "size": 1174989,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-1302.png",
+    "sha256": "cabd806a83817970447e501da53b0c60b3467954e01c855aabdf38ed00d25ca7",
+    "size": 982774,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-1303.png",
+    "sha256": "550b44d9a5d8988af00a595d2ebf2c5924bc3e43c1fc7af79aa75ffcad2d9d73",
+    "size": 928824,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-MOUNT-PLATE-R00.png",
+    "sha256": "ab5095cf248e052b824a5154f44eb4cf6835ca519bae56d04710d6881da385e4",
+    "size": 996382,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-SUB01-R00.png",
+    "sha256": "1d72b83af04f959c687af6a01ff916d5a16dd4c2e5456335ae988870151fb37e",
+    "size": 989822,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-SUB02-R00.png",
+    "sha256": "34631aec9be244d13d340c6ff73e437bf9c1c02301c16ec843769708b139620c",
+    "size": 1149364,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEW-SUB03-R00.png",
+    "sha256": "c5d0401edda87ceb7acbbaca9a7f180f7bf71751877b54d1809411bd916f1634",
+    "size": 1135163,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/01_Original_Drawing_Package/TC800-SLEWING-ASSY-R00.png",
+    "sha256": "4ff1e7e6be7dce8b833672525e24d0da19da5001f43baf515d8a7a8ad7d40b5e",
+    "size": 1008447,
+    "documentType": "drawing"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/02_Customer_Component_Package/TC800-COMPONENT-LIST-R00.xlsx",
+    "sha256": "37ef8dcc3f16a4cd80adb47f21d1a2e6c0452a29ef64ee9ef65720c6a1e7f0cd",
+    "size": 4931,
+    "documentType": "bom"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/03_Technical_Document_Package/TC800-ASSEMBLY-INSTRUCTION-R00.pdf",
+    "sha256": "13ff8f2a36e4323663d4b3c836f185f90a5598392f43483acf6aa24fa19805b6",
+    "size": 2897,
+    "documentType": "specification"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/03_Technical_Document_Package/TC800-GENERAL-TECH-SPEC-R00.pdf",
+    "sha256": "0455f4b55c47ee7cecf0b32f26828b066aad4d7854f2fb4fc3ff0b6053f71d57",
+    "size": 2783,
+    "documentType": "specification"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/03_Technical_Document_Package/TC800-QUALITY-INSPECTION-R00.pdf",
+    "sha256": "cef3eb1dd73297fdb5c811b401e46a7365e160328244fb3e796323958c63563d",
+    "size": 2590,
+    "documentType": "specification"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/03_Technical_Document_Package/TC800-SURFACE-TREATMENT-R00.pdf",
+    "sha256": "3e7c13596244153af868d19ed87f0ebc2ff2f64f207f1276273c95df6514064e",
+    "size": 2518,
+    "documentType": "specification"
+  },
+  {
+    "path": "TC800_POC_DATASET_V4/03_Technical_Document_Package/TC800-WELDING-NDT-SPEC-R00.pdf",
+    "sha256": "cd4cab0b76f9f5899a2f2178a037d3865b32b55fc8c213d8ffd3390c3ae5396e",
+    "size": 2684,
+    "documentType": "specification"
+  }
+]

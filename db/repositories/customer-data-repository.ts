@@ -13,7 +13,7 @@ type NewRawData = Pick<typeof customerRawData.$inferInsert, "id" | "title" | "do
 const scopeWhere = (scope: CustomerDataScope) => and(eq(customerRawData.companyId, scope.companyId), eq(customerRawData.projectId, scope.projectId));
 
 // A project row lock serializes writes, including revision allocation and lifecycle checks.
-async function access(db: Connection, scope: CustomerDataScope, write = false) {
+export async function customerDataAccess(db: Connection, scope: CustomerDataScope, write = false) {
   const query = db.select({ id: projectsDb.id, status: projectsDb.status, projectTypeId: projectsDb.projectTypeId })
     .from(projectsDb).where(and(eq(projectsDb.id, scope.projectId), eq(projectsDb.companyId, scope.companyId)));
   const [project] = await (write ? query.for("update") : query);
@@ -43,17 +43,21 @@ async function audit(tx: Transaction, scope: CustomerDataScope, id: string, acti
 
 export function createCustomerDataRepository(db: Database = getDb()) {
   return {
-    access: (scope: CustomerDataScope) => access(db, scope),
+    access: (scope: CustomerDataScope) => customerDataAccess(db, scope),
     async list(scope: CustomerDataScope) {
-      const permissions = await access(db, scope);
+      const permissions = await customerDataAccess(db, scope);
       const records = await db.select().from(customerRawData).where(scopeWhere(scope)).orderBy(desc(customerRawData.createdAt), desc(customerRawData.revision), desc(customerRawData.id));
       const relations = await db.select().from(customerRawDataRelations).where(and(eq(customerRawDataRelations.companyId, scope.companyId), eq(customerRawDataRelations.projectId, scope.projectId)));
       return { ...permissions, records, relations };
     },
-    async get(scope: CustomerDataScope, id: string) { await access(db, scope); return find(db, scope, id); },
-    async create(scope: CustomerDataScope, data: NewRawData, previousId?: string, relatedId?: string) {
+    async get(scope: CustomerDataScope, id: string) { await customerDataAccess(db, scope); return find(db, scope, id); },
+    async create(scope: CustomerDataScope, data: NewRawData, previousId?: string, relatedId?: string, importOnce = false) {
       return db.transaction(async tx => {
-        await access(tx, scope, true);
+        await customerDataAccess(tx, scope, true);
+        if (importOnce) {
+          const [existing] = await tx.select().from(customerRawData).where(and(scopeWhere(scope),eq(customerRawData.checksum,data.checksum),eq(customerRawData.fileName,data.fileName)));
+          if (existing) return existing;
+        }
         const previous = previousId ? await find(tx, scope, previousId) : null;
         if (relatedId) await find(tx, scope, relatedId);
         if (previous) {
@@ -76,7 +80,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
     },
     async review(scope: CustomerDataScope, id: string, reviewed: boolean) {
       return db.transaction(async tx => {
-        const permission = await access(tx, scope, true);
+        const permission = await customerDataAccess(tx, scope, true);
         if (!permission.canReview) throw new CustomerDataError("PM 또는 PL만 원본 검토 상태를 변경할 수 있습니다.", 403);
         await find(tx, scope, id);
         const now = Math.floor(Date.now() / 1000);
@@ -89,7 +93,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
     },
     async link(scope: CustomerDataScope, sourceId: string, targetId: string) {
       return db.transaction(async tx => {
-        await access(tx, scope, true);
+        await customerDataAccess(tx, scope, true);
         if (sourceId === targetId) throw new CustomerDataError("자기 자신은 참조할 수 없습니다.");
         await find(tx, scope, sourceId); await find(tx, scope, targetId);
         const [relation] = await tx.insert(customerRawDataRelations).values({ id: randomUUID(), companyId: scope.companyId,
