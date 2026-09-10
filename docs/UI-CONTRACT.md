@@ -135,3 +135,6 @@ npm run audit:react-dom
 - 분석 패널은 선택 문서의 초안, 중앙 PBOM은 프로젝트의 확정 구조를 표시한다. 확정 전에는 PART를 생성하지 않는다.
 - 프로젝트 TOP 아래 문서 ASSY를 직접 연결한다. TOP/ASSY/부품은 기존 회사 공통 채번 설정을 사용하며 BOM 위치와 품번을 분리한다.
 - 구매품·공용품 추가는 기존 PART·BOM 편집기를 callback으로 연다.
+
+- 생산 분석 패널의 공통 액션은 탭 아래 한 줄에 배치하고 아이콘·문구를 가로 정렬한다.
+- 우측 PBOM은 내부 품번/구분·변경/품명 계층/Pos./고객 Item No./Drawing No./CompRev/Qty Per Unit/원본 Weight/원본 근거를 표시한다. 전체 필수 컬럼과 계산 결과는 중앙 PBOM에서 유지한다.

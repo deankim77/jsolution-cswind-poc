@@ -27,7 +27,10 @@
 .review-item label { display: flex; gap: 8px; align-items: start; }
 .review-item textarea { width: 100%; min-height: 90px; margin: 8px 0; resize: vertical; box-sizing: border-box; }
 .review-item small, .production-table small { display: block; font-size: var(--v2-font-size-caption); color: var(--v2-color-muted); }
-.review-decision { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 0; }
+.review-decision { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding: 12px 0; }
+.review-save-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; flex-shrink: 0; }
+.review-panel-body .review-decision button { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; width: auto; height: var(--v2-control-height); padding: 0 10px; white-space: nowrap; }
+.review-panel-body .review-decision button[hidden] { display: none; }
 .review-draft button, .production-table button { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; background: var(--v2-surface-content); color: var(--v2-color-primary); cursor: pointer; }
 .review-draft button:disabled { opacity: .5; cursor: default; }
 .review-confirm, .review-uncertain { padding: 12px; background: var(--v2-surface-subtle); }
