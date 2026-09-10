@@ -1,0 +1,9 @@
+
+/* Approved shared-panel variant: production document review only. */
+.wv2-panel.wv2-review-panel { width: var(--v2-review-panel-width); max-width: calc(100vw - var(--v2-global-rail-width)); grid-template-rows: 76px 42px minmax(0,1fr); }
+.wv2-panel.wv2-review-panel.wide { width: var(--v2-review-panel-wide-width); }
+.wv2-review-panel > header > div:first-child { min-width: 0; }
+.wv2-review-panel > header h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wv2-review-panel > nav { overflow-x: auto; white-space: nowrap; }
+.wv2-review-panel > nav button { flex-shrink: 0; }
+.wv2-review-panel > .review-panel-body { padding: 0; min-height: 0; overflow: auto; }

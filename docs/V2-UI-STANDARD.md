@@ -120,3 +120,9 @@ V2 중앙 Workspace는 화면마다 다른 흰색·회색 배경을 임의로 �
 - Right panels that support 2-step width MUST open in the expanded state (`--v2-right-panel-wide-width`).
 - Users MAY collapse the panel to the normal width (`--v2-right-panel-width`) with the standard `PanelRightOpen` / `PanelRightClose` toggle.
 - Reopening or resetting the shared right panel MUST restore the expanded default.
+
+## CS WIND 생산 분석 패널 — 2026-09-10 사용자 승인
+- 고객 문서 목록에서 기존 공통 우측 패널을 사용한다. 별도 중앙 분석 화면은 제거한다.
+- 생산 분석에만 `--v2-review-panel-width: 50vw`, `--v2-review-panel-wide-width: 70vw`를 적용하며 최초에는 기본 50%로 연다. WBS/실적/필터의 560/760px 체계와 최초 확장 상태는 유지한다.
+- 공통 헤더·확장 버튼·탭을 재사용한다. 분석 요약/PBOM/TRR/생산 준비/작업 정보/기존 AI 대화를 제공한다.
+- 고객 원본 및 분석 목록은 공통 WBS 행 44px·헤더 34px 토큰을 사용한다. 불필요한 안내 행을 추가하지 않는다.

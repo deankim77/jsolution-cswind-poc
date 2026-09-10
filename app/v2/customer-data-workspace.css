@@ -21,7 +21,11 @@
 .cswind-data-table { overflow-x: auto; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-md); background: var(--v2-surface-content); }
 .cswind-data-table table { width: 100%; min-width: 1000px; border-collapse: collapse; text-align: left; }
 .cswind-data-table th { background: var(--v2-surface-table-header); font-size: var(--v2-font-size-table-header); }
-.cswind-data-table th, .cswind-data-table td { padding: 12px; border-bottom: 1px solid var(--v2-border-color); }
+.cswind-data-table th, .cswind-data-table td { padding: 0 12px; border-bottom: 1px solid var(--v2-border-color); }
 .cswind-data-table td { max-width: 320px; overflow-wrap: anywhere; }
 .cswind-data-table td button { color: var(--v2-color-primary); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 .cswind-data-table small { display: block; margin-top: 4px; }
+
+.cswind-data-table th { height: var(--v2-wbs-header-height); }
+.cswind-data-table td { height: var(--v2-wbs-row-height); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cswind-data-table th, .cswind-data-table td { box-sizing: border-box; }
