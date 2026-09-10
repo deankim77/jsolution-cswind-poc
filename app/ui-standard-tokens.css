@@ -37,6 +37,9 @@
   --v2-color-muted: #6d7b8d;
   --v2-color-primary: #0d918c;
   --v2-color-primary-dark: #087772;
+  --v2-color-warning: #885b18;
+  --v2-surface-warning: #fff3de;
+  --v2-border-warning: #d8b574;
 
   /* V2 UI Foundation surfaces: workspace, content and table headers must use these tokens. */
   --v2-surface-workspace: #f6f8fa;

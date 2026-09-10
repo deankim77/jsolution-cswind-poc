@@ -88,3 +88,10 @@
 .review-decision-actions .review-select-all { display: inline-flex; align-items: center; gap: 8px; min-height: var(--v2-control-height); margin: 0; white-space: nowrap; font-size: var(--v2-font-size-control); color: var(--v2-color-ink); cursor: pointer; }
 .review-select-all input { width: var(--v2-icon-size); height: var(--v2-icon-size); margin: 0; accent-color: var(--v2-color-primary); }
 .review-select-all:has(input:disabled) { opacity: .5; cursor: default; }
+
+.review-draft button.review-withdraw-action { background: var(--v2-surface-warning); border-color: var(--v2-border-warning); color: var(--v2-color-warning); font-weight: var(--v2-font-weight-bold); }
+.review-withdraw-dialog:not([open]) { display: none; }
+.review-withdraw-dialog { margin: auto; color: var(--v2-color-ink); }
+.review-withdraw-dialog::backdrop { background: rgb(18 31 38 / 48%); }
+.review-withdraw-document { overflow-wrap: anywhere; font-weight: var(--v2-font-weight-bold); }
+.review-withdraw-dialog footer { display: flex; justify-content: flex-end; gap: 8px; }
