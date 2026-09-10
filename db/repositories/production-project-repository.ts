@@ -1,3 +1,4 @@
+import {ensureProductionBomRoot} from './pbom-repository';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from '../index';
@@ -49,6 +50,7 @@ export function createProductionProjectRepository(db = getDb()) {
               const [member] = await tx.select().from(projectMembers).where(and(eq(projectMembers.projectId, p.id),eq(projectMembers.userId,scope.userId)));
               if (!member) throw new CustomerDataError('기존 시연 프로젝트의 참여자에게 문의하세요.',403);
             }
+            await ensureProductionBomRoot(tx,{...scope,projectId:p.id},p.name);
             return { ...p, projectTypeCode: 'PRODUCTION', reused: true };
           }
         }
@@ -86,6 +88,7 @@ export function createProductionProjectRepository(db = getDb()) {
           .where(and(eq(projectsDb.companyId,scope.companyId),sql`${projectsDb.code} ~ ${`^PRD-${year}-[0-9]+$`}`));
         const now = Math.floor(Date.now()/1000), projectId = randomUUID();
         const [project] = await tx.insert(projectsDb).values({ id: projectId, companyId: scope.companyId, templateVersionId: version.id, code: `PRD-${year}-${String(number).padStart(4,'0')}`, name: input.name, customerName: input.customerName || null, partnerId: input.partnerId || null, projectTypeId: type.id, startDate: input.startDate, endDate: input.endDate || plannedEnd, status: 'preparing', templateSnapshot: JSON.stringify({ templateName: version.name, version: version.version, definition }), createdAt: now, updatedAt: now }).returning();
+        await ensureProductionBomRoot(tx,{...scope,projectId},project.name);
         await tx.insert(projectProfiles).values({ projectId, description: input.description || (input.demo ? 'TC800 V4 시연 프로젝트. 일정은 시연용 가정이며 진행 실적과 AI 분석 결과는 입력되지 않았습니다.' : null), referenceCode: input.demo ? demoReference : input.referenceCode || null, visibility: input.visibility || 'company', updatedAt: now });
         if (shareIds.length) await tx.insert(projectShares).values(shareIds.map(organizationId=>({projectId,organizationId,createdAt:now})));
         await tx.insert(projectMembers).values([...members].map(([userId,projectRole])=>({projectId,userId,projectRole,createdAt:now,updatedAt:now})));

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 import { projectsDb, users } from "./schema";
-import type { CustomerDocumentType, CustomerImpactTarget } from "../lib/customer-data-contract";
+import type { CustomerDocumentType, CustomerImpactTarget, CustomerIntakeGroup, CustomerSourcePurpose } from "../lib/customer-data-contract";
 
 export const customerRawData = pgTable("customer_raw_data", {
   id: text("id").primaryKey(),
@@ -9,6 +9,8 @@ export const customerRawData = pgTable("customer_raw_data", {
   projectId: text("project_id").notNull().references(() => projectsDb.id, { onDelete: "restrict" }),
   rawDataId: text("raw_data_id").notNull(),
   revision: integer("revision").notNull(),
+  intakeGroup:text("intake_group").$type<CustomerIntakeGroup>().notNull().default("unclassified"),
+  sourcePurpose:text("source_purpose").$type<CustomerSourcePurpose>().notNull().default("input"),
   title: text("title").notNull(),
   documentType: text("document_type").$type<CustomerDocumentType>().notNull(),
   impactTarget: text("impact_target").$type<CustomerImpactTarget>().notNull(),
@@ -25,6 +27,8 @@ export const customerRawData = pgTable("customer_raw_data", {
   reviewedBy: text("reviewed_by").references(() => users.id),
   reviewedAt: integer("reviewed_at"),
 }, table => [
+  check("customer_raw_data_intake_ck",sql`${table.intakeGroup} IN ('unclassified','a_bt','a_wt','a_im','a_common','b_initial','b_change','b_missing','b_parts','common')`),
+  check("customer_raw_data_purpose_ck",sql`${table.sourcePurpose} IN ('input','template','example')`),
   uniqueIndex("customer_raw_data_revision_uq").on(table.projectId, table.rawDataId, table.revision),
   uniqueIndex("customer_raw_data_scope_uq").on(table.companyId, table.projectId, table.id),
   index("customer_raw_data_project_idx").on(table.companyId, table.projectId, table.createdAt),

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createCustomerDataRepository, type CustomerDataScope } from "../db/repositories/customer-data-repository";
 import { getStorageAdapter } from "../lib/storage-adapter";
-import { CUSTOMER_DOCUMENT_TYPES, CUSTOMER_IMPACT_TARGETS, CustomerDataError, MAX_CUSTOMER_FILE_BYTES,
+import { CUSTOMER_INTAKE_GROUPS,CUSTOMER_SOURCE_PURPOSES,type CustomerIntakeGroup,type CustomerSourcePurpose, CUSTOMER_DOCUMENT_TYPES, CUSTOMER_IMPACT_TARGETS, CustomerDataError, MAX_CUSTOMER_FILE_BYTES,
   type CustomerDocumentType, type CustomerImpactTarget } from "../lib/customer-data-contract";
 
 function publicRecord<T extends { fileKey: string; companyId: string }>(record: T) {
@@ -28,6 +28,9 @@ export function createCustomerDataService(repository = createCustomerDataReposit
       const file = form.get("file");
       if (!(file instanceof File) || !file.size) throw new CustomerDataError("빈 파일은 등록할 수 없습니다. 파일을 선택하세요.");
       if (file.size > MAX_CUSTOMER_FILE_BYTES) throw new CustomerDataError("파일은 50MB 이하로 등록하세요.", 413);
+      const intakeGroup=(text(form.get('intakeGroup'),'접수 분류',30)||'unclassified') as CustomerIntakeGroup;
+      const sourcePurpose=(text(form.get('sourcePurpose'),'자료 용도',30)||'input') as CustomerSourcePurpose;
+      if(!Object.hasOwn(CUSTOMER_INTAKE_GROUPS,intakeGroup)||!Object.hasOwn(CUSTOMER_SOURCE_PURPOSES,sourcePurpose))throw new CustomerDataError('접수 분류와 자료 용도를 확인하세요.');
       const title = text(form.get("title"), "자료명", 200) || file.name.slice(0,200);
       const documentType = (text(form.get("documentType"), "문서유형", 30) || "other") as CustomerDocumentType;
       const impactTarget = (text(form.get("impactTarget"), "영향 대상", 30) || "unclassified") as CustomerImpactTarget;
@@ -44,7 +47,7 @@ export function createCustomerDataService(repository = createCustomerDataReposit
       const checksum = createHash("sha256").update(Buffer.from(bytes)).digest("hex");
       try {
         await storage.put(fileKey, bytes, { httpMetadata: { contentType: "application/octet-stream" }, customMetadata: { originalName: fileName, checksum } });
-        const stored = await repository.create(scope, { id, title, documentType, impactTarget, fileKey, fileName, fileSize: bytes.byteLength, checksum, note }, previousId, relatedId, importOnce);
+        const stored = await repository.create(scope, { id, title, intakeGroup,sourcePurpose,documentType, impactTarget, fileKey, fileName, fileSize: bytes.byteLength, checksum, note }, previousId, relatedId, importOnce);
         if (stored.id !== id) await storage.delete(fileKey);
         return {...publicRecord(stored),duplicate:stored.id!==id};
       } catch (error) {

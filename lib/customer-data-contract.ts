@@ -1,3 +1,7 @@
+export const CUSTOMER_INTAKE_GROUPS={unclassified:'미분류',a_bt:'Category A · BT',a_wt:'Category A · WT',a_im:'Category A · IM',a_common:'Category A · 공통',b_initial:'Category B · 초기 BOM',b_change:'Category B · 변경',b_missing:'Category B · 누락 도면',b_parts:'Category B · 부품 목록',common:'A/B 공통'} as const;
+export type CustomerIntakeGroup=keyof typeof CUSTOMER_INTAKE_GROUPS;
+export const CUSTOMER_SOURCE_PURPOSES={input:'분석용 원본',template:'출력 템플릿',example:'출력 예시'} as const;
+export type CustomerSourcePurpose=keyof typeof CUSTOMER_SOURCE_PURPOSES;
 export const PRODUCTION_PROJECT_CODE = "PRODUCTION";
 export const CUSTOMER_DOCUMENT_TYPES = {
   drawing: "도면", specification: "사양서", bom: "Parts List / BOM",
@@ -12,6 +16,7 @@ export type CustomerDocumentType = keyof typeof CUSTOMER_DOCUMENT_TYPES;
 export type CustomerImpactTarget = keyof typeof CUSTOMER_IMPACT_TARGETS;
 export type CustomerDataRecord = {
   id: string; projectId: string; rawDataId: string; revision: number;
+  intakeGroup?:CustomerIntakeGroup;sourcePurpose?:CustomerSourcePurpose;
   title: string; documentType: CustomerDocumentType; impactTarget: CustomerImpactTarget;
   fileName: string; fileSize: number; checksum: string; note: string | null;
   analysisStatus: "not_requested"; reviewStatus: "pending" | "reviewed";

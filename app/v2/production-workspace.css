@@ -54,3 +54,17 @@
 .customer-document-list tr.selected, .customer-document-list tbody tr:hover { background: var(--v2-surface-subtle); }
 .review-panel-body .review-draft { border: 0; }
 .review-panel-body .review-confirm-actions { position: sticky; top: 0; background: var(--v2-surface-content); z-index: 1; }
+
+.pbom-table-scroll { max-width: 100%; overflow: auto; }
+.pbom-tree-table { width: max-content; min-width: 100%; }
+.pbom-tree-table td { max-width: 360px; }
+.pbom-tree-table th { white-space: nowrap; }
+.pbom-tree-label { display: flex; align-items: center; gap: 8px; }
+.pbom-tree-label button { display: inline-flex; align-items: center; }
+.pbom-fact-editor { padding: 16px; background: var(--v2-surface-content); border: 1px solid var(--v2-border-color); }
+.pbom-fact-editor > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.pbom-fact-editor label { display: flex; flex-direction: column; gap: 4px; font-size: var(--v2-font-size-body); }
+.pbom-fact-editor input,.pbom-fact-editor select { min-width: 0; font: inherit; padding: 8px; border: 1px solid var(--v2-border-color); background: var(--v2-surface-content); color: var(--v2-color-ink); }
+.requirements-table { table-layout: fixed; }
+.requirements-table td button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.requirements-table th:has(input) { width: 44px; }

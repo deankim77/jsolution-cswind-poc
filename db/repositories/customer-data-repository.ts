@@ -9,7 +9,7 @@ export type CustomerDataScope = { companyId: string; userId: string; systemRoles
 type Database = ReturnType<typeof getDb>;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Connection = Database | Transaction;
-type NewRawData = Pick<typeof customerRawData.$inferInsert, "id" | "title" | "documentType" | "impactTarget" | "fileKey" | "fileName" | "fileSize" | "checksum" | "note">;
+type NewRawData = Pick<typeof customerRawData.$inferInsert, "id" | "title" | "documentType" | "impactTarget" | "fileKey" | "fileName" | "fileSize" | "checksum" | "note" | "intakeGroup" | "sourcePurpose">;
 const scopeWhere = (scope: CustomerDataScope) => and(eq(customerRawData.companyId, scope.companyId), eq(customerRawData.projectId, scope.projectId));
 
 // A project row lock serializes writes, including revision allocation and lifecycle checks.
@@ -56,7 +56,16 @@ export function createCustomerDataRepository(db: Database = getDb()) {
         await customerDataAccess(tx, scope, true);
         if (importOnce) {
           const [existing] = await tx.select().from(customerRawData).where(and(scopeWhere(scope),eq(customerRawData.checksum,data.checksum)));
-          if (existing) return existing;
+          if (existing) {
+            // Identical bytes keep one Raw Data identity. Cross-purpose uploads must not silently turn an output example into input evidence.
+            if(data.sourcePurpose&&existing.sourcePurpose!==data.sourcePurpose)throw new CustomerDataError('동일 파일이 다른 자료 용도로 이미 등록되어 있습니다. 기존 목록을 확인하세요.',409);
+            if(data.intakeGroup&&data.intakeGroup!=='unclassified'&&existing.intakeGroup!==data.intakeGroup){
+              const intakeGroup=existing.intakeGroup==='unclassified'?data.intakeGroup:'common';
+              const [updated]=await tx.update(customerRawData).set({intakeGroup}).where(eq(customerRawData.id,existing.id)).returning();
+              await audit(tx,scope,existing.id,'CUSTOMER_DATA_INTAKE_CLASSIFIED',{previous:existing.intakeGroup,intakeGroup});return updated;
+            }
+            return existing;
+          }
         }
         const previous = previousId ? await find(tx, scope, previousId) : null;
         if (relatedId) await find(tx, scope, relatedId);
