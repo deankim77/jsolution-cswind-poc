@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildBomRows,formatPartNumber,validateBomFacts} from '../lib/pbom-contract.ts';
+import {collapsedBomIdsAtDepth,buildBomRows,formatPartNumber,validateBomFacts} from '../lib/pbom-contract.ts';
 const fact=(patch={})=>({parentId:null,section:'Bottom',itemDescription:'MAST ASSY',position:'',customerItemNumber:'ASSY-1',drawingNumber:'D-1',componentRevision:'R00',quantity:2,unit:'EA',weight:null,weightUnit:'kg',weightSource:'Not Available',drawingAvailability:'Drawing Found',partType:'ASSEMBLY',childrenComplete:true,...patch});
 const item=(id,bom)=>({id,recordId:'raw-1',source:'test.pdf R00 p1 Parts List',bom});
 const tree=()=>[item('root',fact()),item('assy',fact({parentId:'root',customerItemNumber:'SUB-1',quantity:3})),item('part',fact({parentId:'assy',customerItemNumber:'PART-1',partType:'PART',quantity:4,weight:2,weightSource:'Parts List',childrenComplete:false}))];
@@ -11,3 +11,12 @@ test('missing parent, cycle and inconsistent customer revisions block confirmati
 test('negative and nonfinite quantities are rejected and unknown identity remains reviewable',()=>{const t=tree();t[2].bom.quantity=-1;assert.throws(()=>buildBomRows(t));t[2].bom.quantity=Infinity;assert.throws(()=>buildBomRows(t));t[2].bom.quantity=1;t[2].bom.customerItemNumber='';t[2].bom.drawingNumber='';assert.equal(buildBomRows(t)[2].match,'NEED_REVIEW');});
 test('company numbering is independent of role, hierarchy and customer revision',()=>{assert.equal(formatPartNumber({prefix:'P',separator:'-',digits:6},7),'P-000007');assert.equal(formatPartNumber({prefix:'CSW',separator:'',digits:4},38),'CSW0038');assert.throws(()=>formatPartNumber({prefix:'P',separator:'-',digits:3},1000));});
 test('direct assembly mass takes precedence over a calculated sum',()=>{const t=tree();t[0].bom.weight=30;t[0].bom.weightSource='Direct from Drawing';const [root]=buildBomRows(t);assert.equal(root.calculatedWeight,30);assert.equal(root.calculatedWeightSource,'Direct from Drawing');});
+
+test('document depth presets handle three levels and multiple root assemblies',()=>{
+ const rows=buildBomRows([...tree(),item('root-2',fact({customerItemNumber:'ASSY-2'})),item('child-2',fact({parentId:'root-2',customerItemNumber:'PART-2',partType:'PART'}))]);
+ const visible=depth=>{const collapsed=new Set(collapsedBomIdsAtDepth(rows,depth));return rows.filter(row=>{let parent=row.bom.parentId;while(parent){if(collapsed.has(parent))return false;parent=rows.find(r=>r.id===parent)?.bom.parentId??null}return true}).map(r=>r.id)};
+ assert.deepEqual(visible(1),['root','root-2']);
+ assert.deepEqual(visible(2),['root','assy','root-2','child-2']);
+ assert.deepEqual(visible(Infinity),rows.map(r=>r.id));
+ assert.deepEqual(rows.map(r=>r.level),[1,2,3,1,2]);
+});

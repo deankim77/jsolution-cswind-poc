@@ -76,3 +76,9 @@
 .pbom-edit-fields .pbom-edit-complete { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
 .pbom-edit-fields input[type="checkbox"] { width: auto; }
 .pbom-edit-dialog footer button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+.pbom-depth-actions { margin: 0; }
+.pbom-review-tree-label { min-width: max-content; }
+.pbom-toggle-slot { display: inline-flex; flex: 0 0 var(--v2-icon-size); width: var(--v2-icon-size); align-items: center; justify-content: center; }
+.pbom-review-tree-label .pbom-toggle-slot button { display: inline-flex; align-items: center; justify-content: center; width: var(--v2-icon-size); min-height: var(--v2-control-height); padding: 0; border: 0; background: transparent; }
+.pbom-node-name { white-space: nowrap; }

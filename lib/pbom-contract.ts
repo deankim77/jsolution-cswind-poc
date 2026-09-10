@@ -39,3 +39,9 @@ export function formatPartNumber(setting:{prefix:string;separator:string;digits:
  if(!Number.isSafeInteger(sequence)||sequence<1||!Number.isInteger(setting.digits)||setting.digits<3||setting.digits>12||String(sequence).length>setting.digits)throw Error('품번 채번 범위가 초과되었거나 설정이 올바르지 않습니다.');
  return `${setting.prefix}${setting.separator}${String(sequence).padStart(setting.digits,'0')}`;
 }
+
+/** Depth presets affect only the current tree view, never stored BOM hierarchy. */
+export function collapsedBomIdsAtDepth(rows:Pick<BomRow,'id'|'bom'|'level'>[],depth:number):string[]{
+ const parents=new Set(rows.map(row=>row.bom.parentId).filter(Boolean));
+ return rows.filter(row=>parents.has(row.id)&&row.level>=depth).map(row=>row.id);
+}
