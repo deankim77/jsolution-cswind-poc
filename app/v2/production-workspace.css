@@ -31,7 +31,7 @@
 .review-save-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; flex-shrink: 0; }
 .review-panel-body .review-decision button { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; width: auto; height: var(--v2-control-height); padding: 0 10px; white-space: nowrap; }
 .review-panel-body .review-decision button[hidden] { display: none; }
-.review-draft button, .production-table button { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; background: var(--v2-surface-content); color: var(--v2-color-primary); cursor: pointer; }
+.review-draft button:not(.wv2-panel-save), .production-table button { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; background: var(--v2-surface-content); color: var(--v2-color-primary); cursor: pointer; }
 .review-draft button:disabled { opacity: .5; cursor: default; }
 .review-confirm, .review-uncertain { padding: 12px; background: var(--v2-surface-subtle); }
 .review-detail-text { white-space: pre-wrap; }
@@ -82,3 +82,9 @@
 .pbom-toggle-slot { display: inline-flex; flex: 0 0 var(--v2-icon-size); width: var(--v2-icon-size); align-items: center; justify-content: center; }
 .pbom-review-tree-label .pbom-toggle-slot button { display: inline-flex; align-items: center; justify-content: center; width: var(--v2-icon-size); min-height: var(--v2-control-height); padding: 0; border: 0; background: transparent; }
 .pbom-node-name { white-space: nowrap; }
+
+/* One decision group for all four review areas, using the existing panel save button. */
+.review-decision-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.review-decision-actions .review-select-all { display: inline-flex; align-items: center; gap: 8px; min-height: var(--v2-control-height); margin: 0; white-space: nowrap; font-size: var(--v2-font-size-control); color: var(--v2-color-ink); cursor: pointer; }
+.review-select-all input { width: var(--v2-icon-size); height: var(--v2-icon-size); margin: 0; accent-color: var(--v2-color-primary); }
+.review-select-all:has(input:disabled) { opacity: .5; cursor: default; }
