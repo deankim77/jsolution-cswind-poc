@@ -9,7 +9,7 @@
 .pbw-reuse-tools { height: calc(2 * var(--v2-control-height) + 24px); min-height: calc(2 * var(--v2-control-height) + 24px); grid-template-rows: repeat(2,var(--v2-control-height)); }
 .pbw-reuse-tools > nav { padding: 0; align-items: center; }
 .pbw-reuse-tools > nav button { height: var(--v2-control-height); }
-.pbw-current > .pbw-tree-head { grid-template-columns: auto minmax(0,1fr) auto; align-items: center; }
+.pbw-current > .pbw-tree-head { grid-template-columns: auto minmax(0,1fr) 84px; padding-right: 11px; align-items: center; }
 .pbw-tree-head > span { grid-row: 1; white-space: nowrap; }
 .pbw-tree-head > span:first-child { grid-column: 1; }
 .pbw-tree-head > span:nth-child(2) { grid-column: 3; text-align: right; }
