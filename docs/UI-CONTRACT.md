@@ -165,3 +165,5 @@ npm run audit:react-dom
 - PBOM은 LEVEL로 계층 깊이, POS로 도면의 부품 위치번호를 별도 표시한다. SECTION은 해당 행이 속한 1레벨 ASSY 명칭을 표시한다.
 
 - 우측 PBOM도 중앙 PBOM과 같은 품번 계층 및 전체 열 목록·순서를 사용한다. 우측 기본 열은 품번/Item Description/Item No./Drawing No./CompRev/Qty Per Unit 6개이며 검토 액션은 별도 유지한다. 기존 사용자 표시 열 선택은 보존하고 기본값 복원 시 6개로 돌아간다.
+
+- 우측 PBOM은 품목 구분을 기본 표시하여 기존 부품/신규 부품/확인 필요/내부 추가를 구분한다. Revision 변경 문구는 중앙 구분 / 변경 열에만 표시한다. 우측 기본 열은 기존 핵심 6개에 품목 구분을 더한 7개다.
