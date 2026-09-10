@@ -57,3 +57,16 @@ export function collapsedBomIdsAtDepth(rows:Pick<BomRow,'id'|'bom'|'level'>[],de
  const parents=new Set(rows.map(row=>row.bom.parentId).filter(Boolean));
  return rows.filter(row=>parents.has(row.id)&&row.level>=depth).map(row=>row.id);
 }
+
+/** Display the level-one assembly containing this occurrence, independently of source Section text. */
+export function bomSectionName(row:BomRow,rows:BomRow[]):string {
+ const byId=new Map(rows.map(item=>[item.id,item]));
+ const seen=new Set<string>();
+ let current:BomRow|undefined=row;
+ while(current&&!seen.has(current.id)){
+  seen.add(current.id);
+  if(current.level===1)return current.bom.partType==='ASSEMBLY'?current.bom.itemDescription:'';
+  current=current.bom.parentId?byId.get(current.bom.parentId):undefined;
+ }
+ return '';
+}

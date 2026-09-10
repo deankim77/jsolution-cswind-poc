@@ -5,17 +5,17 @@ import {ChevronDown,ChevronRight,Layers3} from 'lucide-react';
 import {useColumnPreferences} from './use-column-preferences';
 import PbomEditDialog from './pbom-edit-dialog';
 import {ColumnVisibilityMenu,HierarchyActions} from './table-view-controls';
-import {DRAWING_AVAILABILITY_LABELS,collapsedBomIdsAtDepth,type BomFact,type BomRow} from '../../lib/pbom-contract';
+import {DRAWING_AVAILABILITY_LABELS,bomSectionName,collapsedBomIdsAtDepth,type BomFact,type BomRow} from '../../lib/pbom-contract';
 
 const show=(n:number|null)=>n===null?'미확인':Number(n.toFixed(6)).toLocaleString();
 const labels={NEW:'NEW · 신규',EXISTING:'기존 부품',NEED_REVIEW:'확인 필요',MANUAL:'내부 추가'};
 const columns=[
  {key:'part',label:'품번',locked:true},
  {key:'status',label:'구분 / 변경'},
- {key:'section',label:'Section',full:true},
+ {key:'section',label:'SECTION',full:true},
  {key:'level',label:'LEVEL',full:true},
  {key:'description',label:'Item Description'},
- {key:'position',label:'Pos.'},
+ {key:'position',label:'POS'},
  {key:'item',label:'Item No.'},
  {key:'drawing',label:'Drawing No.'},
  {key:'revision',label:'CompRev'},
@@ -55,7 +55,7 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
   switch(key){
    case 'part':return review?partLink(row):<span className="pbom-tree-label pbom-part-tree-label" title={row.path} style={{paddingInlineStart:`${Math.max(0,row.level-(root?0:1))*20}px`}}>{toggleSlot(row,children)}<span className={`pbom-part-dot ${b.partType==='ASSEMBLY'?'is-assembly':''}`} aria-hidden="true"/>{partLink(row)}</span>;
    case 'status':return <>{labels[row.match??'NEED_REVIEW']}{row.changed?` · ${row.changeLabel||'Revision 변경'}`:''}</>;
-   case 'section':return b.section||'미확인';
+   case 'section':return bomSectionName(row,rows)||'미확인';
    case 'level':return row.level;
    case 'description':return review?<span className="pbom-tree-label pbom-review-tree-label" style={{paddingInlineStart:`calc(${Math.max(0,row.level-1)} * var(--v2-action-height))`}}>{toggleSlot(row,children)}<span className="pbom-node-name">{b.itemDescription}</span></span>:b.itemDescription;
    case 'position':return b.position||'—';
