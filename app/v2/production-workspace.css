@@ -1,3 +1,6 @@
+/* Production has no WBS toolbar: let its canvas fill the remaining height. */
+.wv2-content:has(> .production-canvas) { grid-template-rows: auto auto minmax(0,1fr); }
+.wv2-content:has(> .production-canvas):has(> .wv2-status-notice) { grid-template-rows: auto auto auto minmax(0,1fr); }
 .production-setup { margin: 16px 0; padding: 16px; border: 1px solid var(--v2-border-color); background: var(--v2-surface-content); }
 .production-setup h2 { display: flex; align-items: center; gap: 8px; font-size: var(--v2-font-size-section-title); }
 .production-setup p { font-size: var(--v2-font-size-body); }
