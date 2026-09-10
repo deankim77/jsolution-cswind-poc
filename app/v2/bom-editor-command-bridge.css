@@ -1,6 +1,6 @@
 .pbw-tree-head.pbw-command-head{position:relative;padding:8px 10px}
 .pbw-command-floating{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;overflow-x:auto}
-.pbw-tree-head>.pbw-command-floating{position:static;grid-row:2;grid-column:1 / -1;height:var(--v2-control-height)}
+.pbw-tree-head>.pbw-command-floating{position:static;grid-row:1;grid-column:2;height:var(--v2-control-height)}
 .pbw-command-selection{margin-inline-start:auto;display:flex;align-items:center;gap:6px;min-width:0;max-width:155px;height:var(--v2-control-height);box-sizing:border-box;padding:0 8px;border:1px solid var(--v2-border-color);border-radius:var(--v2-radius-sm);background:var(--v2-surface-content);color:var(--v2-color-ink)}
 .pbw-command-selection b{flex:none;color:var(--v2-color-primary-dark);font-size:var(--v2-font-size-control)}
 .pbw-command-selection em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--v2-font-size-control);font-style:normal}
