@@ -12,8 +12,10 @@ export type ReviewState={recordId:string;version:number;draft:ReviewDraft;messag
 export type ConfirmedReview={id:string;recordId:string;version:number;item:ReviewItem;confirmedBy:string;confirmedAt:number};
 
 type StoredReviewItem=Omit<ReviewItem,'area'> & {area:string;useTargets?:unknown;assy?:unknown;part?:unknown;itemNumber?:unknown;itemName?:unknown};
+const supportedStoredAreas=['pbom','extract','trr','readiness','work'] as const;
 const legacyTarget=(area:string):ReviewUseTarget=>area==='trr'?'TTR':area==='work'?'작업방법':'기타';
 export function normalizeReviewItem(value:StoredReviewItem):ReviewItem {
+ if(!value||!supportedStoredAreas.includes(value.area as typeof supportedStoredAreas[number]))throw new Error('지원하지 않는 AI 분석 영역입니다.');
  const area:ReviewArea=value.area==='pbom'?'pbom':'extract';
  const targets=Array.isArray(value.useTargets)?value.useTargets.filter((target):target is ReviewUseTarget=>typeof target==='string'&&(REVIEW_USE_TARGETS as readonly string[]).includes(target)):[];
  return {...value,area,useTargets:area==='pbom'?undefined:(targets.length?[...new Set(targets)]:[legacyTarget(value.area)]),assy:typeof value.assy==='string'?value.assy.trim():'',part:typeof value.part==='string'?value.part.trim():'',itemNumber:typeof value.itemNumber==='string'?value.itemNumber.trim():'',itemName:typeof value.itemName==='string'?value.itemName.trim():''};
