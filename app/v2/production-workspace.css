@@ -48,10 +48,15 @@
 .cswind-data-table td button { min-height: 0; font-size: var(--v2-font-size-body); }
 .cswind-data-table .customer-thumb { display: flex; align-items: center; justify-content: center; width: var(--v2-control-height); height: var(--v2-control-height); }
 .customer-thumb img { width: 100%; height: 100%; object-fit: contain; }
-.customer-document-list { table-layout: fixed; }
+.customer-document-list { table-layout: fixed; min-width: 1280px; }
 .customer-document-list th:first-child { width: 54px; }
-.customer-document-list th:nth-child(2) { width: 64px; }
-.customer-document-list th:nth-child(3) { width: 38%; }
+.customer-document-list th:nth-child(2) { width: 88px; white-space: nowrap; }
+.customer-document-list th:nth-child(3) { width: 150px; }
+.customer-document-list th:nth-child(5) { width: 110px; }
+.customer-document-list th:nth-child(6) { width: 124px; white-space: nowrap; }
+.customer-document-list .review-count-column { width: 80px; text-align: center; }
+.customer-document-list th:nth-child(9),.customer-document-list th:nth-child(10) { width: 140px; }
+.customer-document-list .review-count-column button { width: 100%; min-height: var(--v2-control-height); font-variant-numeric: tabular-nums; }
 .cswind-data-table .customer-file-link { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .customer-document-list tr { cursor: pointer; }
 .customer-document-list tr.selected, .customer-document-list tbody tr:hover { background: var(--v2-surface-subtle); }

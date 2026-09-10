@@ -157,3 +157,5 @@ npm run audit:react-dom
 - 프로젝트 타임라인과 PBOM은 공통 ColumnVisibilityMenu 및 HierarchyActions를 사용한다. 표시 열 체크·기본값 복원, Columns3·ChevronsUp·ChevronsDown 아이콘과 버튼 크기를 공유한다. PBOM 품번은 계층 탐색을 위해 고정 표시하며 열 숨김은 데이터에 영향을 주지 않는다.
 
 - 중앙 PBOM 보기 설정은 상단 검색·새로고침 툴바의 React 선언 슬롯에 렌더링한다. 표시 열 메뉴는 내부 체크/스크롤 중 유지하고 외부 클릭·Escape로 닫으며 가로 스크롤 없이 긴 항목을 줄바꿈한다.
+
+- AI Data Review 목록은 미리보기 칸에서만 원본 팝업을 연다. 자료 ID 이후 칸은 우측 분석 패널을 열고 결과 건수는 해당 탭으로 연결한다. 분석 상태와 4개 영역의 초안 항목 수를 분리하며 미분석은 —, 분석 결과 0건은 0으로 표시한다.
