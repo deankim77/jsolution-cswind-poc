@@ -28,9 +28,9 @@ export function createCustomerDataService(repository = createCustomerDataReposit
       const file = form.get("file");
       if (!(file instanceof File) || !file.size) throw new CustomerDataError("빈 파일은 등록할 수 없습니다. 파일을 선택하세요.");
       if (file.size > MAX_CUSTOMER_FILE_BYTES) throw new CustomerDataError("파일은 50MB 이하로 등록하세요.", 413);
-      const title = text(form.get("title"), "자료명", 200, true);
-      const documentType = text(form.get("documentType"), "문서유형", 30) as CustomerDocumentType;
-      const impactTarget = text(form.get("impactTarget"), "영향 대상", 30) as CustomerImpactTarget;
+      const title = text(form.get("title"), "자료명", 200) || file.name.slice(0,200);
+      const documentType = (text(form.get("documentType"), "문서유형", 30) || "other") as CustomerDocumentType;
+      const impactTarget = (text(form.get("impactTarget"), "영향 대상", 30) || "unclassified") as CustomerImpactTarget;
       if (!Object.hasOwn(CUSTOMER_DOCUMENT_TYPES, documentType) || !Object.hasOwn(CUSTOMER_IMPACT_TARGETS, impactTarget)) throw new CustomerDataError("문서유형과 영향 대상을 선택하세요.");
       const previousId = text(form.get("previousId"), "이전 버전", 100) || undefined;
       const relatedId = text(form.get("relatedId"), "참조 원본", 100) || undefined;
@@ -46,7 +46,7 @@ export function createCustomerDataService(repository = createCustomerDataReposit
         await storage.put(fileKey, bytes, { httpMetadata: { contentType: "application/octet-stream" }, customMetadata: { originalName: fileName, checksum } });
         const stored = await repository.create(scope, { id, title, documentType, impactTarget, fileKey, fileName, fileSize: bytes.byteLength, checksum, note }, previousId, relatedId, importOnce);
         if (stored.id !== id) await storage.delete(fileKey);
-        return publicRecord(stored);
+        return {...publicRecord(stored),duplicate:stored.id!==id};
       } catch (error) {
         // A failed DB write must not leave an untracked source binary behind.
         await storage.delete(fileKey).catch(cleanupError => console.error("Customer Data storage cleanup failed", { fileKey, cleanupError }));

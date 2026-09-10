@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
-import {useCallback,useEffect,useMemo,useRef,useState,type ComponentType,type CSSProperties} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState,type ComponentType,type CSSProperties,type ReactNode} from "react";
 import {
   AlertTriangle,Bell,CalendarDays,ChartNoAxesGantt,Check,ChevronDown,Clock3,CircleDollarSign,
   ChevronLeft,ChevronRight,ChevronsLeft,Columns3,FileText,Filter,Folders,GanttChartSquare,
@@ -28,7 +28,7 @@ import {
   type AiDraftRequest,type ArtifactPreviewData,type ContextItem,type IntegratedSearchResult,type PortfolioProjectPreset,
   type ReportAiRequest,type V2Project,
 } from "./deferred-workspaces";
-import ProductionWorkspace from "./production-workspace";
+import ProductionWorkspace,{productionTabs,type ProductionTab} from "./production-workspace";
 import CustomerDataWorkspace from "./customer-data-workspace";
 import { PRODUCTION_PROJECT_CODE } from "../../lib/customer-data-contract";
 import {loadPinnedTabs,type PinnedView} from "./pinned-tabs-settings";
@@ -90,6 +90,10 @@ export default function NewWorkViewApp(){
   const [loadError,setLoadError]=useState("");
   const [view,setView]=useState<WorkView>("list");
   const [productionOpen,setProductionOpen]=useState(false);
+  const [productionTab,setProductionTab]=useState<ProductionTab>("customer");
+  const [customerAi,setCustomerAi]=useState<ReactNode>(null);
+  const closeCustomerAi=useCallback(()=>{setCustomerAi(null);setPanelOpen(false)},[]);
+  const openCustomerAi=useCallback((content:ReactNode)=>{setCustomerAi(content);setSelectedId("");setPanelTab("ai");setPanelWide(true);setPanelOpen(true)},[]);
   const [contextOpen,setContextOpen]=useState(true);
   const [selectedId,setSelectedId]=useState("");
   const [panelOpen,setPanelOpen]=useState(false);
@@ -134,7 +138,7 @@ export default function NewWorkViewApp(){
   const closeConfirm=(value:boolean)=>{confirmResolver.current?.(value);confirmResolver.current=null;setConfirmDialog(null)};
   const openWorkspaceTab=(tab:WorkspaceTab)=>{setWorkspaceTabs(current=>current.some(item=>item.key===tab.key)?current:[...current,tab]);setActiveWorkspaceTab(tab.key);setWorkspaceViewState(tab.view)};
   const openBomCompare=(leftRootId:string,rightRootId?:string)=>{if(!leftRootId)return;const key=`bom-compare:${leftRootId}${rightRootId?`:${rightRootId}`:""}`;openWorkspaceTab({key,view:"bom-compare",entityId:leftRootId,editId:rightRootId,title:"BOM 비교"})};
-  useEffect(()=>{setProductionOpen(project?.projectTypeCode===PRODUCTION_PROJECT_CODE);setPanelOpen(false)},[project?.id,project?.projectTypeCode]);
+  useEffect(()=>{setProductionOpen(project?.projectTypeCode===PRODUCTION_PROJECT_CODE);setProductionTab("customer");setCustomerAi(null);setPanelOpen(false)},[project?.id,project?.projectTypeCode]);
   const setWorkspaceView=(next:WorkspaceView)=>{if(next==="customer-data"&&project){setPanelOpen(false);openWorkspaceTab({key:`customer-data:${project.id}`,view:next,entityId:project.id,title:`고객 Data · ${project.name}`});return}if(next==="issues")setIssueProjectPreset("");if(next==="wbs"&&project){openWorkspaceTab({key:`wbs:${project.id}`,view:"wbs",entityId:project.id,title:`WBS · ${project.name}`});return}openWorkspaceTab(genericWorkspaceTab(next))};
   const openTemplateEditor=(templateId?:string,templateName="새 템플릿")=>{const key=templateId?`template-editor:${templateId}`:`template-editor:new-${Date.now()}`;setTemplateEditorId(templateId);openWorkspaceTab({key,view:"template-editor",entityId:templateId,title:`템플릿 · ${templateName}`})};
   const openCreateWorkspace=(view:"create-workflow"|"create-ecr"|"create-quality",initialProjectId="")=>openWorkspaceTab({key:view,view,entityId:initialProjectId||undefined,title:workspaceLabels[view]});
@@ -328,10 +332,11 @@ export default function NewWorkViewApp(){
         </header>
         {statusNotice&&<p className="wv2-status-notice">{statusNotice}</p>}
         <nav className="wv2-view-tabs" aria-label="Work View">
-          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<button className={productionOpen?"active":""} onClick={()=>{setProductionOpen(true);setPanelOpen(false)}}><Workflow size={18}/>생산 작업공간</button>}
-          {viewTabs.map(([key,label,Icon])=><button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button>)}
+          {viewTabs.map(([key,label,Icon])=><button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{closeCustomerAi();setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button>)}
+          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<span className="production-tab-spacer"/>}
+          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&productionTabs.map(([key,label])=><button key={key} className={productionOpen&&productionTab===key?"active":""} onClick={()=>{closeCustomerAi();setProductionTab(key);setProductionOpen(true)}}>{label}</button>)}
         </nav>
-        {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?<section className="wv2-canvas production-canvas"><ProductionWorkspace key={project.id} project={project} onOpenFilter={openWorkspaceFilter}/></section>:<>
+        {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?<ProductionWorkspace key={project.id} project={project} tab={productionTab} onAi={openCustomerAi} onCloseAi={closeCustomerAi} onOpenFilter={openWorkspaceFilter}/>:<>
         <div className="wv2-toolbar">
           <button className="wv2-add" disabled={project.status!=="preparing"} onClick={()=>addTask()}><Plus size={18}/> 업무 추가 <ChevronDown size={18}/></button>
           <label><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="WBS, 업무, 담당자 검색"/></label>
@@ -355,7 +360,7 @@ export default function NewWorkViewApp(){
       </section>
     </section>
     <AiSelectionBar onStart={items=>{setAiDraft({key:Date.now(),contextItems:items,source:"V2 선택 업무"});setPanelTab("ai");setPanelOpen(true)}}/>
-    {panelOpen&&<WorkPanel project={project} projects={projects} task={selected} tasks={tasks} members={members} tab={panelTab} wide={panelWide} onWide={()=>setPanelWide(value=>!value)} onTab={setPanelTab} onTaskSelect={setSelectedId} onClose={closePanel} patchTask={patchTask} filters={filters} setFilters={setFilters} workspaceFilter={workspaceFilter} deliverableRegistrationRequest={deliverableRegistrationRequest} onDeliverableRegistrationHandled={()=>setDeliverableRegistrationRequest(null)} onDeliverableRegistrationCompleted={closePanel} aiDraft={aiDraft}/>} 
+    {panelOpen&&<WorkPanel project={project} projects={projects} task={selected} tasks={tasks} members={members} tab={panelTab} wide={panelWide} onWide={()=>setPanelWide(value=>!value)} onTab={setPanelTab} onTaskSelect={setSelectedId} onClose={closePanel} patchTask={patchTask} filters={filters} setFilters={setFilters} workspaceFilter={workspaceFilter} deliverableRegistrationRequest={deliverableRegistrationRequest} onDeliverableRegistrationHandled={()=>setDeliverableRegistrationRequest(null)} onDeliverableRegistrationCompleted={closePanel} aiDraft={aiDraft} aiContent={productionOpen&&workspaceView==="wbs"?customerAi:null}/>}
     {globalOpen&&<IntegratedGlobalSearch query={globalQuery} setQuery={setGlobalQuery} onClose={()=>{setGlobalOpen(false);setGlobalQuery("")}} onOpen={(result:IntegratedSearchResult)=>{if(!result.projectId)return;openSearchResult({id:result.id,kind:result.kind as "project"|"task"|"document"|"issue",projectId:result.projectId,taskId:result.taskId,eyebrow:result.eyebrow,title:result.title,meta:result.meta})}} onAi={(items,prompt)=>{setGlobalOpen(false);setGlobalQuery("");setAiDraft({key:Date.now(),contextItems:items,source:"통합검색",prompt});setPanelTab("ai");setPanelOpen(true)}}/>} 
     {membersOpen&&project&&<ProjectMembersMasterDialog project={project} onClose={()=>setMembersOpen(false)} onSaved={next=>{setMembers(next);setMembersOpen(false)}}/>}
     {confirmDialog&&<ConfirmDialog title={confirmDialog.title} message={confirmDialog.message} danger={confirmDialog.danger} onConfirm={()=>closeConfirm(true)} onCancel={()=>closeConfirm(false)}/>} 

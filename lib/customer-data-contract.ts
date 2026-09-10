@@ -15,7 +15,7 @@ export type CustomerDataRecord = {
   title: string; documentType: CustomerDocumentType; impactTarget: CustomerImpactTarget;
   fileName: string; fileSize: number; checksum: string; note: string | null;
   analysisStatus: "not_requested"; reviewStatus: "pending" | "reviewed";
-  appliedStatus: "not_applied"; createdBy: string; createdAt: number;
+  appliedStatus: "not_applied"; createdBy: string; createdByName?: string | null; createdAt: number;
   reviewedBy: string | null; reviewedAt: number | null;
 };
 export type CustomerDataRelation = {

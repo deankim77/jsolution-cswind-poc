@@ -64,6 +64,13 @@
       "when": 1789041600000,
       "tag": "0008_production_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789041600001,
+      "tag": "0009_customer_review",
+      "breakpoints": true
     }
   ]
 }

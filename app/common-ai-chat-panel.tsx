@@ -11,6 +11,10 @@ type ChatMessage={id:string;role:"user"|"assistant";content:string;artifactType?
 type ConversationUpdatedDetail={id:string;title:string;context:string;source:string;contextItems:CommonAiContextItem[]};
 
 type Props={
+  requestContext?:{projectId:string;recordId:string};
+  initialMessages?:{role:"user"|"assistant";content:string}[];
+  onResponse?:(result:unknown)=>void;
+  onSendingChange?:(sending:boolean)=>void;
   items:CommonAiContextItem[];
   projectName:string;
   source:string;
@@ -23,10 +27,10 @@ type Props={
 
 function safeFileBase(value:string){return `${(value||"AI-PMS").trim()}-AI결과`;}
 
-export default function CommonAiChatPanel({items,projectName,source,contextType="mixed",contextTitle,onRemove,onClear,emptyLabel="분석할 업무 문맥을 선택해 주세요."}:Props){
+export default function CommonAiChatPanel({items,projectName,source,contextType="mixed",contextTitle,onRemove,onClear,requestContext,initialMessages,onResponse,onSendingChange,emptyLabel="분석할 업무 문맥을 선택해 주세요."}:Props){
   const [conversationId,setConversationId]=useState("");
   const [conversationTitle,setConversationTitle]=useState("");
-  const [messages,setMessages]=useState<ChatMessage[]>([]);
+  const [messages,setMessages]=useState<ChatMessage[]>(()=>initialMessages?.map((m,i)=>({...m,id:`saved-${i}`}))??[]);
   const [query,setQuery]=useState("");
   const [sending,setSending]=useState(false);
   const sendingRef=useRef(false);
@@ -51,18 +55,19 @@ export default function CommonAiChatPanel({items,projectName,source,contextType=
   const send=async()=>{
     const message=query.trim();
     if(!message||sendingRef.current||!items.length)return;
-    sendingRef.current=true;setSending(true);setQuery("");
+    sendingRef.current=true;setSending(true);onSendingChange?.(true);setQuery("");
     const now=Date.now();
     setMessages(current=>[...current,{id:`user-${now}`,role:"user",content:message}]);
     try{
-      const response=await fetch("/api/ai/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({conversationId:conversationId||undefined,projectName,source,contextType,contextTitle:resolvedContextTitle,contextItems:items,message})});
+      const response=await fetch("/api/ai/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({conversationId:conversationId||undefined,projectName,source,contextType,contextTitle:resolvedContextTitle,contextItems:items,message,customerReview:requestContext})});
       const data=await response.json() as {conversationId?:string;answer?:string;error?:string;saved?:boolean;duplicate?:boolean};
       const nextId=data.conversationId||conversationId;
       const nextTitle=conversationTitle||message;
       if(nextId){setConversationId(nextId);if(!conversationTitle)setConversationTitle(nextTitle);}
       if(data.duplicate)return;
+      if(response.ok)onResponse?.(data);
       const answer=response.ok?(data.answer||"응답 내용이 없습니다."):(data.answer?`${data.answer}\n\nAI 연결 오류: ${data.error||"응답을 받지 못했습니다."}`:`AI 연결 오류: ${data.error||"응답을 받지 못했습니다."}`);
-      const artifactType=response.ok?detectAiArtifactType(message)||undefined:undefined;
+      const artifactType=response.ok&&!requestContext?detectAiArtifactType(message)||undefined:undefined;
       setMessages(current=>[...current,{id:`assistant-${Date.now()}`,role:"assistant",content:answer,artifactType}]);
       if(nextId){
         emitConversation({id:nextId,title:nextTitle,context:resolvedContextTitle,source,contextItems:items});
@@ -70,7 +75,7 @@ export default function CommonAiChatPanel({items,projectName,source,contextType=
       }
     }catch(error){
       setMessages(current=>[...current,{id:`error-${Date.now()}`,role:"assistant",content:`AI 연결 오류: ${error instanceof Error?error.message:"응답을 받지 못했습니다."}`}]);
-    }finally{sendingRef.current=false;setSending(false);}
+    }finally{sendingRef.current=false;setSending(false);onSendingChange?.(false);}
   };
 
   return <section className="common-ai-chat-panel">

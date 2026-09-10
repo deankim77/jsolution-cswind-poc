@@ -1,83 +1,47 @@
 "use client";
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {Factory,RefreshCw,Upload} from 'lucide-react';
-import {V2ViewTabs} from './v2-ui-foundation';
-import CustomerDataWorkspace from './customer-data-workspace';
+import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
+import {ArrowLeft,ChevronLeft,ChevronRight,Search,Sparkles,Check,RefreshCw,Save,Filter} from 'lucide-react';
+import CommonAiChatPanel from '../common-ai-chat-panel';
+import CustomerDataWorkspace,{CustomerSourcePreview,uploadTime} from './customer-data-workspace';
 import type {V2Project} from './project-workspaces';
-import type {WorkspaceFilterConfig} from './workspace-filter-panel';
 import type {CustomerDataList} from '../../lib/customer-data-contract';
+import {REVIEW_AREAS,REVIEW_TYPES,type ReviewState,type ReviewDraft,type ConfirmedReview} from '../../lib/customer-review-contract';
+import {FilterSelect,type WorkspaceFilterConfig} from './workspace-filter-panel';
 import './production-workspace.css';
-
-type Data=CustomerDataList&{
-  nodes:{id:string;code:string;name:string;kind:string;level:number}[];
-  assignments:{recordId:string;wbsCode:string;confirmedBy:string;confirmedAt:number}[];
-  proposals:{recordId:string;codes:string[];reason:string}[];
-};
-const tabs=[{value:'customer',label:'고객 Data'},{value:'review',label:'AI Data Review'},{value:'pbom',label:'PBOM'},{value:'trr',label:'TRR / 요구사항'},{value:'readiness',label:'Process Readiness'}];
-export default function ProductionWorkspace({project,onOpenFilter}:{project:V2Project;onOpenFilter:(config:WorkspaceFilterConfig)=>void}) {
-  const [data,setData]=useState<Data|null>(null),[stage,setStage]=useState(''),[tab,setTab]=useState('customer');
-  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[reload,setReload]=useState(0);
-  const [draft,setDraft]=useState<Record<string,string[]>>({});
-  const fileInput=useRef<HTMLInputElement>(null);
-  const url=`/api/projects/${encodeURIComponent(project.id)}`;
-  const load=useCallback(async(signal?:AbortSignal)=>{
-    const response=await fetch(`${url}/production`,{cache:'no-store',signal});const result=await response.json();
-    if(!response.ok)throw new Error(result.error||'생산 자료를 불러오지 못했습니다.');
-    if(!signal?.aborted){setData(result);setDraft({});}
-  },[url]);
-  useEffect(()=>{const controller=new AbortController();setError('');void load(controller.signal).catch(reason=>{if(!controller.signal.aborted)setError(reason.message)});return()=>controller.abort()},[load,reload]);
-  const changed=useCallback(()=>setReload(value=>value+1),[]);
-  async function importZip(file:File) {
-    setBusy(true);setError('');setNotice('최초 접수 자료를 등록 중입니다. 완료까지 이 화면을 유지하세요.');
-    try{
-      if(file.size>50*1024*1024)throw new Error('ZIP 파일은 50MB 이하로 선택하세요.');
-      const form=new FormData();form.set('file',file);
-      const response=await fetch(`${url}/customer-data/import`,{method:'POST',body:form});const result=await response.json();
-      if(!response.ok)throw new Error(result.error||'등록에 실패했습니다. 같은 ZIP으로 다시 시도하면 기존 파일은 건너뜁니다.');
-      setNotice(`최초 접수 ${result.total}개 · 신규 ${result.imported}개 · 기존 ${result.skipped}개. 변경 패키지와 검증 정답은 등록하지 않았습니다.`);
-      changed();
-    }catch(reason){setError(reason instanceof Error?reason.message:'등록에 실패했습니다.');setNotice('일부 자료가 등록되었을 수 있습니다. 같은 ZIP으로 재시도할 수 있습니다.');changed();}
-    finally{setBusy(false);if(fileInput.current)fileInput.current.value='';}
-  }
-  async function assign(recordId:string,codes:string[]) {
-    setBusy(true);setError('');
-    try{const response=await fetch(`${url}/production`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({recordId,codes})});const result=await response.json();if(!response.ok)throw new Error(result.error);await load();setNotice('공정 할당을 저장했습니다. 작업용 문서 승인은 별도로 진행합니다.');}
-    catch(reason){setError(reason instanceof Error?reason.message:'할당에 실패했습니다.');}finally{setBusy(false);}
-  }
-  const inStage=(code:string)=>!stage||code===stage||code.startsWith(`${stage}.`);
-  const applies=(code:string)=>inStage(code)||Boolean(stage&&stage.startsWith(`${code}.`));
-  const records=(data?.records??[]).filter(record=>!stage||data?.assignments.some(a=>a.recordId===record.id&&applies(a.wbsCode)));
-  const reviewRecords=(data?.records??[]).filter(record=>!stage||data?.assignments.some(a=>a.recordId===record.id&&applies(a.wbsCode))||data?.proposals.find(p=>p.recordId===record.id)?.codes.some(applies));
-  const nodes=data?.nodes.filter(node=>node.kind==='summary')??[];
-  const selectedName=nodes.find(node=>node.code===stage)?.name||'프로젝트 전체';
-  return <div className="production-layout">
-    <aside className="production-stages" aria-label="생산 공정"><button aria-pressed={!stage} onClick={()=>setStage('')}>전체 자료<small>{data?.records.length??0}개 원본</small></button>
-      {nodes.map(node=><button key={node.id} aria-pressed={stage===node.code} onClick={()=>setStage(node.code)} style={{marginLeft:node.level>1?12:0}}>{node.name}<small>{node.level===1?'생산 단계':'Sub ASSY'}</small></button>)}
-    </aside>
-    <section className="production-body"><header className="wv2-page-title"><div><small>PRODUCTION · {project.code}</small><h1><Factory size={20}/> 생산 작업공간</h1><p>{selectedName}</p></div><button disabled={busy} onClick={changed}><RefreshCw size={18}/>새로고침</button></header>
-      {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status" className="wv2-template-notice">{notice}</p>}
-      {!data&&!error&&<p>생산 자료를 불러오는 중…</p>}
-      {data&&<><div className="production-cards">
-        <button onClick={()=>setTab('review')}>AI Data Review<strong>{reviewRecords.filter(r=>!data.assignments.some(a=>a.recordId===r.id)).length}개 할당 검토</strong><small>현재는 파일명·템플릿 매핑 제안</small></button>
-        <button onClick={()=>setTab('pbom')}>PBOM<strong>{records.filter(r=>r.documentType==='bom').length}개 원본</strong><small>구조화 PBOM 생성 전</small></button>
-        <button onClick={()=>setTab('trr')}>TRR / 요구사항<strong>{records.filter(r=>['specification','requirement','report'].includes(r.documentType)).length}개 근거 자료</strong><small>TRR 분석·작성 전</small></button>
-        <button onClick={()=>setTab('readiness')}>Process Readiness<strong>{records.length}개 연결 자료</strong><small>실물 자재·작업 준비 확인 전</small></button>
-      </div>
-      <V2ViewTabs value={tab} onChange={setTab} items={tabs}/>
-      {tab==='customer'&&<><div className="cswind-data-card"><p>TC800 V4 ZIP에서 최초 도면 24개·부품 목록 1개·사양서 5개를 등록합니다. 같은 파일은 중복 등록하지 않습니다.</p><input ref={fileInput} type="file" accept=".zip" aria-label="TC800 V4 ZIP 선택" disabled={busy||!data.canReview} onChange={e=>{const file=e.target.files?.[0];if(file)void importZip(file)}}/><span><Upload size={18}/> 등록 자료는 전체에서 확인 후 공정에 할당하세요.</span></div>
-      {!busy&&<CustomerDataWorkspace key={`${project.id}:${reload}:${stage}`} project={project} onOpenFilter={onOpenFilter} embedded recordIds={stage?records.map(r=>r.id):undefined} onChanged={changed}/>}</>}
-      {tab==='review'&&<><p>AI 문서 내용 분석은 아직 연결되지 않았습니다. 아래는 TC800 파일명과 ASSY 코드에 따른 할당 제안입니다. 원본을 확인한 뒤 확정하세요.</p>
-        <table className="production-table"><thead><tr><th>원본 자료·근거</th><th>적용 공정 / ASSY</th><th>확정</th></tr></thead><tbody>{reviewRecords.map(record=>{
-          const proposal=data.proposals.find(p=>p.recordId===record.id);
-          const existing=data.assignments.filter(a=>a.recordId===record.id).map(a=>a.wbsCode);
-          const codes=draft[record.id]??(existing.length?existing:proposal?.codes??[]);
-          return <tr key={record.id}><td><a href={`${url}/customer-data/${record.id}`}>{record.fileName}</a><p>{proposal?.reason}</p><small>{existing.length?'할당 확정됨':'할당 검토 대기'}</small></td><td><select multiple aria-label={`${record.fileName} 공정 할당`} disabled={busy||!data.canReview} value={codes} onChange={e=>setDraft(value=>({...value,[record.id]:Array.from(e.target.selectedOptions,option=>option.value)}))}>{nodes.map(node=><option key={node.id} value={node.code}>{node.name}</option>)}</select><small>Ctrl 키로 여러 공정 선택</small></td><td><button disabled={busy||!data.canReview} onClick={()=>void assign(record.id,codes)}>할당 확정</button>{existing.length>0&&<button disabled={busy||!data.canReview} onClick={()=>void assign(record.id,[])}>할당 해제</button>}</td></tr>;
-        })}</tbody></table>{!reviewRecords.length&&<p>검토할 자료가 없습니다. 전체 → 고객 Data에서 자료를 등록하세요.</p>}</>}
-      {(tab==='pbom'||tab==='trr')&&<><p>{tab==='pbom'?'BOM 근거 원본과 ASSY 구성입니다. 부품·수량의 구조화 PBOM은 아직 생성되지 않았습니다.':'기술검토의 근거 자료입니다. 요구사항 추출과 TRR 보고서는 아직 생성되지 않았습니다.'}</p>
-        {tab==='pbom'&&<ul>{nodes.filter(n=>inStage(n.code)&&n.code.split('.')[0]!=='1'&&n.code.split('.')[0]!=='6').map(n=><li key={n.id}>{n.name}</li>)}</ul>}
-        <ul>{records.filter(r=>tab==='pbom'?['bom','drawing'].includes(r.documentType):['specification','requirement','report'].includes(r.documentType)).map(r=><li key={r.id}><a href={`${url}/customer-data/${r.id}`}>{r.fileName}</a> · {r.reviewStatus==='reviewed'?'원본 검토 완료':'검토 대기'}</li>)}</ul></>}
-      {tab==='readiness'&&<><p>자료 연결 현황입니다. 문서 업로드나 할당만으로 자재 입고·작업·검사 완료 처리하지 않습니다.</p><table className="production-table"><thead><tr><th>공정 / ASSY</th><th>연결 원본</th><th>작업·검사·자재 준비</th></tr></thead><tbody>{nodes.filter(n=>inStage(n.code)).map(node=><tr key={node.id}><td>{node.name}</td><td>{new Set(data.assignments.filter(a=>a.wbsCode===node.code||a.wbsCode.startsWith(`${node.code}.`)||node.code.startsWith(`${a.wbsCode}.`)).map(a=>a.recordId)).size}개</td><td>담당자 확인 필요</td></tr>)}</tbody></table></>}
-      </>}
-    </section>
-  </div>;
+export const productionTabs=[['customer','고객 Data'],['review','AI Data Review'],['pbom','PBOM'],['trr','TRR / 요구사항'],['readiness','Process Readiness'],['work','공정별 작업관리']] as const;
+export type ProductionTab=typeof productionTabs[number][0];
+export default function ProductionWorkspace({project,tab,onAi,onCloseAi,onOpenFilter}:{onOpenFilter:(config:WorkspaceFilterConfig)=>void;project:V2Project;tab:ProductionTab;onAi:(content:ReactNode)=>void;onCloseAi:()=>void}){
+ const [data,setData]=useState<CustomerDataList|null>(null),[reviews,setReviews]=useState<ReviewState[]>([]),[confirmed,setConfirmed]=useState<ConfirmedReview[]>([]),[reload,setReload]=useState(0),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[type,setType]=useState(''),[status,setStatus]=useState(''),[selected,setSelected]=useState(''),[checked,setChecked]=useState<string[]>([]),[draft,setDraft]=useState<ReviewDraft|null>(null),[itemIds,setItemIds]=useState<string[]>([]),[busy,setBusy]=useState(false),[confirmOpen,setConfirmOpen]=useState(false),[focus,setFocus]=useState<'split'|'source'|'draft'>('split'),[dirty,setDirty]=useState(false);
+ const [filterOpen,setFilterOpen]=useState(false),[filterDraft,setFilterDraft]=useState({type:'',status:''}),[previousDraft,setPreviousDraft]=useState<ReviewDraft|null>(null);
+ const draftRef=useRef<ReviewDraft|null>(null);
+ const mounted=useRef(true);useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
+ const url=`/api/projects/${project.id}/customer-data`,current=reviews.find(r=>r.recordId===selected),record=data?.records.find(r=>r.id===selected);
+ const refresh=useCallback(()=>setReload(x=>x+1),[]);
+ useEffect(()=>{const c=new AbortController();setError('');Promise.all([fetch(url,{signal:c.signal}),fetch(`${url}/review`,{signal:c.signal})].map(async r=>{const res=await r,d=await res.json();if(!res.ok)throw Error(d.error);return d})).then(([d,r])=>{setData(d);setReviews(r.reviews);setConfirmed(r.confirmed)}).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[url,reload]);
+ useEffect(()=>{setDraft(current?.draft??null);setDirty(false);setItemIds([]);setConfirmOpen(false)},[selected,current?.version]);
+ useEffect(()=>{onCloseAi()},[tab,selected]);
+ const rows=(data?.records??[]).filter(r=>{const d=reviews.find(v=>v.recordId===r.id)?.draft;return (!type||(d?.documentType??'unclassified')===type)&&(!status||(status==='analyzed'?Boolean(d):!d))&&`${r.fileName} ${d?.drawingNumber??''} ${d?.summary??''}`.toLowerCase().includes(query.toLowerCase())});
+ useEffect(()=>{setPreviousDraft(null)},[selected]);
+ useEffect(()=>{draftRef.current=current?.draft??null},[current]);
+ useEffect(()=>{if(!filterOpen)return;onOpenFilter({eyebrow:'AI DATA REVIEW',title:'문서 분석 필터',description:'문서 종류와 분석 상태를 선택하세요.',resultCount:(data?.records??[]).filter(r=>{const d=reviews.find(v=>v.recordId===r.id)?.draft;return (!filterDraft.type||(d?.documentType??'unclassified')===filterDraft.type)&&(!filterDraft.status||(filterDraft.status==='analyzed'?Boolean(d):!d))}).length,activeCount:Number(Boolean(filterDraft.type))+Number(Boolean(filterDraft.status)),onCancel:()=>setFilterOpen(false),onApply:()=>{setType(filterDraft.type);setStatus(filterDraft.status);setFilterOpen(false)},onReset:()=>setFilterDraft({type:'',status:''}),content:<><FilterSelect label="문서 종류" value={filterDraft.type} options={Object.entries(REVIEW_TYPES).map(([value,label])=>({value,label}))} onChange={type=>setFilterDraft(d=>({...d,type}))}/><FilterSelect label="분석 상태" value={filterDraft.status} options={[{value:'pending',label:'미분석'},{value:'analyzed',label:'분석 초안 있음'}]} onChange={status=>setFilterDraft(d=>({...d,status}))}/></>})},[filterOpen,filterDraft,data,reviews,onOpenFilter]);
+ const accept=(result:any)=>{if(!mounted.current)return;if(result.review){setPreviousDraft(draftRef.current);setReviews(values=>[result.review,...values.filter(r=>r.recordId!==result.review.recordId)]);setNotice('AI 분석 초안을 갱신했습니다. 확정 전 DATA입니다.');}};
+ const post=async(body:unknown)=>{const r=await fetch(`${url}/review`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw Error(d.error);return d;};
+ const run=async(action:()=>Promise<void>)=>{if(busy)return;setBusy(true);setError('');try{await action()}catch(e){setError((e as Error).message)}finally{if(mounted.current)setBusy(false)}};
+ const analyze=()=>run(async()=>{const result=await post({recordId:selected,recordIds:[...new Set([selected,...checked])],message:'선택 문서를 근거로 문서 종류를 분류하고 3~6번에 반영할 초안을 작성해 주세요. 원본에 없는 내용은 만들지 말고 불확실한 점을 표시하세요.'});accept(result)});
+ const openChat=()=>{if(!record||dirty)return;const ids=[...new Set([selected,...checked])];setFocus('draft');onAi(<CommonAiChatPanel key={`${project.id}:${selected}:${ids.join(',')}`} projectName={project.name} source="고객 Data Review" contextType="customer-review" contextTitle={record.fileName} items={ids.map(id=>({id,kind:'고객 원본',title:data?.records.find(r=>r.id===id)?.fileName||id}))} requestContext={{projectId:project.id,recordId:selected}} initialMessages={current?.messages} onResponse={accept} onSendingChange={value=>{if(mounted.current)setBusy(value)}}/>)};
+ if(tab==='customer')return <CustomerDataWorkspace key={project.id} project={project} embedded/>;
+ const confirmedRows=confirmed.filter(c=>c.item.area===tab&&!confirmed.some(n=>n.recordId===c.recordId&&n.item.id===c.item.id&&n.version>c.version));
+ return <><div className="wv2-toolbar">
+ {selected&&tab==='review'?<><button disabled={busy||dirty} onClick={()=>setSelected('')}><ArrowLeft size={18}/>목록으로</button><button aria-label="이전 문서" disabled={busy||dirty||rows.findIndex(r=>r.id===selected)<=0} onClick={()=>setSelected(rows[rows.findIndex(r=>r.id===selected)-1].id)}><ChevronLeft size={18}/></button><button aria-label="다음 문서" disabled={busy||dirty||rows.findIndex(r=>r.id===selected)>=rows.length-1} onClick={()=>setSelected(rows[rows.findIndex(r=>r.id===selected)+1].id)}><ChevronRight size={18}/></button><span className="review-file-name" title={record?.fileName}>{record?.fileName}</span><select aria-label="분석 보기 방식" value={focus} onChange={e=>setFocus(e.target.value as typeof focus)}><option value="split">원본 + 분석</option><option value="source">원본 크게</option><option value="draft">분석 크게</option></select><button disabled={busy||dirty||!data?.canReview} onClick={()=>void analyze()}><RefreshCw size={18}/>{current?'재검증':'AI 분석'}</button><button disabled={busy||dirty||!data?.canReview} onClick={openChat}><Sparkles size={18}/>AI 대화</button></>:<><label><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={tab==='review'?'파일명·도면번호·분석 내용 검색':'확정 DATA 검색'}/></label>{tab==='review'&&<button onClick={()=>{setFilterDraft({type,status});setFilterOpen(true)}}><Filter size={18}/>상세 필터{(type||status)&&<em>{Number(Boolean(type))+Number(Boolean(status))}</em>}</button>}<button onClick={refresh}><RefreshCw size={18}/>새로고침</button><span className="cswind-data-count">{tab==='review'?`${rows.length}개 문서`:`${confirmedRows.length}개 확정 항목`}</span></>}
+ </div><section className="wv2-canvas customer-review-canvas">
+ {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status" className="wv2-template-notice">{notice}</p>}{busy&&<p role="status">처리 중입니다. 잠시 기다려 주세요.</p>}
+ {tab==='review'?(record?<div className={`review-focus ${focus}`}>
+ {focus!=='draft'&&<div className="review-source"><CustomerSourcePreview projectId={project.id} record={record}/></div>}
+ {focus!=='source'&&<div className="review-draft">{draft?<><h2>분석 초안 · v{current?.version}</h2><label>문서 종류<select disabled={busy||!data?.canReview} value={draft.documentType} onChange={e=>{setDraft({...draft,documentType:e.target.value as ReviewDraft['documentType']});setDirty(true);onCloseAi()}}>{Object.entries(REVIEW_TYPES).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><p>도면번호: {draft.drawingNumber||'미확인'} · 문서 Revision: {draft.revisionLabel||'미확인'}</p><p>{draft.summary}</p>{draft.uncertainties.length>0&&<section className="review-uncertain"><h3>확인 필요</h3><ul>{draft.uncertainties.map((u,i)=><li key={i}>{u}</li>)}</ul></section>}
+ {draft.items.map(item=><article className="review-item" key={item.id}><label><input type="checkbox" disabled={busy||dirty} checked={itemIds.includes(item.id)} onChange={e=>setItemIds(ids=>e.target.checked?[...ids,item.id]:ids.filter(id=>id!==item.id))}/><strong>{REVIEW_AREAS[item.area]} · {item.title}</strong></label><textarea aria-label={`${item.title} 초안 수정`} disabled={busy||!data?.canReview} value={item.detail} onChange={e=>{setDraft({...draft,items:draft.items.map(i=>i.id===item.id?{...i,detail:e.target.value}:i)});setDirty(true);setItemIds([]);onCloseAi()}}/>{previousDraft?.items.find(i=>i.id===item.id)&&previousDraft.items.find(i=>i.id===item.id)?.detail!==item.detail&&<details><summary>이전 초안과 비교</summary><p>{previousDraft.items.find(i=>i.id===item.id)?.detail}</p></details>}<small>근거: {item.source}</small></article>)}{!draft.items.length&&<p>반영할 항목이 없습니다. AI 대화에서 원본을 다시 검토하세요.</p>}
+ <div className="review-decision"><button disabled={!dirty||busy} onClick={()=>void run(async()=>{accept(await post({action:'save',recordId:selected,version:current?.version,draft}));})}><Save size={18}/>초안 저장</button><button disabled={!dirty||busy} onClick={()=>{setDraft(current?.draft??null);setDirty(false)}}>수정 취소</button><button className="primary" disabled={dirty||busy||!data?.canReview||!itemIds.length} onClick={()=>{onCloseAi();setConfirmOpen(true)}}><Check size={18}/>선택 {itemIds.length}개 확정</button></div>
+ {confirmOpen&&<section className="review-confirm"><h3>다음 DATA를 확정합니다</h3><ul>{draft.items.filter(i=>itemIds.includes(i.id)).map(i=><li key={i.id}>{REVIEW_AREAS[i.area]} · {i.title}<p>{i.detail}</p></li>)}</ul><p>확정자·일시와 원본 근거가 기록됩니다. 기존 확정 이력은 유지됩니다.</p><button disabled={busy} onClick={()=>setConfirmOpen(false)}>취소</button><button disabled={busy} onClick={()=>void run(async()=>{await post({action:'confirm',recordId:selected,version:current?.version,itemIds});setConfirmOpen(false);setItemIds([]);setNotice('선택한 DATA가 3~6번 해당 영역에 반영되었습니다.');refresh()})}>확정 및 반영</button></section>}
+ </>:<div className="review-empty"><h2>원본을 확인하고 AI 분석을 시작하세요</h2><p>문서 분류·추출 DATA·근거와 확인사항을 준비합니다. 확정 전에는 3~6번에 반영하지 않습니다.</p><button disabled={busy||!data?.canReview} onClick={()=>void analyze()}><Sparkles size={18}/>AI 분석 시작</button></div>}</div>}
+ </div>:<><p className="production-help">문서 하나를 열어 분석하세요. Revision 비교가 필요하면 최대 5개를 선택한 뒤 기준 문서를 여세요. AI 대화는 기존 우측 패널에서 진행합니다.</p><table className="production-table"><thead><tr><th>비교 선택</th><th>원본 파일명</th><th>문서 종류</th><th>도면번호</th><th>분석 상태</th></tr></thead><tbody>{rows.map(r=>{const review=reviews.find(v=>v.recordId===r.id);return <tr key={r.id}><td><input aria-label={`${r.fileName} 비교 선택`} type="checkbox" checked={checked.includes(r.id)} disabled={!checked.includes(r.id)&&checked.length>=4} onChange={e=>setChecked(ids=>e.target.checked?[...ids,r.id]:ids.filter(id=>id!==r.id))}/></td><td><button onClick={()=>setSelected(r.id)}>{r.fileName}</button></td><td>{REVIEW_TYPES[review?.draft.documentType??'unclassified']}</td><td>{review?.draft.drawingNumber||'—'}</td><td>{review?'분석 초안 있음':'미분석'}</td></tr>})}{!rows.length&&<tr><td colSpan={5}>{!data&&!error?'자료를 불러오는 중…':'표시할 문서가 없습니다. 고객 Data에서 원본을 업로드하세요.'}</td></tr>}</tbody></table></>):<><p className="production-help">2번에서 담당자가 확정한 DATA입니다. 원본·결정 버전을 함께 보관합니다.{tab==='pbom'?' 현재는 확정 BOM 항목 목록이며, PART 마스터·BOM 편집기 연결은 후속 단계입니다.':''}</p><table className="production-table"><thead><tr><th>확정 항목</th><th>내용</th><th>원본 근거</th><th>확정자 / 일시</th></tr></thead><tbody>{confirmedRows.filter(c=>JSON.stringify(c.item).toLowerCase().includes(query.toLowerCase())).map(c=><tr key={c.id}><td>{c.item.title}<small>결정 v{c.version}</small></td><td className="review-detail-text">{c.item.detail}</td><td>{c.item.source}<a href={`${url}/${c.item.recordId}`}>원본 다운로드</a></td><td>{c.confirmedBy}<small>{uploadTime(c.confirmedAt)}</small></td></tr>)}{!confirmedRows.length&&<tr><td colSpan={4}>확정된 DATA가 없습니다. AI Data Review에서 검토 후 확정하세요.</td></tr>}</tbody></table></>}
+ </section></>;
 }

@@ -36,6 +36,7 @@ export type DocumentPreviewTab={
 };
 
 type Props={
+  sourceUrls?:{preview:string;download:string};
   projectId:string;
   tab:DocumentPreviewTab;
   item?:DocumentPreviewDeliverable;
@@ -48,7 +49,7 @@ type Props={
 const bytes=(value:number)=>value>=1024*1024?`${(value/1024/1024).toFixed(1)} MB`:value>=1024?`${Math.round(value/1024)} KB`:`${value||0} B`;
 const isDrawing=(item?:DocumentPreviewDeliverable)=>item?.documentKind==="drawing";
 
-export default function DocumentPreviewRenderer({projectId,tab,item,versions,onVersion,onRegisterRevision,viewerRef}:Props){
+export default function DocumentPreviewRenderer({projectId,tab,item,versions,onVersion,onRegisterRevision,viewerRef,sourceUrls}:Props){
   const version=versions.find(candidate=>candidate.id===tab.versionId)??versions[0];
   const [text,setText]=useState("");
   const [error,setError]=useState<{message:string;downloadAvailable:boolean}|null>(null);
@@ -65,7 +66,7 @@ export default function DocumentPreviewRenderer({projectId,tab,item,versions,onV
     setConversionError(version?.conversionError||"");
   },[version?.id,version?.conversionStatus,version?.conversionError]);
 
-  const url=version?`/api/projects/${projectId}/deliverables?versionId=${encodeURIComponent(version.id)}&preview=1`:"";
+  const url=sourceUrls?.preview||(version?`/api/projects/${projectId}/deliverables?versionId=${encodeURIComponent(version.id)}&preview=1`:"");
   const lower=version?.fileName.toLowerCase()||"";
   const kind=version?.contentType?.startsWith("image/")||/\.(png|jpe?g|gif|webp|svg)$/i.test(lower)
     ?"image"
@@ -98,7 +99,7 @@ export default function DocumentPreviewRenderer({projectId,tab,item,versions,onV
       .finally(()=>setLoading(false));
   },[version?.id,reloadKey]);
 
-  const download=version?`/api/projects/${projectId}/deliverables?versionId=${encodeURIComponent(version.id)}`:"";
+  const download=sourceUrls?.download||(version?`/api/projects/${projectId}/deliverables?versionId=${encodeURIComponent(version.id)}`:"");
   const retryConversion=async()=>{
     if(!version)return;
     setConversionSaving(true);
@@ -129,12 +130,12 @@ export default function DocumentPreviewRenderer({projectId,tab,item,versions,onV
     <header>
       <div><span><b>{item?.drawingCode?`${item.drawingCode} · ${item.name}`:item?.name||tab.title}</b><small>{version?.fileName||"Revision 없음"}{version?` · ${bytes(version.fileSize)}`:""}</small>{approvalMeta&&<em>{approvalMeta}</em>}</span></div>
       <div className="wv2-preview-actions">
-        <label>Revision <select value={version?.id||""} onChange={event=>onVersion(event.target.value)}>{versions.map(candidate=><option key={candidate.id} value={candidate.id}>Rev.{String(candidate.revision).padStart(2,"0")} · {candidate.fileName}</option>)}</select><ChevronDown size={18}/></label>
+        {!sourceUrls&&<label>Revision <select value={version?.id||""} onChange={event=>onVersion(event.target.value)}>{versions.map(candidate=><option key={candidate.id} value={candidate.id}>Rev.{String(candidate.revision).padStart(2,"0")} · {candidate.fileName}</option>)}</select><ChevronDown size={18}/></label>}
         <button title="축소" onClick={()=>{setFit(false);setZoom(value=>Math.max(50,(fit?100:value)-10))}}><Minus size={18}/></button>
         <button className="wv2-preview-zoom-label" title="화면 맞춤" onClick={()=>{setFit(true);setZoom(100)}}>{fit?"맞춤":`${zoom}%`}</button>
         <button title="확대" onClick={()=>{setFit(false);setZoom(value=>Math.min(200,(fit?100:value)+10))}}><ZoomIn size={18}/></button>
         <button title="전체 화면" onClick={()=>viewerRef.current?.requestFullscreen()}><Maximize2 size={18}/></button>
-        {item&&<button onClick={()=>onRegisterRevision(item)}><Upload size={18}/>{isDrawing(item)?"새 Rev 등록":"Revision 등록"}</button>}
+        {item&&!sourceUrls&&<button onClick={()=>onRegisterRevision(item)}><Upload size={18}/>{isDrawing(item)?"새 Rev 등록":"Revision 등록"}</button>}
         <a href={download} download><Download size={18}/>다운로드</a>
       </div>
     </header>

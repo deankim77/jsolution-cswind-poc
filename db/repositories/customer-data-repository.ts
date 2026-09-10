@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, getTableColumns } from "drizzle-orm";
 import { getDb } from "../index";
-import { auditLogs, projectMembers, projectsDb, projectTypes } from "../schema";
+import { auditLogs, projectMembers, projectsDb, projectTypes, users } from "../schema";
 import { customerRawData, customerRawDataRelations } from "../customer-data-schema";
 import { CustomerDataError, PRODUCTION_PROJECT_CODE } from "../../lib/customer-data-contract";
 
@@ -46,7 +46,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
     access: (scope: CustomerDataScope) => customerDataAccess(db, scope),
     async list(scope: CustomerDataScope) {
       const permissions = await customerDataAccess(db, scope);
-      const records = await db.select().from(customerRawData).where(scopeWhere(scope)).orderBy(desc(customerRawData.createdAt), desc(customerRawData.revision), desc(customerRawData.id));
+      const records = await db.select({...getTableColumns(customerRawData),createdByName:users.name}).from(customerRawData).leftJoin(users,and(eq(users.id,customerRawData.createdBy),eq(users.companyId,scope.companyId))).where(scopeWhere(scope)).orderBy(desc(customerRawData.createdAt), desc(customerRawData.revision), desc(customerRawData.id));
       const relations = await db.select().from(customerRawDataRelations).where(and(eq(customerRawDataRelations.companyId, scope.companyId), eq(customerRawDataRelations.projectId, scope.projectId)));
       return { ...permissions, records, relations };
     },
@@ -55,7 +55,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
       return db.transaction(async tx => {
         await customerDataAccess(tx, scope, true);
         if (importOnce) {
-          const [existing] = await tx.select().from(customerRawData).where(and(scopeWhere(scope),eq(customerRawData.checksum,data.checksum),eq(customerRawData.fileName,data.fileName)));
+          const [existing] = await tx.select().from(customerRawData).where(and(scopeWhere(scope),eq(customerRawData.checksum,data.checksum)));
           if (existing) return existing;
         }
         const previous = previousId ? await find(tx, scope, previousId) : null;

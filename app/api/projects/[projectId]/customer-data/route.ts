@@ -19,6 +19,6 @@ export async function POST(request: Request, { params }: Params) {
       return Response.json({ relation: await service.link(scope, input.sourceId, input.targetId) });
     }
     if (Number(request.headers.get("content-length")) > MAX_CUSTOMER_FILE_BYTES + 1024 * 1024) throw new CustomerDataError("파일은 50MB 이하로 등록하세요.", 413);
-    return Response.json({ record: await service.upload(scope, await request.formData()) }, { status: 201 });
+    return Response.json({ record: await service.upload(scope, await request.formData(), true) }, { status: 201 });
   } catch (reason) { return customerDataError(reason); }
 }
