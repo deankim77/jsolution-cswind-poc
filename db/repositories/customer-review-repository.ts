@@ -1,12 +1,12 @@
-import {applyConfirmedPbom,lockPbomCompany} from './pbom-repository';
+import {applyConfirmedPbom,withdrawConfirmedPbom,lockPbomCompany} from './pbom-repository';
 import {randomUUID} from 'node:crypto';
-import {and,eq,desc} from 'drizzle-orm';
+import {and,eq,desc,inArray} from 'drizzle-orm';
 import {getDb} from '../index';
 import {customerReviews,customerConfirmedData} from '../customer-review-schema';
 import {auditLogs} from '../schema';
 import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
 import {CustomerDataError} from '../../lib/customer-data-contract';
-import type {ReviewDraft,ReviewMessage} from '../../lib/customer-review-contract';
+import type {ReviewArea,ReviewDraft,ReviewMessage} from '../../lib/customer-review-contract';
 export function createCustomerReviewRepository(db=getDb()) {
  const where=(s:CustomerDataScope)=>and(eq(customerReviews.companyId,s.companyId),eq(customerReviews.projectId,s.projectId));
  return {
@@ -31,6 +31,17 @@ export function createCustomerReviewRepository(db=getDb()) {
  const now=Math.floor(Date.now()/1000);
  await tx.insert(customerConfirmedData).values(items.map(item=>({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,recordId,version,itemId:item.id,item,confirmedBy:s.userId,confirmedAt:now}))).onConflictDoNothing();
  await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({version,itemIds}),createdAt:now});return {ok:true};
+ });},
+ async cancel(s:CustomerDataScope,recordId:string,area:ReviewArea,confirmationIds:string[]){return db.transaction(async tx=>{
+ await lockPbomCompany(tx,s.companyId);
+ const permission=await customerDataAccess(tx,s,true);if(!permission.canReview)throw new CustomerDataError('PM 또는 PL만 확정을 취소할 수 있습니다.',403);
+ const active=(await tx.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId)))).filter(row=>row.item.area===area);
+ if(!active.length)return {ok:true,retained:0};
+ const expected=new Set(confirmationIds);if(expected.size!==active.length||active.some(row=>!expected.has(row.id)))throw new CustomerDataError('확정 내역이 변경되었습니다. 새로고침 후 다시 취소하세요.',409);
+ const result=area==='pbom'?await withdrawConfirmedPbom(tx,s,recordId):{retained:0};
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMATION_CANCELLED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,area,confirmed:active}),createdAt:Math.floor(Date.now()/1000)});
+ await tx.delete(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId),inArray(customerConfirmedData.id,active.map(row=>row.id))));
+ return {ok:true,...result};
  });}
  };
 }

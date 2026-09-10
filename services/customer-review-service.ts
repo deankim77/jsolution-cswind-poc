@@ -2,7 +2,7 @@ import {createCustomerDataRepository,type CustomerDataScope} from '../db/reposit
 import {createCustomerReviewRepository} from '../db/repositories/customer-review-repository';
 import {getStorageAdapter} from '../lib/storage-adapter';
 import {CustomerDataError} from '../lib/customer-data-contract';
-import {validateReviewDraft} from '../lib/customer-review-contract';
+import {REVIEW_AREAS,validateReviewDraft} from '../lib/customer-review-contract';
 import {requestCustomerReview,type ReviewFile} from './customer-review-provider';
 export function customerFileMime(name:string){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',pdf:'application/pdf',txt:'text/plain',csv:'text/plain',md:'text/plain'} as Record<string,string>)[ext||'']||'application/octet-stream';}
 export function createCustomerReviewService(raw=createCustomerDataRepository(),reviews=createCustomerReviewRepository(),storage=getStorageAdapter(),provider=requestCustomerReview){return {
@@ -20,5 +20,6 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  return {answer,review};
  },
  async save(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);const current=(await reviews.list(s)).reviews.find(r=>r.recordId===id);if(!current)throw new CustomerDataError('먼저 AI 분석을 실행하세요.');const allowed=(await raw.list(s)).records.map(r=>r.id);let draft;try{draft=validateReviewDraft(input.draft,allowed);}catch(e){throw new CustomerDataError((e as Error).message);}return reviews.save(s,id,input.version,draft,current.messages);},
+ async cancel(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);if(!Object.hasOwn(REVIEW_AREAS,input.area)||!Array.isArray(input.confirmationIds)||input.confirmationIds.some((id:unknown)=>typeof id!=='string'))throw new CustomerDataError('취소할 확정 내역을 확인하세요.');return reviews.cancel(s,id,input.area,input.confirmationIds);},
  async confirm(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);if(!Number.isInteger(input.version)||!Array.isArray(input.itemIds)||input.itemIds.some((x:unknown)=>typeof x!=='string'))throw new CustomerDataError('확정 요청을 확인하세요.');return reviews.confirm(s,id,input.version,input.itemIds);}
 };}

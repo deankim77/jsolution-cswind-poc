@@ -1,3 +1,4 @@
+import {planPbomWithdrawal,type WithdrawalBaseline} from '../../lib/pbom-withdrawal';
 import {randomUUID} from 'node:crypto';
 import type {AnyPgColumn} from 'drizzle-orm/pg-core';
 import {and,eq,inArray,sql} from 'drizzle-orm';
@@ -81,6 +82,9 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
  const occurrenceRows=await tx.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s));
  const previous=occurrenceRows.filter(o=>o.recordId===recordId);
  if(previous.length&&previous.every(o=>o.version===version)&&previous.length===items.length){await tx.delete(bomEditLocks).where(inArray(bomEditLocks.id,lockIds));return;}
+ const baselineLogs=previous.length?await tx.select().from(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityId,recordId),eq(auditLogs.action,'PBOM_CONFIRM_BASELINE'))):[];
+ const priorBaseline=baselineLogs.map(log=>JSON.parse(log.detail||'{}')).filter(log=>log.projectId===s.projectId).sort((a,b)=>(b.sequence??0)-(a.sequence??0)||b.version-a.version)[0];
+ const baseline:WithdrawalBaseline[]=[];
  const nodeParts=new Map<string,string>(),byKey=new Map((await identityRows(tx,s)).map(i=>[i.key,i]));
  for(const row of rows){const b=row.bom,key=bomIdentity(b);let match=byKey.get(key);
   if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit);await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
@@ -119,17 +123,52 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
  await tx.delete(customerBomOccurrences).where(and(scoped(customerBomOccurrences,s),eq(customerBomOccurrences.recordId,recordId)));
  for(const [index,group] of [...groups.values()].entries()){
   let edge=edges.find(e=>e.parentPartId===group.parent&&e.childPartId===group.child);
+  const before=edge?{...edge}:null;
   const owners=edge?occurrenceRows.filter(o=>o.bomItemId===edge!.id):[];
   if(edge&&(edge.quantity!==group.quantity||edge.unit!==group.unit)&&(!owners.length||owners.some(o=>o.recordId!==recordId)))throw new CustomerDataError('기존 또는 다른 문서의 BOM 수량과 다릅니다. BOM 편집기에서 조정 후 재확인하세요.',409);
   if(edge){await tx.update(productBomItems).set({quantity:group.quantity,unit:group.unit,updatedAt:now()}).where(eq(productBomItems.id,edge.id));}
   else [edge]=await tx.insert(productBomItems).values({id:randomUUID(),companyId:s.companyId,parentPartId:group.parent,childPartId:group.child,quantity:group.quantity,unit:group.unit,sortOrder:index,createdAt:now(),updatedAt:now()}).returning();
+  const original=priorBaseline?.edges?.find((b:WithdrawalBaseline)=>b.edgeId===edge!.id);
+  baseline.push({edgeId:edge!.id,before:original?original.before:before,after:{...edge!,quantity:group.quantity,unit:group.unit}});
   await tx.insert(customerBomOccurrences).values(group.rows.map(row=>({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,recordId,version,itemId:row.id,bomItemId:edge!.id,fact:row.bom,source:row.source,confirmedBy:s.userId,confirmedAt:now()})));
  }
  const allEdges=await tx.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId)),reachable=new Set<string>();const visit=(id:string)=>{if(reachable.has(id))return;reachable.add(id);allEdges.filter(e=>e.parentPartId===id).forEach(e=>visit(e.childPartId));};visit(root.rootPartId);
  const parts=await tx.select().from(productParts).where(and(eq(productParts.companyId,s.companyId),inArray(productParts.id,[...reachable])));
  const snapshot={rootPartId:root.rootPartId,parts:parts.map(({id,partNumber,name,partType,spec,unit,revision,status})=>({id,partNumber,name,partType,spec,unit,revision,status})).sort((a,b)=>a.partNumber.localeCompare(b.partNumber)),bom:allEdges.filter(e=>reachable.has(e.parentPartId)).map(({id,parentPartId,childPartId,quantity,unit,sortOrder,note})=>({id,parentPartId,childPartId,quantity,unit,sortOrder,note})),customerEvidence:await tx.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s))};
  const [max]=await tx.select({n:sql<number>`COALESCE(MAX(${bomRevisions.revisionSeq}),0)`}).from(bomRevisions).where(and(eq(bomRevisions.companyId,s.companyId),eq(bomRevisions.rootPartId,root.rootPartId)));const seq=Number(max.n)+1;
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'PBOM_CONFIRM_BASELINE',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,version,sequence:seq,edges:baseline}),createdAt:now()});
  await tx.insert(bomRevisions).values({id:randomUUID(),companyId:s.companyId,rootPartId:root.rootPartId,revisionSeq:seq,revision:`PBOM-${seq}`,structureHash:`customer-${recordId}-${version}`,snapshotJson:JSON.stringify(snapshot),changeNote:`고객 문서 확정 v${version}`,createdBy:s.userId,createdAt:now()});
  await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'PBOM_CONFIRMED',entityType:'PROJECT',entityId:s.projectId,detail:JSON.stringify({recordId,version,rootPartId:root.rootPartId,items:items.length}),createdAt:now()});
  await tx.delete(bomEditLocks).where(inArray(bomEditLocks.id,lockIds));
+}
+
+/** The review repository owns the transaction and company/project locks. */
+export async function withdrawConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string){
+ const allOccurrences=await tx.select().from(customerBomOccurrences).where(eq(customerBomOccurrences.companyId,s.companyId));
+ const owned=allOccurrences.filter(o=>o.projectId===s.projectId&&o.recordId===recordId);if(!owned.length)return {retained:0};
+ const edges=await tx.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId));
+ const [root]=await tx.select().from(productionBomRoots).where(scoped(productionBomRoots,s));
+ const affected=new Set(edges.filter(e=>owned.some(o=>o.bomItemId===e.id)).flatMap(e=>[e.parentPartId,e.childPartId]));if(root)affected.add(root.rootPartId);
+ let added=true;while(added){added=false;for(const e of edges)if(affected.has(e.parentPartId)&&!affected.has(e.childPartId)){affected.add(e.childPartId);added=true;}}
+ const lockIds=[...affected].map(()=>randomUUID());
+ const locks=await tx.insert(bomEditLocks).values([...affected].map((rootPartId,i)=>({id:lockIds[i],companyId:s.companyId,rootPartId,lockedBy:s.userId,lockedAt:now(),updatedAt:now()}))).onConflictDoNothing().returning();
+ if(locks.length!==affected.size)throw new CustomerDataError('BOM 편집을 마친 뒤 확정 취소를 다시 실행하세요.',409);
+ const logs=await tx.select().from(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityId,recordId),eq(auditLogs.action,'PBOM_CONFIRM_BASELINE')));
+ const baseline=logs.map(log=>JSON.parse(log.detail||'{}')).filter(log=>log.projectId===s.projectId&&owned.some(o=>o.version===log.version)).sort((a,b)=>(b.sequence??0)-(a.sequence??0)||b.version-a.version)[0];
+ const plan=planPbomWithdrawal(edges,owned.map(o=>o.bomItemId),allOccurrences.filter(o=>o.recordId!==recordId||o.projectId!==s.projectId).map(o=>o.bomItemId),baseline?.edges??[]);
+ // Audit captures the exact evidence and edge values before clearing active confirmation.
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'PBOM_CONFIRMATION_CANCELLED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,occurrences:owned,edges:edges.filter(e=>owned.some(o=>o.bomItemId===e.id)),plan}),createdAt:now()});
+ await tx.delete(customerBomOccurrences).where(and(scoped(customerBomOccurrences,s),eq(customerBomOccurrences.recordId,recordId)));
+ if(plan.remove.length)await tx.delete(productBomItems).where(and(eq(productBomItems.companyId,s.companyId),inArray(productBomItems.id,plan.remove)));
+ for(const edge of plan.restore)await tx.update(productBomItems).set({quantity:edge.quantity,unit:edge.unit,sortOrder:edge.sortOrder,note:edge.note,updatedAt:now()}).where(and(eq(productBomItems.companyId,s.companyId),eq(productBomItems.id,edge.id)));
+ if(root){
+  const allEdges=await tx.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId));
+  const reachable=new Set<string>();const visit=(id:string)=>{if(reachable.has(id))return;reachable.add(id);allEdges.filter(e=>e.parentPartId===id).forEach(e=>visit(e.childPartId))};visit(root.rootPartId);
+  const parts=await tx.select().from(productParts).where(and(eq(productParts.companyId,s.companyId),inArray(productParts.id,[...reachable])));
+  const evidence=await tx.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s));
+  const [max]=await tx.select({n:sql<number>`coalesce(max(${bomRevisions.revisionSeq}),0)`}).from(bomRevisions).where(and(eq(bomRevisions.companyId,s.companyId),eq(bomRevisions.rootPartId,root.rootPartId)));const seq=Number(max.n)+1;
+  await tx.insert(bomRevisions).values({id:randomUUID(),companyId:s.companyId,rootPartId:root.rootPartId,revisionSeq:seq,revision:`PBOM-${seq}`,structureHash:`cancel-${recordId}-${seq}`,snapshotJson:JSON.stringify({rootPartId:root.rootPartId,parts,bom:allEdges.filter(e=>reachable.has(e.parentPartId)),customerEvidence:evidence}),changeNote:'고객 문서 확정 취소',createdBy:s.userId,createdAt:now()});
+ }
+ await tx.delete(bomEditLocks).where(inArray(bomEditLocks.id,lockIds));
+ return {retained:plan.retained.length};
 }
