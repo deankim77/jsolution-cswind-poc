@@ -1,5 +1,6 @@
 "use client";
 import {useState,type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import {ChevronDown,ChevronRight,Layers3} from 'lucide-react';
 import PbomEditDialog from './pbom-edit-dialog';
 import {ColumnVisibilityMenu,HierarchyActions} from './table-view-controls';
@@ -27,7 +28,7 @@ const columns=[
 type ColumnKey=typeof columns[number]['key'];
 const defaultColumns=()=>new Set<ColumnKey>(columns.map(c=>c.key));
 
-export default function PbomTable({rows,root,variant="full",editable=false,onEdit,onOpenEditor,renderSource}:{rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
+export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource}:{toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [visibleColumns,setVisibleColumns]=useState(defaultColumns),[columnMenuOpen,setColumnMenuOpen]=useState(false);
  const review=variant==='review';
@@ -66,11 +67,12 @@ export default function PbomTable({rows,root,variant="full",editable=false,onEdi
    case 'source':return renderSource?.(row.sourceRecordIds??[row.recordId])??(row.sourceRecordIds??[row.recordId]).join(', ');
   }
  };
- return <>
-  <div className="pbom-view-controls" role="group" aria-label={review?"문서 BOM 보기 설정":"프로젝트 BOM 보기 설정"}>
+ const controls=<div className="pbom-view-controls" role="group" aria-label={review?"문서 BOM 보기 설정":"프로젝트 BOM 보기 설정"}>
    <ColumnVisibilityMenu options={options} visible={visibleColumns} onChange={setVisibleColumns} onReset={()=>setVisibleColumns(defaultColumns())} open={columnMenuOpen} onOpenChange={setColumnMenuOpen}/>
    <HierarchyActions disabled={!rows.length} onCollapseAll={()=>{setRootCollapsed(Boolean(root&&!review));setCollapsed(collapsedBomIdsAtDepth(rows,1));}} onExpandAll={()=>{setRootCollapsed(false);setCollapsed([]);}}/>
-  </div>
+  </div>;
+ return <>
+  {toolbarContainer?createPortal(controls,toolbarContainer):toolbarContainer===undefined?controls:null}
   <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table">
    <thead><tr>{shown.map(c=><th key={c.key}>{c.label}</th>)}{editable&&<th>검토</th>}</tr></thead>
    <tbody>
