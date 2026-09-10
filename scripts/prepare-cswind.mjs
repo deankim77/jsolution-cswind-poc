@@ -53,7 +53,22 @@ async function promptAdmin(url) {
 }
 async function connect(url) { const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 10000 }); await client.connect(); return client; }
 export function postgresToolEnv(value, inherited = process.env) {
-  const env = { ...inherited, PGDATABASE: value, PGAPPNAME: 'cswind-copy', PGCONNECT_TIMEOUT: '10', LC_ALL: 'C', LC_MESSAGES: 'C', LANGUAGE: 'C' };
+  const url = new URL(value);
+  const env = { ...inherited };
+  // PGDATABASE is a database name, not the connection URL supplied to node-postgres.
+  // Pass credentials explicitly to unattended tools; never prompt on their hidden console.
+  for (const key of Object.keys(env)) if (/^PG(HOST|HOSTADDR|PORT|DATABASE|USER|PASSWORD|SERVICE|SERVICEFILE)$/i.test(key)) delete env[key];
+  Object.assign(env, {
+    PGHOST: url.hostname.replace(/^\[|\]$/g, ''), PGPORT: url.port || '5432',
+    PGDATABASE: decodeURIComponent(url.pathname.slice(1)), PGUSER: decodeURIComponent(url.username),
+    PGPASSWORD: decodeURIComponent(url.password), PGAPPNAME: 'cswind-copy', PGCONNECT_TIMEOUT: '10',
+    LC_ALL: 'C', LC_MESSAGES: 'C', LANGUAGE: 'C'
+  });
+  const options = { sslmode: 'PGSSLMODE', sslrootcert: 'PGSSLROOTCERT', sslcert: 'PGSSLCERT', sslkey: 'PGSSLKEY', options: 'PGOPTIONS', channel_binding: 'PGCHANNELBINDING' };
+  for (const [key, option] of url.searchParams) {
+    invariant(key in options, 'Unsupported PostgreSQL URL option for copy tools: ' + key);
+    env[options[key]] = option;
+  }
   // An empty PGSERVICE still requests a service named "" in libpq.
   // Omit service settings altogether when using the explicit connection URL.
   for (const key of Object.keys(env)) if (['PGSERVICE', 'PGSERVICEFILE'].includes(key.toUpperCase())) delete env[key];
@@ -83,6 +98,7 @@ async function run(binary, args, env, log) {
     child.on('error', () => reject(new Error('Could not start ' + path.basename(binary))));
     child.on('close', code => code === 0 ? resolve() : reject(new Error(path.basename(binary) + ' failed; see the local recovery log.')));
   }).finally(async () => {
+    if (env.PGPASSWORD) output = output.replaceAll(env.PGPASSWORD, '[redacted]');
     for (const value of [env.PGDATABASE, env.DATABASE_URL]) {
       if (!value) continue;
       output = output.replaceAll(value, '[connection redacted]');
@@ -165,11 +181,11 @@ export async function prepare() {
     invariant(Number(expected.companies) > 0 && Number(expected.users) > 0 && Number(expected.projects) > 0, 'Source database has no expected business data.');
     const snapshot = (await source.query('SELECT pg_export_snapshot() AS id')).rows[0].id;
     console.log('[2/6] Creating a consistent source backup.');
-    await run(binaries.dump, ['--format=custom', '--no-owner', '--no-privileges', '--snapshot=' + snapshot, '--file=' + dumpFile], envFor(sourceUrl), path.join(recovery, 'dump.log'));
+    await run(binaries.dump, ['--no-password', '--format=custom', '--no-owner', '--no-privileges', '--snapshot=' + snapshot, '--file=' + dumpFile], envFor(sourceUrl), path.join(recovery, 'dump.log'));
     await source.query('COMMIT'); await source.end(); source = null;
     console.log('[3/6] Restoring to a NEW staging database.');
     await admin.query(`CREATE DATABASE ${quote(stageName)} OWNER ${quote(owner.app_user)} TEMPLATE template0`);
-    await run(binaries.restore, ['--dbname=' + stageName, '--no-owner', '--no-privileges', '--exit-on-error', dumpFile], { ...envFor(stageUrl), PGHOST: new URL(stageUrl).hostname, PGPORT: new URL(stageUrl).port || '5432', PGUSER: decodeURIComponent(new URL(stageUrl).username), PGPASSWORD: decodeURIComponent(new URL(stageUrl).password) }, path.join(recovery, 'restore.log'));
+    await run(binaries.restore, ['--no-password', '--dbname=' + stageName, '--no-owner', '--no-privileges', '--exit-on-error', dumpFile], envFor(stageUrl), path.join(recovery, 'restore.log'));
     stage = await connect(stageUrl);
     const copied = await counts(stage);
     for (const [table,n] of Object.entries(expected)) invariant(copied[table] === n, 'Copied row count differs: ' + table);

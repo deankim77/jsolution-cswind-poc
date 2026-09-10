@@ -11,12 +11,23 @@ test('PostgreSQL tools omit inherited or empty service selectors without changin
     const inherited = { PATH: 'existing-tools', PGSERVICE: service, PgServiceFile: 'old-service.conf' };
     const env = postgresToolEnv('postgresql://app@localhost/source', inherited);
     assert.equal(Object.keys(env).some(key => ['PGSERVICE', 'PGSERVICEFILE'].includes(key.toUpperCase())), false);
-    assert.equal(env.PGDATABASE, 'postgresql://app@localhost/source');
+    assert.equal(env.PGDATABASE, 'source');
     assert.equal(env.PATH, inherited.PATH);
     assert.equal(env.LC_ALL, 'C');
     assert.equal(inherited.PGSERVICE, service);
     assert.equal(inherited.PgServiceFile, 'old-service.conf');
   }
+});
+
+test('dump and restore receive explicit application credentials rather than a URL database name', () => {
+  const env = postgresToolEnv('postgresql://app:p%40ss%25word@localhost:5544/jsolution_ai_plm?sslmode=disable', { PGUSER: 'wrong', PGPASSWORD: 'wrong', PGHOSTADDR: '192.0.2.1' });
+  assert.equal(env.PGHOST, 'localhost');
+  assert.equal(env.PGPORT, '5544');
+  assert.equal(env.PGDATABASE, 'jsolution_ai_plm');
+  assert.equal(env.PGUSER, 'app');
+  assert.equal(env.PGPASSWORD, 'p@ss%word');
+  assert.equal(env.PGSSLMODE, 'disable');
+  assert.equal(env.PGHOSTADDR, undefined);
 });
 
 test('temporary admin credentials preserve server settings and handle reserved password characters', () => {
