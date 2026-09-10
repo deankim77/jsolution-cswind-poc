@@ -5,7 +5,7 @@ import {ChevronDown,ChevronRight,Layers3} from 'lucide-react';
 import {useColumnPreferences} from './use-column-preferences';
 import PbomEditDialog from './pbom-edit-dialog';
 import {ColumnVisibilityMenu,HierarchyActions} from './table-view-controls';
-import {collapsedBomIdsAtDepth,type BomFact,type BomRow} from '../../lib/pbom-contract';
+import {DRAWING_AVAILABILITY_LABELS,collapsedBomIdsAtDepth,type BomFact,type BomRow} from '../../lib/pbom-contract';
 
 const show=(n:number|null)=>n===null?'미확인':Number(n.toFixed(6)).toLocaleString();
 const labels={NEW:'NEW · 신규',EXISTING:'기존 부품',NEED_REVIEW:'확인 필요',MANUAL:'내부 추가'};
@@ -13,7 +13,7 @@ const columns=[
  {key:'part',label:'품번',locked:true},
  {key:'status',label:'구분 / 변경'},
  {key:'section',label:'Section',full:true},
- {key:'level',label:'BOM Level',full:true},
+ {key:'level',label:'LEVEL',full:true},
  {key:'description',label:'Item Description'},
  {key:'position',label:'Pos.'},
  {key:'item',label:'Item No.'},
@@ -66,7 +66,7 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
    case 'total':return `${show(row.totalQuantity)} ${b.unit}`;
    case 'weight':return `${show(review?b.weight:row.calculatedWeight)} ${b.weightUnit}`;
    case 'weightSource':return row.calculatedWeightSource;
-   case 'availability':return b.drawingAvailability;
+   case 'availability':return DRAWING_AVAILABILITY_LABELS[b.drawingAvailability];
    case 'source':return renderSource?.(row.sourceRecordIds??[row.recordId])??(row.sourceRecordIds??[row.recordId]).join(', ');
   }
  };

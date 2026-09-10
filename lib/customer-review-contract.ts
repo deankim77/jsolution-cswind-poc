@@ -17,3 +17,14 @@ export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDra
   if(JSON.stringify(d).length>200000)throw new Error('분석 결과가 너무 큽니다.');
   return {...d,items:d.items.map(defaultDocumentRootQuantity)};
 }
+
+/** Map an extracted drawing revision only to its unambiguous document root. */
+export function applyDrawingRootRevision(draft:ReviewDraft,recordId:string):ReviewDraft {
+ const revision=draft.revisionLabel.trim(),drawing=draft.drawingNumber.trim();
+ if(draft.documentType!=='drawing'||!drawing||!revision||/^(미확인|unknown|n\/a|—|-)$/i.test(revision))return draft;
+ const candidates=draft.items.filter(item=>item.recordId===recordId&&item.area==='pbom'&&item.bom?.parentId===null&&item.bom.partType==='ASSEMBLY'&&item.bom.drawingNumber.trim()===drawing);
+ if(candidates.length!==1)return draft;
+ const root=candidates[0];
+ if(root.bom!.componentRevision.trim())return draft;
+ return {...draft,items:draft.items.map(item=>item.id===root.id?{...item,source:`${item.source} · 도면 표제란 Revision: ${revision}`,bom:{...item.bom!,componentRevision:revision}}:item)};
+}

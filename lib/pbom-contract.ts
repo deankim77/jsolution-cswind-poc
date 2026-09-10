@@ -1,5 +1,12 @@
 /** Customer occurrence data. Internal identity and quantities calculated by the system are not AI fields. */
 export const DRAWING_AVAILABILITY=['Drawing Found','Missing Drawing','Standard Item','Purchased Item','Need Review'] as const;
+export const DRAWING_AVAILABILITY_LABELS:Record<typeof DRAWING_AVAILABILITY[number],string>={
+ 'Drawing Found':'도면 확인',
+ 'Missing Drawing':'도면 누락',
+ 'Standard Item':'표준품 · 도면 미확인',
+ 'Purchased Item':'구매품 · 도면 미확인',
+ 'Need Review':'도면 미확인',
+};
 export const WEIGHT_SOURCES=['Direct from Drawing','Parts List','Calculated from Child BOM','Not Available'] as const;
 export type BomFact={parentId:string|null;section:string;itemDescription:string;position:string;customerItemNumber:string;drawingNumber:string;componentRevision:string;quantity:number|null;unit:string;weight:number|null;weightUnit:string;weightSource:typeof WEIGHT_SOURCES[number];drawingAvailability:typeof DRAWING_AVAILABILITY[number];partType:'ASSEMBLY'|'PART';childrenComplete:boolean};
 export type BomInput={id:string;recordId:string;source:string;bom?:BomFact};
