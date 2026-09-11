@@ -6,7 +6,7 @@ import parser from '@typescript-eslint/parser';
 import hooks from 'eslint-plugin-react-hooks';
 const lint=source=>new Linter().verify(source,[{files:['**/*.tsx'],languageOptions:{parser,parserOptions:{ecmaVersion:'latest',sourceType:'module',ecmaFeatures:{jsx:true}}},plugins:{'react-hooks':hooks},rules:{'react-hooks/rules-of-hooks':'error'}}],{filename:'component.tsx'});
 test('production workspace and editor hooks remain unconditional across tab renders',()=>{
- for(const path of ['app/v2/production-workspace.tsx','app/v2/production-bulk-dialog.tsx','app/production-editor/page.tsx']){
+ for(const path of ['app/v2/production-workspace.tsx','app/v2/customer-data-workspace.tsx','app/v2/production-bulk-dialog.tsx','app/production-editor/page.tsx']){
   assert.deepEqual(lint(fs.readFileSync(new URL('../'+path,import.meta.url),'utf8')),[],path);
  }
 });
