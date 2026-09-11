@@ -20,11 +20,11 @@ const isTimeout=error=>error instanceof CustomerDataError&&error.status===504&&e
 
 test('analysis accepts a completed response with a five-minute budget',async t=>{
  const controller=setup(t);
- const result={answer:'분석 완료',draft:{items:[]}};
+ const result={answer:'부품 연결 관계는 도면에서 명확하지 않습니다.'};
  t.mock.method(globalThis,'fetch',async(url,init)=>{
   assert.equal(init.signal,controller.signal);
-  assert.equal(JSON.parse(init.body).max_output_tokens,10000);
-  return Response.json({output:[{content:[{type:'output_text',text:JSON.stringify(result)}]}]});
+  assert.equal(JSON.parse(init.body).max_output_tokens,4000);
+  return Response.json({output:[{content:[{type:'output_text',text:result.answer}]}]});
  });
  assert.deepEqual(await requestCustomerReview('분석',[]),result);
 });
@@ -44,10 +44,10 @@ test('unrelated connection errors are not mislabeled as timeouts',async t=>{
  t.mock.method(globalThis,'fetch',async()=>{throw error;});
  await assert.rejects(requestCustomerReview('분석',[]),value=>value===error);
 });
-test('invalid and incomplete AI responses remain rejected',async t=>{
+test('empty and incomplete AI responses remain rejected',async t=>{
  setup(t);
  const fetch=t.mock.method(globalThis,'fetch',async()=>Response.json({status:'incomplete'}));
  await assert.rejects(requestCustomerReview('분석',[]),error=>error.status===422);
- fetch.mock.mockImplementation(async()=>Response.json({output_text:'invalid JSON'}));
+ fetch.mock.mockImplementation(async()=>Response.json({output_text:''}));
  await assert.rejects(requestCustomerReview('분석',[]),error=>error.status===422);
 });

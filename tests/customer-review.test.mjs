@@ -22,10 +22,10 @@ test('AI analysis saves only a draft; no confirmation is invoked',async()=>{
  const service=createCustomerReviewService(raw,reviews,storage,async()=>{const d=draft();d.items[0].area='trr';return {answer:'초안',draft:d}});
  const r=await service.analyze(scope,'raw-1',['raw-1'],'분석');assert.equal(r.review.version,1);assert.equal(saved,1);assert.equal(confirmed,0);
 });
-test('AI failures and invalid source citations never overwrite saved draft',async()=>{
- let saved=0;const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})};const reviews={list:async()=>({reviews:[]}),save:async()=>{saved++}};const storage={get:async()=>({body:new Blob(['%PDF']).stream()})};
- await assert.rejects(createCustomerReviewService(raw,reviews,storage,async()=>{throw Error('unavailable')}).analyze(scope,'raw-1',['raw-1'],'분석'));
- const bad=draft();bad.items[0].recordId='not-selected';await assert.rejects(createCustomerReviewService(raw,reviews,storage,async()=>({draft:bad})).analyze(scope,'raw-1',['raw-1'],'분석'));assert.equal(saved,0);
+test('failed or empty analysis never overwrites existing data',async()=>{
+ let saved=0;const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})},reviews={list:async()=>({reviews:[]}),save:async()=>saved++},storage={get:async()=>({body:new Blob(['pdf']).stream()})};
+ for(const provider of [async()=>{throw Error('failed')},async()=>({answer:''})])await assert.rejects(createCustomerReviewService(raw,reviews,storage,provider).analyze(scope,'raw-1',['raw-1'],'분석'));
+ assert.equal(saved,0);
 });
 test('bulk reception needs only file and reports duplicates while cleaning extra storage',async()=>{
  const deleted=[];const repository={access:async()=>({canUpload:true}),create:async(s,d,p,r,once)=>{assert.equal(d.title,'drawing.png');assert.equal(d.documentType,'other');assert.equal(d.impactTarget,'unclassified');assert.equal(once,true);return {...d,id:'existing',companyId:'c'}}};
@@ -33,7 +33,7 @@ test('bulk reception needs only file and reports duplicates while cleaning extra
  const result=await createCustomerDataService(repository,storage).upload(scope,form,true);assert.equal(result.duplicate,true);assert.equal(deleted.length,1);assert.equal(result.fileKey,undefined);
 });
 
-test('new AI responses cannot save unstructured BOM facts or use output examples as technical input',async()=>{
+test('analysis rejects empty answers and output examples as technical input',async()=>{
  let saved=0;const reviews={list:async()=>({reviews:[]}),save:async()=>{saved++}};
  const storage={get:async()=>({body:new Blob(['%PDF']).stream()})};
  const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x',sourcePurpose:'input'})};
@@ -58,10 +58,10 @@ test('analysis rejects multiple originals before loading files',async()=>{
  const service=createCustomerReviewService({access:async()=>({canReview:true}),get:()=>assert.fail('must reject before file read')},{},{},()=>assert.fail('must not call AI'));
  await assert.rejects(service.analyze(scope,'raw-1',['raw-1','raw-2'],'분석'),error=>error.status===400);
 });
-test('compact reanalysis prompt keeps identity references but omits prior long answers',()=>{
- const {buildCustomerAnalysisPrompt}=require('../services/customer-review-prompts.ts');
- const d=draft();d.summary='old-summary-marker';d.items[0].detail='old-detail-marker';
- const prompt=buildCustomerAnalysisPrompt('raw-1',d,'분석');
- assert.ok(prompt.includes('part-1'));assert.ok(!prompt.includes('old-summary-marker'));assert.ok(!prompt.includes('old-detail-marker'));
- assert.ok(prompt.includes('componentRevision'));assert.ok(prompt.includes('useTargets'));
+test('plain analysis preserves existing extracted work without forced categories',async()=>{
+ const old=draft(),answer='연결 관계는 도면에서 확인할 수 없습니다.';
+ const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})};
+ const reviews={list:async()=>({reviews:[{recordId:'raw-1',version:2,draft:old,messages:[]}]}),save:async(s,id,v,d)=>{assert.equal(v,2);assert.deepEqual(d.items,old.items);assert.equal(d.summary,answer);assert.equal(d.analysisMode,'text');return {draft:d}}};
+ const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob(['pdf']).stream()})},async prompt=>{assert.ok(!prompt.includes('JSON'));assert.ok(!prompt.includes('useTargets'));return {answer}});
+ await service.analyze(scope,'raw-1',['raw-1'],'분석');assert.equal(old.summary,'원본 분석');
 });
