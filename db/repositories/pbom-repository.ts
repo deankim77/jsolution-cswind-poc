@@ -77,7 +77,7 @@ export async function numberApprovedPbom(tx:Tx,s:CustomerDataScope,items:ReviewI
  for(const item of items){if(!item.bom)continue;const b=item.bom,key=bomIdentity(b),alias=`APPROVED:${item.recordId}:${item.id}`;
   let match=known.get(key)||known.get(alias);
   if(!match){
-   const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.material?.trim()||'');
+   const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.itemDescription.trim());
    await tx.update(productParts).set({revision:'00'}).where(eq(productParts.id,part.id));
    match={key:key||alias,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};
   }
@@ -112,7 +112,7 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
  const baseline:WithdrawalBaseline[]=[];
  const nodeParts=new Map<string,string>(),byKey=new Map((await identityRows(tx,s)).map(i=>[i.key,i]));
  for(const row of rows){const b=row.bom,key=bomIdentity(b);let match=byKey.get(key);
-  if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.material?.trim()||'');await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
+  if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.itemDescription.trim());await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
   else {
    const [part]=await tx.select().from(productParts).where(and(eq(productParts.id,match.partId),eq(productParts.companyId,s.companyId)));
    const role=['ASSEMBLY','SUB_ASSEMBLY'].includes(part.partType)?'ASSEMBLY':'PART';

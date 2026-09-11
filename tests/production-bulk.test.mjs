@@ -127,13 +127,13 @@ test('approval numbering accepts missing quantity/unit, is idempotent, and survi
  vm.runInNewContext(ts.transpileModule(functionCode,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
   module,exports:module.exports,Map,Set,identityRows:async()=>identities,
   bomIdentity:b=>b.customerItemNumber?`ITEM:${b.customerItemNumber}`:'',randomUUID:()=>String(identities.length),
-  createNumberedPart:async(tx,s,name,partType,unit)=>{const part={id:`p${parts.length}`,partNumber:`P-${parts.length}`,name,unit};parts.push(part);return part},
+  createNumberedPart:async(tx,s,name,partType,unit,spec)=>{const part={id:`p${parts.length}`,partNumber:`P-${parts.length}`,name,unit,spec};parts.push(part);return part},
   productParts:{id:'id'},customerPartIdentities:{},eq:(col,value)=>value
  });
  const tx={update:()=>({set:values=>({where:async id=>Object.assign(parts.find(p=>p.id===id),values)})}),insert:()=>({values:async value=>identities.push({...value,key:value.customerKey,partNumber:parts.find(p=>p.id===value.partId).partNumber})})};
  const items=approvedDoc('missing',1).map(r=>({...r.item,bom:{...r.item.bom,customerItemNumber:'',quantity:null,unit:''}}));
  await module.exports.numberApprovedPbom(tx,scope,items);await module.exports.numberApprovedPbom(tx,scope,items);
- assert.equal(parts.length,1);assert.equal(parts[0].unit,'');assert.equal(parts[0].revision,'00');
+ assert.equal(parts.length,1);assert.equal(parts[0].unit,'');assert.equal(parts[0].revision,'00');assert.equal(parts[0].spec,items[0].bom.itemDescription.trim());
  items[0].bom.customerItemNumber='CUSTOMER-1';await module.exports.numberApprovedPbom(tx,scope,items);
  assert.equal(parts.length,1);assert.equal(identities.find(i=>i.key==='ITEM:CUSTOMER-1').partId,parts[0].id);
 });
