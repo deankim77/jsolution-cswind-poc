@@ -2,7 +2,7 @@ import {createCustomerDataRepository,type CustomerDataScope} from '../db/reposit
 import {createCustomerReviewRepository} from '../db/repositories/customer-review-repository';
 import {getStorageAdapter} from '../lib/storage-adapter';
 import {CustomerDataError} from '../lib/customer-data-contract';
-import {REVIEW_AREAS,REVIEW_TYPES,validateReviewDraft,type ReviewDraft} from '../lib/customer-review-contract';
+import {REVIEW_AREAS,REVIEW_TYPES,validateReviewDraft} from '../lib/customer-review-contract';
 import {buildCustomerAnalysisPrompt} from './customer-review-prompts';
 import {requestCustomerReview,type ReviewFile} from './customer-review-provider';
 export function customerFileMime(name:string){const ext=name.toLowerCase().split('.').pop();return ({png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',pdf:'application/pdf',txt:'text/plain',csv:'text/plain',md:'text/plain'} as Record<string,string>)[ext||'']||'application/octet-stream';}
@@ -47,13 +47,18 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  if(typeof recordId!=='string'||!Array.isArray(ids)||ids.some(id=>typeof id!=='string')||!ids.includes(recordId)||ids.length!==1||typeof message!=='string'||!message.trim()||message.length>8000)throw new CustomerDataError('분석할 원본 문서 1건과 요청을 확인하세요.');
  const unique=[recordId],files=await loadFiles(s,unique);
  const reviewState=await reviews.list(s),current=reviewState.reviews.find(r=>r.recordId===recordId);
- const prompt=buildCustomerAnalysisPrompt();
- const result=await provider(prompt,files);
- if(typeof result.answer!=='string'||!result.answer.trim())throw new CustomerDataError('AI 응답 내용이 비어 있어 저장하지 않았습니다.',422);
- const answer=result.answer.trim();
- // Store the explanation without regenerating or validating AI-produced BOM objects.
- // Existing extracted/confirmed work is preserved; new documents start with no extracted items.
- const draft:ReviewDraft={...(current?.draft??{documentType:'unclassified',drawingNumber:'',revisionLabel:'',summary:'',missingData:[],uncertainties:[],items:[]}),analysisMode:'text',summary:answer};
+ const prompt=buildCustomerAnalysisPrompt(recordId);
+ const result=await provider(prompt,files,true);
+ let draft;
+ try{
+  draft=validateReviewDraft(result.draft,unique);
+  if(draft.items.some(i=>i.area==='pbom'&&!i.bom))throw Error('PBOM 항목에 부품 정보가 없습니다.');
+ }catch(reason){
+  const detail=reason instanceof Error?reason.message:'분석 결과 형식 오류';
+  console.error('[customer-review-validation]',{recordId,reason:detail});
+  throw new CustomerDataError(`분석 결과를 저장하지 않았습니다: ${detail}`,422);
+ }
+ const answer=typeof result.answer==='string'&&result.answer.trim()?result.answer.trim():'파트리스트와 원본 내용을 추출했습니다.';
  const review=await reviews.save(s,recordId,current?.version??0,draft,[...(current?.messages??[]),{role:'user',content:message},{role:'assistant',content:answer}],'analysis');
  return {answer,review};
  },

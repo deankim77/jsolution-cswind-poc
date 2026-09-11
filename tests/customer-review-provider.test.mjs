@@ -51,3 +51,10 @@ test('empty and incomplete AI responses remain rejected',async t=>{
  fetch.mock.mockImplementation(async()=>Response.json({output_text:''}));
  await assert.rejects(requestCustomerReview('분석',[]),error=>error.status===422);
 });
+
+test('PBOM analysis parses JSON while ordinary explanations stay plain text',async t=>{
+ setup(t);
+ const draft={documentType:'drawing',revisionLabel:'V02',items:[]};
+ t.mock.method(globalThis,'fetch',async(url,init)=>{const body=JSON.parse(init.body);assert.equal(body.max_output_tokens,10000);assert.equal(body.reasoning.effort,'minimal');return Response.json({output_text:JSON.stringify({answer:'추출',draft})});});
+ assert.deepEqual(await requestCustomerReview('파트리스트',[],true),{answer:'추출',draft});
+});

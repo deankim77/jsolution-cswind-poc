@@ -58,10 +58,16 @@ test('analysis rejects multiple originals before loading files',async()=>{
  const service=createCustomerReviewService({access:async()=>({canReview:true}),get:()=>assert.fail('must reject before file read')},{},{},()=>assert.fail('must not call AI'));
  await assert.rejects(service.analyze(scope,'raw-1',['raw-1','raw-2'],'분석'),error=>error.status===400);
 });
-test('plain analysis preserves existing extracted work without forced categories',async()=>{
- const old=draft(),answer='연결 관계는 도면에서 확인할 수 없습니다.';
+test('part list is saved using the existing PBOM contract without revision correction',async()=>{
+ const bom={parentId:null,section:'',itemDescription:'JIB',position:'',customerItemNumber:'JIB-A',drawingNumber:'JIB-01',componentRevision:'V02',quantity:1,unit:'EA',weight:null,weightUnit:'',weightSource:'Not Available',drawingAvailability:'Drawing Found',partType:'ASSEMBLY',childrenComplete:false};
+ const result=draft();result.revisionLabel='V02';result.items[0].bom=bom;
  const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})};
- const reviews={list:async()=>({reviews:[{recordId:'raw-1',version:2,draft:old,messages:[]}]}),save:async(s,id,v,d)=>{assert.equal(v,2);assert.deepEqual(d.items,old.items);assert.equal(d.summary,answer);assert.equal(d.analysisMode,'text');return {draft:d}}};
- const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob(['pdf']).stream()})},async prompt=>{assert.ok(!prompt.includes('JSON'));assert.ok(!prompt.includes('useTargets'));return {answer}});
- await service.analyze(scope,'raw-1',['raw-1'],'분석');assert.equal(old.summary,'원본 분석');
+ const reviews={list:async()=>({reviews:[]}),save:async(s,id,v,d)=>{assert.deepEqual(d.items[0].bom,bom);assert.equal(d.revisionLabel,'V02');return {draft:d}}};
+ const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob(['pdf']).stream()})},async(prompt,files,structured)=>{assert.equal(structured,true);assert.ok(prompt.includes('Rev/Revision'));assert.ok(prompt.includes('Ver/Version'));return {answer:'추출',draft:result}});
+ await service.analyze(scope,'raw-1',['raw-1'],'분석');
+});
+test('validation errors retain their reason and do not overwrite prior data',async()=>{
+ const bad=draft();bad.items[0].recordId='other';
+ const service=createCustomerReviewService({access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})},{list:async()=>({reviews:[]}),save:()=>assert.fail('must not save')},{get:async()=>({body:new Blob(['pdf']).stream()})},async()=>({answer:'추출',draft:bad}));
+ await assert.rejects(service.analyze(scope,'raw-1',['raw-1'],'분석'),e=>e.status===422&&e.message.includes('분석 항목의 분류·근거'));
 });
