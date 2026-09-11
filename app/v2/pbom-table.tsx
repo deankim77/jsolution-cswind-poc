@@ -21,6 +21,7 @@ const columns=[
  {key:'drawing',label:'Drawing No.'},
  {key:'revision',label:'CompRev'},
  {key:'quantity',label:'Qty Per Unit'},
+ {key:'unit',label:'수량 단위',locked:true},
  {key:'total',label:'Total Qty / Section'},
  {key:'weight',label:'Weight'},
  {key:'weightSource',label:'Weight Source / Calculation Basis'},
@@ -29,8 +30,8 @@ const columns=[
 ] as const;
 type ColumnKey=typeof columns[number]['key'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
-const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity'];
-const lockedColumnKeys:readonly ColumnKey[]=['part'];
+const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
+const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
 export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource}:{toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
@@ -65,8 +66,9 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
    case 'item':return b.customerItemNumber||'—';
    case 'drawing':return b.drawingNumber||'—';
    case 'revision':return b.componentRevision||'미확인';
-   case 'quantity':return `${show(b.quantity)} ${b.unit}`;
-   case 'total':return `${show(row.totalQuantity)} ${b.unit}`;
+   case 'quantity':return show(b.quantity);
+   case 'unit':return b.unit.trim()||'미확인';
+   case 'total':return show(row.totalQuantity);
    case 'weight':return `${show(review?b.weight:row.calculatedWeight)} ${b.weightUnit}`;
    case 'weightSource':return row.calculatedWeightSource;
    case 'availability':return DRAWING_AVAILABILITY_LABELS[b.drawingAvailability];
