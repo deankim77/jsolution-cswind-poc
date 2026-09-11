@@ -1,4 +1,5 @@
 "use client";
+import {readApiJson} from '../../lib/read-api-json';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {isAnalysisPending,type CustomerAnalysisJob} from '../../lib/customer-analysis-job';
 
@@ -12,8 +13,9 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
   const poll=async()=>{
    const polledAt=Date.now();
    try{
-    const response=await fetch(`${url}/analysis-jobs`,{signal:controller.signal,cache:'no-store'}),data=await response.json();
+    const response=await fetch(`${url}/analysis-jobs`,{signal:controller.signal,cache:'no-store'}),data=await readApiJson(response);
     if(!response.ok)throw Error(data.error||'분석 상태를 불러오지 못했습니다.');
+    if(!Array.isArray(data?.jobs))throw Error('분석 상태 응답에 작업 목록이 없습니다.');
     if(disposed)return;
     setPollError('');
     setJobs(previous=>{
@@ -37,7 +39,7 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
   const pending:CustomerAnalysisJob={id:`submitting:${recordId}`,recordId,status:'queued',startedAt:Date.now()};
   setJobs(values=>[...values.filter(j=>j.recordId!==recordId),pending]);
   try{
-   const response=await fetch(`${url}/analysis-jobs`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({recordId,message})}),data=await response.json();
+   const response=await fetch(`${url}/analysis-jobs`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({recordId,message})}),data=await readApiJson(response);
    if(!response.ok)throw Error(data.error||'분석을 시작하지 못했습니다.');
    if(activeUrl.current===url)setJobs(values=>[...values.filter(j=>j.recordId!==recordId),data.job]);
   }catch(reason){

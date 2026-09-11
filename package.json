@@ -52,7 +52,8 @@
     "data:seed:hdem-all": "npm run data:seed:hdem && npm run data:seed:hdem-docs",
     "dev:cswind": "vite --config vite.node.config.ts --configLoader native --port 5176 --strictPort",
     "db:migrate:cswind": "node scripts/migrate-cswind.mjs",
-    "prepare:cswind": "node scripts/prepare-cswind.mjs"
+    "prepare:cswind": "node scripts/prepare-cswind.mjs",
+    "predev:cswind": "node scripts/patch-vinext-request.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
