@@ -46,8 +46,19 @@ export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDra
   }
   if(!Array.isArray(d.items)||d.items.length>300)invalid('items','최대 300개의 분석 항목 배열이 필요합니다.');
   if(!d||!Object.hasOwn(REVIEW_TYPES,d.documentType)||(d.documentTypeConfirmed!==undefined&&typeof d.documentTypeConfirmed!=='boolean')||typeof d.drawingNumber!=='string'||typeof d.revisionLabel!=='string'||typeof d.summary!=='string'||(d.missingData!==undefined&&(!Array.isArray(d.missingData)||d.missingData.length>50||d.missingData.some(x=>!x||typeof x.field!=='string'||!x.field.trim()||typeof x.reason!=='string'||!x.reason.trim())))||!Array.isArray(d.uncertainties)||d.uncertainties.some(x=>typeof x!=='string')||!Array.isArray(d.items)||d.items.length>300)throw new Error('분석 결과 형식을 확인하세요.');
-  const items=(d.items as unknown as StoredReviewItem[]).map(normalizeReviewItem),ids=new Set<string>();
-  for(const i of items){if(!i||!i.id||ids.has(i.id)||!Object.hasOwn(REVIEW_AREAS,i.area)||!allowedIds.includes(i.recordId)||(['title','detail','source'] as const).some(k=>typeof i[k]!=='string'||!i[k].trim()))throw new Error('분석 항목의 분류·근거를 확인하세요.');if(i.area==='extract'&&(!i.useTargets?.length||i.useTargets.some(target=>!(REVIEW_USE_TARGETS as readonly string[]).includes(target))))throw new Error('AI 추출사항의 활용 대상을 확인하세요.');ids.add(i.id);}
+  const ids=new Set<string>();
+  const items=(d.items as unknown as StoredReviewItem[]).map((value,index)=>{
+   const field=`items[${index+1}]`;
+   if(!value||typeof value!=='object'||Array.isArray(value))invalid(field,'분석 항목 객체가 필요합니다.');
+   if(typeof value.id!=='string'||!value.id.trim())invalid(`${field}.id`,'빈 값이 아닌 항목 ID가 필요합니다.');
+   if(ids.has(value.id))invalid(`${field}.id`,'다른 항목과 ID가 중복됩니다.');
+   if(!supportedStoredAreas.includes(value.area as typeof supportedStoredAreas[number]))invalid(`${field}.area`,'지원하는 분석 분류가 필요합니다.');
+   if(typeof value.recordId!=='string'||!allowedIds.includes(value.recordId))invalid(`${field}.recordId`,'요청한 원본 자료 ID와 일치해야 합니다.');
+   for(const key of ['title','detail','source'] as const)if(typeof value[key]!=='string'||!value[key].trim())invalid(`${field}.${key}`,`${({title:'제목',detail:'본문',source:'근거'})[key]}가 비어 있거나 문자열이 아닙니다.`);
+   const item=normalizeReviewItem(value);
+   if(item.area==='extract'&&(!item.useTargets?.length||item.useTargets.some(target=>!(REVIEW_USE_TARGETS as readonly string[]).includes(target))))invalid(`${field}.useTargets`,'AI 추출사항의 활용 대상을 확인하세요.');
+   ids.add(item.id);return item;
+  });
   if(items.some(i=>i.bom&&i.area!=='pbom'))throw new Error('BOM 구조는 PBOM 항목에만 저장할 수 있습니다.');
   for(const i of items.filter(i=>i.area==='trr'))if(!TRR_SECTIONS.includes(i.trrSection!)||!['current','historical'].includes(i.trrKind??'')||[i.title,i.detail,i.source].some(v=>v.length>6000))throw new Error('TRR 반영 목차·자료 구분·본문 길이를 확인하세요.');
   validateBomFacts(items);
