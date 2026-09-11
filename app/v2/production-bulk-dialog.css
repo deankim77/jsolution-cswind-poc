@@ -5,9 +5,9 @@
 .production-bulk-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; flex: 0 0 auto; min-height: var(--v2-control-height); border-bottom: 1px solid var(--v2-border-color); }
 .production-bulk-view-controls { min-width: 0; }
 .production-bulk-status { margin-left: auto; white-space: nowrap; font-size: var(--v2-font-size-caption); }
-.production-bulk-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; width: auto; margin: 0; min-height: var(--v2-control-height); padding: 6px 10px; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); background: var(--v2-surface-content); color: var(--v2-color-primary); font: inherit; white-space: nowrap; cursor: pointer; }
-.production-bulk-toolbar button.production-bulk-save { background: var(--v2-color-primary); color: var(--v2-surface-content); border-color: var(--v2-color-primary); }
-.production-bulk-toolbar button:disabled { opacity: .45; cursor: default; }
+.production-bulk-toolbar > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; width: auto; margin: 0; min-height: var(--v2-control-height); padding: 6px 10px; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); background: var(--v2-surface-content); color: var(--v2-color-primary); font: inherit; white-space: nowrap; cursor: pointer; }
+.production-bulk-toolbar > button.production-bulk-primary:not(:disabled) { background: var(--v2-color-primary); color: var(--v2-surface-content); border-color: var(--v2-color-primary); }
+.production-bulk-toolbar > button:disabled { opacity: .45; cursor: default; }
 .production-bulk-body { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
 .production-bulk-body > .pbom-table-scroll,.production-bulk-scroll { flex: 1; min-height: 0; overflow: auto; }
 .production-bulk-window .production-table { table-layout: auto; width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -16,9 +16,9 @@
 .production-bulk-window .production-table td { max-width: none; }
 .production-bulk-window td[data-column='description'] { min-width: 300px; }
 .production-bulk-window td[data-column='item'],.production-bulk-window td[data-column='drawing'],.production-bulk-window td[data-column='section'] { min-width: 230px; }
-.production-bulk-window input,.production-bulk-window textarea { display: block; box-sizing: border-box; width: 100%; min-width: 100px; min-height: var(--v2-control-height); margin: 0; padding: 6px 8px; border: 1px solid transparent; border-radius: 0; background: transparent; color: inherit; font: inherit; line-height: var(--v2-line-height-body); }
-.production-bulk-window textarea { min-height: 72px; resize: vertical; }
-.production-bulk-window input:focus,.production-bulk-window textarea:focus { outline: 2px solid var(--v2-color-primary); outline-offset: -2px; }
-.production-bulk-window input.production-bulk-changed,.production-bulk-window textarea.production-bulk-changed { background: var(--v2-surface-warning); }
+.production-bulk-body .production-table td > input,.production-bulk-body .production-table td > textarea { display: block; box-sizing: border-box; width: 100%; min-width: 100px; min-height: var(--v2-control-height); margin: 0; padding: 6px 8px; border: 1px solid transparent; border-radius: 0; background: transparent; color: inherit; font: inherit; line-height: var(--v2-line-height-body); }
+.production-bulk-body .production-table td > textarea { min-height: 72px; resize: vertical; }
+.production-bulk-body .production-table td > input:focus,.production-bulk-body .production-table td > textarea:focus { outline: 2px solid var(--v2-color-primary); outline-offset: -2px; }
+.production-bulk-body .production-table td > input.production-bulk-changed,.production-bulk-body .production-table td > textarea.production-bulk-changed { background: var(--v2-surface-warning); }
 .production-bulk-window > p { flex: 0 0 auto; margin: 0; padding: 8px 12px; font-size: var(--v2-font-size-caption); }
 @media (max-width: 1000px) { .production-bulk-toolbar { flex-wrap: wrap; } .production-bulk-status { margin-left: 0; } }
