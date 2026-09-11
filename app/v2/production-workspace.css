@@ -85,7 +85,7 @@
 .review-panel-body .requirements-table td:last-child { text-align: center; }
 .review-panel-body .requirements-table td:last-child button { overflow: visible; text-overflow: clip; }
 
-.wv2-module-dialog.ai-extract-edit-dialog { position: fixed; inset: 0; margin: auto; max-width: calc(100vw - 36px); max-height: calc(100dvh - 36px); box-sizing: border-box; }
+.wv2-module-dialog.ai-extract-edit-dialog { max-width: calc(100vw - 36px); max-height: calc(100dvh - 36px); box-sizing: border-box; }
 .wv2-module-dialog.ai-extract-edit-dialog:not([open]) { display: none; }
 .ai-extract-edit-dialog .ai-extract-edit-fields { min-width: 0; margin: 0; padding: 8px 0; }
 .ai-extract-edit-dialog .ai-extract-edit-fields > label { min-width: 0; }
