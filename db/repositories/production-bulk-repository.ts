@@ -5,7 +5,7 @@ import {customerConfirmedData,productionBulkLocks} from '../customer-review-sche
 import {auditLogs,bomEditLocks,productBomItems,productParts} from '../schema';
 import {customerPartIdentities,productionBomRoots,customerBomOccurrences} from '../pbom-schema';
 import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
-import {applyConfirmedPbom,lockPbomCompany} from './pbom-repository';
+import {applyConfirmedPbom,lockPbomCompany,numberApprovedPbom} from './pbom-repository';
 import {normalizeReviewItem,validateReviewDraft,type ReviewArea,type ConfirmedReview} from '../../lib/customer-review-contract';
 import {activeBulkRows,mergeBulkEdits,type BulkRow} from '../../lib/production-bulk-edit';
 import {bomIdentity} from '../../lib/pbom-contract';
@@ -35,12 +35,14 @@ export function createProductionBulkRepository(db=getDb()){return {
  await lockPbomCompany(tx,s.companyId);
  const permission=await customerDataAccess(tx,s,action!=='cancel');if(action!=='cancel'&&!permission.canReview)throw new CustomerDataError('PM 또는 PL만 전체수정할 수 있습니다.',403);
  const [lock]=await tx.select().from(productionBulkLocks).where(and(scoped(productionBulkLocks,s),eq(productionBulkLocks.area,area)));
- const rows=await readRows(tx,s,area);
+ let rows=await readRows(tx,s,area);
  if(action==='checkout'){
   if(lock)throw new CustomerDataError('이미 체크아웃 중입니다. 창을 다시 열어 편집 상태를 확인하세요.',409);
   if(!rows.length)throw new CustomerDataError('편집할 승인 항목이 없습니다.',422);
   const bomLockIds:string[]=[];
   if(area==='pbom'){
+   await numberApprovedPbom(tx,s,rows.map(r=>r.item));
+   rows=await readRows(tx,s,area);
    const identities=await tx.select().from(customerPartIdentities).where(scoped(customerPartIdentities,s));
    const roots=await tx.select().from(productionBomRoots).where(scoped(productionBomRoots,s));
    const parts=new Set([...identities.map(i=>i.partId),...roots.map(r=>r.rootPartId)]);

@@ -47,7 +47,7 @@ function harness(apply=async()=>{}){
  'drizzle-orm':{eq:(col,value)=>({kind:'eq',col,value}),and:(...args)=>({kind:'and',args}),inArray:(col,values)=>({kind:'in',col,values})},
  '../index':{getDb:()=>db},'../customer-review-schema':tables,'../schema':tables,'../pbom-schema':tables,
  './customer-data-repository':{customerDataAccess:async(db,s)=>{if(s.projectId!=='p')throw Error('denied');return {canReview:s.userId!=='viewer'}}},
- './pbom-repository':{lockPbomCompany:async()=>{},applyConfirmedPbom:apply}
+ './pbom-repository':{lockPbomCompany:async()=>{},numberApprovedPbom:async()=>{},applyConfirmedPbom:apply}
  };
  vm.runInNewContext(code,{module,exports:module.exports,require:name=>mocks[name]??require(name.startsWith('../../lib/')?'../lib/'+name.slice('../../lib/'.length)+'.ts':name)});
  return {repo:module.exports.createProductionBulkRepository(db),data:()=>data};
@@ -89,4 +89,45 @@ test('PBOM checkin restores both locks on application failure and retains condit
  assert.equal(h.data().bomEditLocks.length,0);assert.equal(h.data().productionBulkLocks.length,0);
  assert.equal(h.data().customerConfirmedData[0].item.bom.weight,19);
  assert.equal(h.data().customerConfirmedData[0].item.approval.status,'conditional');
+});
+
+const {approvedPbomView}=require('../lib/production-pbom-view.ts');
+const {buildBomRows}=require('../lib/pbom-contract.ts');
+const bom=(id,parentId=null)=>({parentId,section:'',itemDescription:id,position:id,customerItemNumber:id,drawingNumber:'',componentRevision:'R00',quantity:1,unit:'PCS',weight:null,weightUnit:'kg',weightSource:'Not Available',drawingAvailability:'Need Review',partType:parentId?'PART':'ASSEMBLY',childrenComplete:false});
+function approvedDoc(doc,count,version=1){return Array.from({length:count},(_,i)=>({id:`${doc}-${version}-${i}`,recordId:doc,version,confirmedBy:'u',confirmedAt:1,item:{...item(`${version}-${i}`),recordId:doc,area:'pbom',bom:bom(`${doc}-${i}`,i?`${version}-0`:null),approval:{status:'conditional',issues:['unit']}}}));}
+test('all 46 approved rows including conditional rows appear, with durable edit bindings',()=>{
+ const docs=[...approvedDoc('a',13),...approvedDoc('b',1),...approvedDoc('c',16),...approvedDoc('d',16)];
+ docs[14].item.bom.unit='';docs[15].item.bom.quantity=null;
+ const old=buildBomRows(approvedDoc('a',13).map(r=>r.item)).map(r=>({...r,sourceItemId:'outdated-id'}));
+ const view=approvedPbomView({root:null,rows:old,identities:[]},docs);
+ assert.equal(view.rows.length,46);assert.equal(new Set(view.rows.map(r=>r.confirmationId)).size,46);
+ assert.equal(view.rows.find(r=>r.confirmationId===docs[14].id).bom.unit,'');
+ assert.equal(view.rows.find(r=>r.confirmationId===docs[15].id).bom.quantity,null);
+ assert.ok(view.rows.every(r=>docs.some(d=>d.id===r.confirmationId)));
+});
+test('latest approved version replaces earlier approval, preserves manual child and original facts',()=>{
+ const first=approvedDoc('a',2),latest=approvedDoc('a',2,2);
+ const applied=buildBomRows(first.map(r=>r.item)).map(r=>({...r,sourceItemId:r.id}));
+ const manual={...applied[1],id:'manual',recordId:'',sourceItemId:undefined,bom:{...applied[1].bom,parentId:applied[0].id},match:'MANUAL'};
+ const view=approvedPbomView({root:null,rows:[...applied,manual],identities:[]},[...first,...latest]);
+ assert.equal(view.rows.length,3);assert.equal(view.rows[0].confirmationId,latest[0].id);
+ assert.equal(view.rows[2].bom.parentId,view.rows[0].id);
+ assert.equal(latest[1].item.bom.parentId,'2-0');
+});
+test('approval numbering accepts missing quantity/unit, is idempotent, and survives identity completion',async()=>{
+ const sourceCode=fs.readFileSync(new URL('../db/repositories/pbom-repository.ts',import.meta.url),'utf8');
+ const functionCode=sourceCode.slice(sourceCode.indexOf('export async function numberApprovedPbom'),sourceCode.indexOf('/** Called in the review'));
+ const module={exports:{}},identities=[],parts=[];
+ vm.runInNewContext(ts.transpileModule(functionCode,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
+  module,exports:module.exports,Map,Set,identityRows:async()=>identities,
+  bomIdentity:b=>b.customerItemNumber?`ITEM:${b.customerItemNumber}`:'',randomUUID:()=>String(identities.length),
+  createNumberedPart:async(tx,s,name,partType,unit)=>{const part={id:`p${parts.length}`,partNumber:`P-${parts.length}`,name,unit};parts.push(part);return part},
+  productParts:{id:'id'},customerPartIdentities:{},eq:(col,value)=>value
+ });
+ const tx={update:()=>({set:values=>({where:async id=>Object.assign(parts.find(p=>p.id===id),values)})}),insert:()=>({values:async value=>identities.push({...value,key:value.customerKey,partNumber:parts.find(p=>p.id===value.partId).partNumber})})};
+ const items=approvedDoc('missing',1).map(r=>({...r.item,bom:{...r.item.bom,customerItemNumber:'',quantity:null,unit:''}}));
+ await module.exports.numberApprovedPbom(tx,scope,items);await module.exports.numberApprovedPbom(tx,scope,items);
+ assert.equal(parts.length,1);assert.equal(parts[0].unit,'');assert.equal(parts[0].revision,'00');
+ items[0].bom.customerItemNumber='CUSTOMER-1';await module.exports.numberApprovedPbom(tx,scope,items);
+ assert.equal(parts.length,1);assert.equal(identities.find(i=>i.key==='ITEM:CUSTOMER-1').partId,parts[0].id);
 });

@@ -1,3 +1,6 @@
+import {approvedPbomView} from '../../lib/production-pbom-view';
+import {customerConfirmedData} from '../customer-review-schema';
+import {normalizeReviewItem} from '../../lib/customer-review-contract';
 import {assertNoProductionBulkLock} from './production-bulk-lock';
 import {planPbomWithdrawal,type WithdrawalBaseline} from '../../lib/pbom-withdrawal';
 import {randomUUID} from 'node:crypto';
@@ -40,7 +43,8 @@ export function createPbomRepository(db=getDb()){return {
  async list(s:CustomerDataScope):Promise<ProjectPbom>{
   await customerDataAccess(db,s);
   const identities=await identityRows(db,s),[root]=await db.select({id:productParts.id,partNumber:productParts.partNumber,name:productParts.name}).from(productionBomRoots).innerJoin(productParts,and(eq(productParts.id,productionBomRoots.rootPartId),eq(productParts.companyId,s.companyId))).where(scoped(productionBomRoots,s));
-  if(!root)return {root:null,rows:[],identities};
+  const confirmed=(await db.select().from(customerConfirmedData).where(scoped(customerConfirmedData,s))).map(r=>({...r,item:normalizeReviewItem(r.item)}));
+  if(!root)return approvedPbomView({root:null,rows:[],identities},confirmed);
   const [parts,edges,occurrences]=await Promise.all([db.select().from(productParts).where(eq(productParts.companyId,s.companyId)),db.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId)),db.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s))]);
   const rows:BomRow[]=[];
   const walk=(parent:string,parentRow:string|null,level:number,total:number|null,path:string,seen:Set<string>,parentSource?:typeof occurrences[number])=>{if(seen.has(parent))return;const next=new Set(seen).add(parent);
@@ -63,16 +67,35 @@ export function createPbomRepository(db=getDb()){return {
   };walk(root.id,null,1,1,root.partNumber,new Set());
   // Weight roll-up uses complete customer child lists only; manually added rows remain explicit unknowns.
   for(const row of [...rows].reverse()){const children=rows.filter(r=>r.bom.parentId===row.id);if(row.bom.weight===null&&row.bom.childrenComplete&&children.length&&row.bom.weightUnit&&children.every(c=>c.calculatedWeight!==null&&c.bom.weightUnit===row.bom.weightUnit&&c.bom.quantity!==null)){const sum=children.reduce((n,c)=>n+c.calculatedWeight!*c.bom.quantity!,0);if(Number.isFinite(sum)){row.calculatedWeight=sum;row.calculatedWeightSource='Calculated from Child BOM';}}}
-  return {root,rows,identities};
+  return approvedPbomView({root,rows,identities},confirmed);
  },
  async initialize(s:CustomerDataScope){return db.transaction(async tx=>{await lockPbomCompany(tx,s.companyId);const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 TOP을 생성할 수 있습니다.',403);const [project]=await tx.select().from(projectsDb).where(and(eq(projectsDb.id,s.projectId),eq(projectsDb.companyId,s.companyId)));return ensureProductionBomRoot(tx,s,project.name);});}
 };}
+/** Number approved items independently of whether quantities can yet form BOM edges. */
+export async function numberApprovedPbom(tx:Tx,s:CustomerDataScope,items:ReviewItem[]){
+ const known=new Map((await identityRows(tx,s)).map(i=>[i.key,i]));
+ for(const item of items){if(!item.bom)continue;const b=item.bom,key=bomIdentity(b),alias=`APPROVED:${item.recordId}:${item.id}`;
+  let match=known.get(key)||known.get(alias);
+  if(!match){
+   const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.material?.trim()||'');
+   await tx.update(productParts).set({revision:'00'}).where(eq(productParts.id,part.id));
+   match={key:key||alias,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};
+  }
+  for(const customerKey of new Set([key,alias].filter(Boolean)))if(!known.has(customerKey)){
+   await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey,partId:match.partId,revision:b.componentRevision});
+   known.set(customerKey,{...match,key:customerKey});
+  }
+ }
+}
 /** Called in the review confirmation transaction: confirmation and BOM changes commit together. */
 export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[],force=false){
  await assertNoProductionBulkLock(tx,s,'pbom');
  if(items.some(i=>!i.bom||i.recordId!==recordId))throw new CustomerDataError('이 문서의 구조화된 BOM을 먼저 재분석하세요.',422);
- const rows=buildBomRows(items,await identityRows(tx,s));
- const issues=pbomApprovalIssues(rows);if(issues.length)return {conditional:true,issues};
+ let rows=buildBomRows(items,await identityRows(tx,s));
+ const issues=pbomApprovalIssues(rows);
+ await numberApprovedPbom(tx,s,items);
+ if(issues.length)return {conditional:true,issues};
+ rows=buildBomRows(items,await identityRows(tx,s));
  const [project]=await tx.select().from(projectsDb).where(and(eq(projectsDb.id,s.projectId),eq(projectsDb.companyId,s.companyId)));
  const root=await ensureProductionBomRoot(tx,s,project.name);
  // Acquire the same root lock used by the existing editor, so neither writer can silently overwrite the other.

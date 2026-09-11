@@ -14,9 +14,9 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  const [pbom,setPbom]=useState<ProjectPbom|null>(null),[toolbar,setToolbar]=useState<HTMLDivElement|null>(null);
  const [state,setState]=useState<BulkState|null>(null),[cells,setCells]=useState<Cells>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const url=`/api/projects/${projectId}/production-bulk`,columns=bulkFields[area],editing=Boolean(state?.lock?.mine),rows=state?.rows??[];
- const editorRows=area==='pbom'?(pbom?.rows??[]).flatMap(p=>{const row=rows.find(r=>r.recordId===p.recordId&&r.item.id===p.sourceItemId);return row?[row]:[]}):rows;
+ const editorRows=area==='pbom'?(pbom?.rows??[]).flatMap(p=>{const row=rows.find(r=>r.id===p.confirmationId||(r.recordId===p.recordId&&r.item.id===p.sourceItemId));return row?[row]:[]}):rows;
  const accept=(next:BulkState,view=pbom)=>{setState(next);const values=Object.fromEntries(next.rows.map(row=>[row.id,Object.fromEntries(columns.map(([key])=>[key,bulkCell(row,area,key)]))]));
-  if(area==='pbom')for(const p of view?.rows??[]){const row=next.rows.find(r=>r.recordId===p.recordId&&r.item.id===p.sourceItemId);if(row)for(const [key] of columns)values[row.id][key]=bulkCell({...row,item:{...row.item,bom:p.bom}},area,key);}
+  if(area==='pbom')for(const p of view?.rows??[]){const row=next.rows.find(r=>r.id===p.confirmationId||(r.recordId===p.recordId&&r.item.id===p.sourceItemId));if(row)for(const [key] of columns)values[row.id][key]=bulkCell({...row,item:{...row.item,bom:p.bom}},area,key);}
   baseline.current=values;setCells(values);
  };
  const load=async(signal?:AbortSignal)=>{
@@ -67,7 +67,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status" className="production-bulk-notice">{notice}</p>}
  <div className="production-bulk-body">
  {area==='pbom'?<PbomTable rows={pbom?.rows??[]} root={pbom?.root} toolbarContainer={toolbar} renderSource={ids=>ids.map(id=>sources[id]||id).join(', ')} renderCell={(key,row,fallback:ReactNode)=>{
-  const original=rows.find(r=>r.recordId===row.recordId&&r.item.id===row.sourceItemId),field=fields[key];
+  const original=rows.find(r=>r.id===row.confirmationId||(r.recordId===row.recordId&&r.item.id===row.sourceItemId)),field=fields[key];
   return editing&&original&&field?renderInput(original,field,key):fallback;
  }}/>:<div className="production-bulk-scroll"><table className="production-table production-bulk-grid"><colgroup>{columns.map(([key])=><col key={key} style={{width:key==='detail'?720:key==='itemName'?240:180}}/>)}</colgroup><thead><tr>{columns.map(([key,label])=><th key={key}>{label}</th>)}</tr></thead><tbody>{editorRows.map(row=><tr key={row.id}>{columns.map(([key,label])=><td key={key}>{renderInput(row,key,label)}</td>)}</tr>)}{!rows.length&&<tr><td colSpan={columns.length}>{state?'편집할 승인 항목이 없습니다.':'불러오는 중…'}</td></tr>}</tbody></table></div>}
  </div>

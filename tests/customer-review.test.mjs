@@ -96,22 +96,24 @@ test('missing or unreadable optional numbers preserve the extracted parts list',
  const d=draft();d.items[0].bom={...root,weight:85};const normalized=prepareReviewNumbers(d);assert.equal(validateReviewDraft(normalized,['raw-1']).items[0].bom.weight,85);assert.ok(normalized.uncertainties[0].includes('85'));
 });
 
-test('conditional confirmation persists missing fields and audit without creating PART or BOM',async()=>{
+test('conditional confirmation numbers PARTs and preserves missing fields without fabricating BOM quantities',async()=>{
  const access=require('../db/repositories/customer-data-repository.ts');
  const oldAccess=access.customerDataAccess;access.customerDataAccess=async()=>({canReview:true});
  try{
   const {createCustomerReviewRepository}=require('../db/repositories/customer-review-repository.ts');
   const {customerReviews,customerConfirmedData}=require('../db/customer-review-schema.ts');
-  const {auditLogs}=require('../db/schema.ts');
+  const {auditLogs,productParts,partNumberSettings,partNumberHistory}=require('../db/schema.ts');
+  const {customerPartIdentities}=require('../db/pbom-schema.ts');
   const d=draft();d.items[0].bom={parentId:null,section:'',itemDescription:'PLATE',position:'1',customerItemNumber:'',drawingNumber:'',componentRevision:'',quantity:null,unit:'',weight:18.5,weightUnit:'kg',weightSource:'Parts List',drawingAvailability:'Need Review',partType:'PART',childrenComplete:false};
   d.items.push({...d.items[0],id:'root',bom:{...d.items[0].bom,partType:'ASSEMBLY',customerItemNumber:'ROOT',quantity:1,unit:'PCS'}});d.items[0].bom.parentId='root';
   const writes=[];
   const tx={select:()=>({from:table=>{
    const rows=table===customerReviews?[{version:1,draft:d}]:[];
-   const chain={where:()=>chain,innerJoin:()=>chain,for:()=>chain,then:resolve=>Promise.resolve(rows).then(resolve)};return chain;
-  }}),insert:table=>{assert.ok([customerConfirmedData,auditLogs].includes(table),'must not create PART/BOM');return {values:value=>{writes.push({table,value});return {onConflictDoUpdate:async()=>{}}}}}};
+   const chain={where:()=>chain,innerJoin:()=>chain,for:()=>chain,limit:()=>chain,then:resolve=>Promise.resolve(rows).then(resolve)};return chain;
+  }}),update:table=>({set:()=>({where:()=>({returning:async()=>[{prefix:'P',separator:'-',digits:6,nextSequence:writes.filter(w=>w.table===productParts).length+2}]})})}),insert:table=>{assert.ok([customerConfirmedData,auditLogs,productParts,partNumberSettings,partNumberHistory,customerPartIdentities].includes(table),'must not fabricate BOM edges');return {values:value=>{writes.push({table,value});const chain={onConflictDoUpdate:async()=>{},onConflictDoNothing:()=>chain,returning:async()=>[value]};return chain}}}};
   const repo=createCustomerReviewRepository({transaction:fn=>fn(tx)});
   const result=await repo.confirm(scope,'raw-1',1,['part-1','root']);
+  assert.equal(writes.filter(w=>w.table===productParts).length,2);
   assert.equal(result.conditional,true);assert.match(result.issues[0],/식별번호.*수량.*단위/);
   const saved=writes.find(w=>w.table===customerConfirmedData).value[0];
   assert.equal(saved.item.approval.status,'conditional');assert.equal(saved.item.bom.quantity,null);assert.equal(saved.item.bom.weight,18.5);assert.equal(saved.item.bom.unit,'');
