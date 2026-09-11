@@ -12,7 +12,7 @@ export type BomFact={material?:string;parentId:string|null;section:string;itemDe
 export type BomInput={id:string;recordId:string;source:string;bom?:BomFact};
 export type BomRow=BomInput & {confirmationId?:string;sourceItemId?:string;sourceRecordIds?:string[];bom:BomFact;level:number;path:string;totalQuantity:number|null;calculatedWeight:number|null;calculatedWeightSource:typeof WEIGHT_SOURCES[number];internalPartNumber?:string;partId?:string;match?:'NEW'|'EXISTING'|'NEED_REVIEW'|'MANUAL';changed?:boolean;changeLabel?:string};
 export type BomIdentity={key:string;partId:string;partNumber:string;revision:string};
-export type ProjectPbom={root:{id:string;partNumber:string;name:string}|null;rows:BomRow[];identities:BomIdentity[]};
+export type ProjectPbom={root:{id:string;partNumber:string;name:string}|null;pendingDocuments?:number;rows:BomRow[];identities:BomIdentity[]};
 export function bomIdentity(b:BomFact){return b.customerItemNumber.trim()?`ITEM:${b.customerItemNumber.trim()}`:b.drawingNumber.trim()?`DRAWING:${b.drawingNumber.trim()}`:'';}
 /** Default only an unspecified document-root assembly quantity; preserve all explicit quantities. */
 export function defaultDocumentRootQuantity<T extends BomInput>(item:T):T {
@@ -30,7 +30,7 @@ export function validateBomFacts(items:BomInput[]){
   // Preserve readable weight even when its unit/source still needs user review.
   if(b.parentId!==null&&(typeof b.parentId!=='string'||!byId.has(b.parentId)))throw Error('상위 ASSY 행을 확인하세요.');
   if(b.parentId){const parent=byId.get(b.parentId)!;if(parent.recordId!==i.recordId||parent.bom.partType!=='ASSEMBLY')throw Error('동일 문서의 ASSY 아래에 부품을 배치하세요.');}
-  else if(b.partType!=='ASSEMBLY')throw Error('문서의 최상위 행은 ASSY여야 합니다.');
+
   const key=bomIdentity(b),previous=identities.get(key);if(key&&previous&&(previous.componentRevision!==b.componentRevision||previous.partType!==b.partType||previous.unit!==b.unit))throw Error('동일 고객 품목의 Revision·역할·단위가 서로 다릅니다.');if(key)identities.set(key,b);
   const seen=new Set<string>();let node:typeof i|undefined=i;
   while(node){if(seen.has(node.id))throw Error('BOM에 순환 관계가 있습니다.');seen.add(node.id);node=node.bom.parentId?byId.get(node.bom.parentId):undefined;}
@@ -72,7 +72,7 @@ export function bomSectionName(row:BomRow,rows:BomRow[]):string {
  return '';
 }
 
-/** Missing application fields permit review approval, but never fabricated BOM edges. */
+/** Missing properties are review issues; structural approval preserves unknown quantities. */
 export function pbomApprovalIssues(rows:BomRow[]){
  return rows.flatMap(row=>{
   const missing=[row.match==='NEED_REVIEW'?'품목 식별번호/매칭':'',row.bom.quantity===null?'수량':'',!row.bom.unit.trim()?'단위':''].filter(Boolean);

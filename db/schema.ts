@@ -117,7 +117,7 @@ export const productParts = pgTable("product_parts", {
 
 export const productBomItems = pgTable("product_bom_items", {
   id:text("id").primaryKey(), companyId:text("company_id").notNull(), parentPartId:text("parent_part_id").notNull(), childPartId:text("child_part_id").notNull(),
-  quantity:doublePrecision("quantity").notNull().default(1), unit:text("unit").notNull().default("EA"), sortOrder:integer("sort_order").notNull().default(0), note:text("note"), createdAt:integer("created_at").notNull(), updatedAt:integer("updated_at").notNull(),
+  quantity:doublePrecision("quantity").default(1), unit:text("unit").notNull().default("EA"), sortOrder:integer("sort_order").notNull().default(0), note:text("note"), createdAt:integer("created_at").notNull(), updatedAt:integer("updated_at").notNull(),
 }, t=>[uniqueIndex("product_bom_parent_child_uq").on(t.companyId,t.parentPartId,t.childPartId)]);
 
 export const bomEditLocks = pgTable("bom_edit_locks", {

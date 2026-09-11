@@ -35,10 +35,15 @@ async function seedDemo(db:D1,companyId:string,userId:string){
 }
 
 function rollup(parts:any[],bom:any[]){
-  const byId=new Map(parts.map(p=>[p.id,p]));const children=new Map<string,any[]>();
-  for(const row of bom)children.set(row.parentPartId,[...(children.get(row.parentPartId)||[]),row]);
-  const memo=new Map<string,number>();const calc=(id:string,seen=new Set<string>()):number=>{if(memo.has(id))return memo.get(id)!;if(seen.has(id))return 0;seen.add(id);const childRows=children.get(id)||[];const value=childRows.length?childRows.reduce((sum,row)=>sum+calc(row.childPartId,new Set(seen))*Number(row.quantity||0),0):Number(byId.get(id)?.standardCost||0);memo.set(id,value);return value};
-  return Object.fromEntries(parts.map(p=>[p.id,Math.round(calc(p.id)*100)/100]));
+ const byId=new Map(parts.map(p=>[p.id,p])),memo=new Map<string,number|null>();
+ const calc=(id:string,seen=new Set<string>()):number|null=>{
+  if(memo.has(id))return memo.get(id)!;if(seen.has(id))return null;
+  const next=new Set(seen).add(id),children=bom.filter(row=>row.parentPartId===id);
+  let value:number|null=children.length?0:Number(byId.get(id)?.standardCost||0);
+  for(const row of children){const cost=calc(row.childPartId,next);if(row.quantity===null||cost===null){value=null;break;}value!+=cost*Number(row.quantity);}
+  memo.set(id,value);return value;
+ };
+ return Object.fromEntries(parts.map(p=>{const value=calc(p.id);return [p.id,value===null?null:Math.round(value*100)/100]}));
 }
 
 async function createsCycle(db:D1,companyId:string,parentId:string,childId:string){
@@ -61,7 +66,7 @@ export async function GET(request:Request){
     db.prepare("SELECT l.root_part_id AS rootPartId,l.locked_by AS lockedBy,l.locked_at AS lockedAt,u.name AS lockedByName FROM bom_edit_locks l LEFT JOIN users u ON u.id=l.locked_by WHERE l.company_id=?").bind(context.companyId).all(),
   ]);
   const parts=partRows.results??[],bom=bomRows.results??[],rollupCost=rollup(parts,bom);
-  return Response.json({parts:parts.map((p:any)=>({...p,rollupCost:rollupCost[p.id]??Number(p.standardCost||0)})),bom,costSheets:costRows.results??[],numberHistory:historyRows.results??[],bomLocks:lockRows.results??[],currentUserId:context.userId,numberRule:"{TYPE}-{YYYY}-{SEQ4}"});
+  return Response.json({parts:parts.map((p:any)=>({...p,rollupCost:rollupCost[p.id]})),bom,costSheets:costRows.results??[],numberHistory:historyRows.results??[],bomLocks:lockRows.results??[],currentUserId:context.userId,numberRule:"{TYPE}-{YYYY}-{SEQ4}"});
 }
 
 export async function POST(request:Request){

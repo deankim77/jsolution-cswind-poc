@@ -1,4 +1,4 @@
-export type WithdrawalEdge={id:string;parentPartId:string;childPartId:string;quantity:number;unit:string;sortOrder:number;note:string|null};
+export type WithdrawalEdge={id:string;parentPartId:string;childPartId:string;quantity:number|null;unit:string;sortOrder:number;note:string|null};
 export type WithdrawalBaseline={edgeId:string;before:WithdrawalEdge|null;after:WithdrawalEdge};
 /** Only undo unchanged, exclusively owned edges. Keep shared or subsequently edited definitions. */
 export function planPbomWithdrawal(edges:WithdrawalEdge[],ownedIds:string[],sharedIds:string[],baselines:WithdrawalBaseline[]){

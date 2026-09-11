@@ -1,3 +1,4 @@
+import {sumBomQuantities,sameBomQuantity} from '../../lib/bom-quantities';
 import {createHash,randomUUID} from 'node:crypto';
 import {and,eq,inArray} from 'drizzle-orm';
 import {getDb} from '../index';
@@ -74,8 +75,8 @@ export function createProductionBulkRepository(db=getDb()){return {
   if(area==='pbom'){
    const occurrences=await tx.select().from(customerBomOccurrences).where(and(scoped(customerBomOccurrences,s),eq(customerBomOccurrences.recordId,recordId)));
    const edges=await tx.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId));
-   for(const edgeId of new Set(occurrences.map(o=>o.bomItemId))){const sources=occurrences.filter(o=>o.bomItemId===edgeId),edge=edges.find(e=>e.id===edgeId);const parent=sources[0].fact.parentId;const quantity=sources.filter(o=>o.fact.parentId===parent).reduce((sum,o)=>sum+(o.fact.quantity??0),0);
-    if(edge&&(Math.abs(edge.quantity-quantity)>1e-9||sources.some(o=>o.fact.unit!==edge.unit)))throw new CustomerDataError('기존 BOM 편집기에서 수량·단위가 변경된 항목입니다. 기존 편집기에서 해당 변경을 먼저 확인하세요.',409);
+   for(const edgeId of new Set(occurrences.map(o=>o.bomItemId))){const sources=occurrences.filter(o=>o.bomItemId===edgeId),edge=edges.find(e=>e.id===edgeId);const parent=sources[0].fact.parentId;const quantity=sumBomQuantities(sources.filter(o=>o.fact.parentId===parent).map(o=>o.fact.quantity));
+    if(edge&&(!sameBomQuantity(edge.quantity,quantity)||sources.some(o=>o.fact.unit!==edge.unit)))throw new CustomerDataError('기존 BOM 편집기에서 수량·단위가 변경된 항목입니다. 기존 편집기에서 해당 변경을 먼저 확인하세요.',409);
    }
    const result=await applyConfirmedPbom(tx,s,recordId,group[0].version,group.map(r=>r.item),true);issues=result?.issues??[];}
   for(const row of group){const item={...row.item,approval:{status:issues.length?'conditional' as const:'approved' as const,issues}};

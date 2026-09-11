@@ -13,7 +13,7 @@ import "./part-bom-dnd.css";
 import "./part-bom-ai-selection.css";
 
 type Part={id:string;partNumber:string;name:string;partType:string;spec?:string;unit:string;revision:string;status:string;standardCost:number;rollupCost:number};
-type BomRow={id:string;parentPartId:string;parentNumber:string;parentName:string;childPartId:string;childNumber:string;childName:string;quantity:number;unit:string;sortOrder:number;note?:string};
+type BomRow={id:string;parentPartId:string;parentNumber:string;parentName:string;childPartId:string;childNumber:string;childName:string;quantity:number|null;unit:string;sortOrder:number;note?:string};
 type BomLock={rootPartId:string;lockedBy:string;lockedByName?:string;lockedAt:number};
 type Data={parts:Part[];bom:BomRow[];bomLocks:BomLock[];currentUserId?:string;numberRule?:string};
 type View="part"|"bom";
@@ -160,7 +160,7 @@ export function PartBomWorkspace({onOpenBomCompare,initialRootId,onBomCopied}:{o
       return data.bom.filter(row=>row.parentPartId===parentId).sort((a,b)=>a.sortOrder-b.sortOrder).flatMap(row=>{
         const part=data.parts.find(item=>item.id===row.childPartId),meta=roleMeta(part?.partType||"PART"),childHasChildren=hasChildren(row.childPartId);
         const displayRole=childHasChildren&&normalizedRole(part?.partType||"PART")==="PART"?ITEM_ROLES[1]:meta;
-        const quantityNode=isMyLock&&!compact?<span className="pbw-qty-edit"><input key={`${row.id}-${row.quantity}`} type="number" min="0.001" step="any" defaultValue={row.quantity} disabled={quantityBusyId===row.id} onKeyDown={event=>{if(event.key==="Enter")(event.currentTarget as HTMLInputElement).blur()}} onBlur={event=>void saveQuantity(row,Number(event.currentTarget.value))}/><small>{row.unit}</small></span>:<span className="pbw-qty">{row.quantity} {row.unit}</span>;
+        const quantityNode=isMyLock&&!compact?<span className="pbw-qty-edit"><input key={`${row.id}-${row.quantity}`} type="number" min="0.001" step="any" defaultValue={row.quantity??""} placeholder="미확인" disabled={quantityBusyId===row.id} onKeyDown={event=>{if(event.key==="Enter")(event.currentTarget as HTMLInputElement).blur()}} onBlur={event=>{if(event.currentTarget.value.trim())void saveQuantity(row,Number(event.currentTarget.value))}}/><small>{row.unit||"단위 미확인"}</small></span>:<span className="pbw-qty">{row.quantity??"수량 미확인"} {row.unit||"단위 미확인"}</span>;
         return [<div className="pbw-tree-row" key={row.id} style={{paddingLeft:`${10+depth*(compact?14:20)}px`}}><span className="pbw-tree-toggle">{childHasChildren?<ChevronDown size={18}/>:<span/>}</span><span className={`pbw-type-dot ${displayRole.value.toLowerCase()}`}/><span className="pbw-tree-main"><b>{row.childNumber}</b><em>{row.childName}</em><small>{displayRole.label}{part?.spec?` · ${part.spec}`:""}</small></span>{quantityNode}</div>,...walk(row.childPartId,depth+1)];
       });
     };

@@ -15,10 +15,10 @@ trrSection은 ${JSON.stringify(TRR_SECTIONS)} 중 정확히 한 값이다. trrKi
 JSON 형식: {"answer":"추출 안내","draft":{"documentType":"report","documentTypeConfirmed":false,"drawingNumber":"","revisionLabel":"","summary":"TRR 관련 핵심 요구사항과 주의사항 요약","missingData":[],"uncertainties":[],"items":[]}}
 missingData는 확인이 필요한 {"field":"항목명","reason":"미확인 이유"} 객체 배열이다. 없으면 []이다. uncertainties는 문자열 배열이며 없으면 []이다. drawingNumber와 revisionLabel은 없으면 빈 문자열이며 null을 쓰지 않는다. summary는 문자열이다. items는 항목 객체 배열이다. documentType은 위 영문 코드만 사용한다. 원문에서 읽지 못한 숫자를 추측하지 않는다. ${trr}\nJSON 객체만 반환한다.`;
  return `첨부 원본 1건을 읽고 도면의 파트리스트만 PBOM으로 추출한다. 도면이 아닌 기술문서에서는 PBOM을 만들지 않는다.
-- 하단 타이틀 블록의 Item No.는 대표 ASSY customerItemNumber, Drawing Title은 draft.drawingTitle(없으면 빈 문자열), 대표 ASSY Item Description은 itemDescription, Drawing No.는 drawingNumber로 읽는다. 품번과 도면번호는 서로 달라도 원문 그대로 둔다.
+- 하단 타이틀 블록의 Item No.는 대표 품목 customerItemNumber, Drawing Title은 draft.drawingTitle(없으면 빈 문자열), 대표 품목 Item Description은 itemDescription, Drawing No.는 drawingNumber로 읽는다. 품번과 도면번호는 서로 달라도 원문 그대로 둔다.
 - Parts List의 품번·품명·수량·단위·중량을 원문대로 읽는다. Material/재질은 해당 품목의 material에 그대로 넣는다.
 - PCS 열은 quantity와 unit="PCS", KG/PCS 열의 숫자는 개당 중량 weight와 weightUnit="kg", weightSource="Parts List"로 읽는다. 수량을 곱하거나 값이 있는데 null로 두지 않는다.
-- 대표 ASSY 행을 포함하고 부품표 항목은 해당 ASSY의 id를 parentId로 연결한다. 원본에 없는 중간 계층은 만들지 않는다.
+- 조립도는 대표 ASSY 행을 포함하고 부품표 항목은 해당 ASSY의 id를 parentId로 연결한다. 단품 도면은 대표 PART 한 행을 parentId:null로 생성한다. 원본에 없는 중간 계층은 만들지 않는다.
 - 도면 Rev는 하단 표제란의 Rev/Revision 또는 Ver/Version 값을 그대로 revisionLabel과 대표 품목의 componentRevision에 넣는다. 부품 행의 Rev는 그 행에 있을 때만 읽고, 없는 값은 빈 문자열로 둔다.
 - 나머지 주기·요구사항은 원본에 명확한 내용만 extract로 추출한다. 활용 대상은 TTR/조립기준/검사기준/작업방법 중 명확할 때만 지정하고 애매하면 기타로 둔다. 해석이 불확실한 내용은 summary에 그대로 설명한다.
 - 없는 숫자는 null, 없는 문자열은 빈 문자열이다. 내부 품번·Level·총수량·합산중량은 만들지 않는다.
@@ -29,7 +29,7 @@ missingData는 확인이 필요한 {"field":"항목명","reason":"미확인 이�
 각 항목: {"id":"고유ID","area":"pbom","title":"품명","detail":"원본에서 읽은 내용","source":"표제란 또는 부품표 행/주기 위치","recordId":"${recordId}"}
 PBOM 항목에는 bom 객체를 넣는다:
 {"parentId":null,"section":"","itemDescription":"품명","position":"","customerItemNumber":"","drawingNumber":"","componentRevision":"","material":"","quantity":null,"unit":"","weight":null,"weightUnit":"","weightSource":"Not Available","drawingAvailability":"Need Review","partType":"ASSEMBLY","childrenComplete":false}
-partType은 ASSEMBLY 또는 PART, parentId는 대표 ASSY에서만 null이다.
+partType은 ASSEMBLY 또는 PART, parentId는 문서 최상위 품목(ASSEMBLY 또는 PART)에서 null이다.
 weightSource는 Direct from Drawing/Parts List/Not Available 중 실제 출처이며 중량에는 원본 단위를 함께 쓴다.
 drawingAvailability는 해당 품목 자신의 도면이 보일 때 Drawing Found, 그 외는 Need Review다. childrenComplete는 전체 부품표가 확인됐을 때만 true다.
 그 외 항목은 area를 extract로 하고 useTargets 배열과 assy/part/itemNumber/itemName 문자열을 넣는다. 부품 연결이 불명확하면 빈 문자열로 둔다.
