@@ -5,7 +5,7 @@ import CommonAiChatPanel from '../common-ai-chat-panel';
 import CustomerDataWorkspace,{uploadTime} from './customer-data-workspace';
 import type {V2Project} from './project-workspaces';
 import type {CustomerDataList} from '../../lib/customer-data-contract';
-import {REVIEW_AREAS,REVIEW_TYPES,type ReviewState,type ReviewDraft,type ConfirmedReview} from '../../lib/customer-review-contract';
+import {REVIEW_AREAS,REVIEW_TYPES,reviewAreaCounts,type ReviewArea,type ReviewState,type ReviewDraft,type ConfirmedReview} from '../../lib/customer-review-contract';
 import {FilterSelect,type WorkspaceFilterConfig} from './workspace-filter-panel';
 import {WorkPanelFrame} from './work-panel';
 import ReviewDecisionActions from './review-decision-actions';
@@ -68,7 +68,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  <td><button type="button" className="customer-file-link" disabled={busy||dirty} onClick={e=>{e.stopPropagation();choose(r.id)}}>{customerReceiptId(r)}</button></td>
  <td><button type="button" className="customer-file-link" disabled={busy||dirty} onClick={e=>{e.stopPropagation();choose(r.id)}} title={r.fileName}>{r.fileName}</button></td>
  <td>{REVIEW_TYPES[review?.draft.documentType??'unclassified']}</td><td>{analysisJobLabel(analysis.jobs.find(j=>j.recordId===r.id))||(review?'AI 분석 완료':'미분석')}</td>
- {Object.entries(REVIEW_AREAS).map(([area,label])=><td className="review-count-column" key={area} onClick={e=>{e.stopPropagation();choose(r.id,area)}}><button type="button" disabled={busy||dirty} aria-label={`${customerReceiptId(r)} ${label.replace(/^\d+\. /,'')} 분석 결과 보기`}>{review?review.draft.items.filter(item=>item.area===area).length:'—'}</button></td>)}
+ {Object.entries(REVIEW_AREAS).map(([area,label])=>{const count=reviewAreaCounts(review,confirmed,area as ReviewArea);return <td className="review-count-column" key={area} onClick={e=>{e.stopPropagation();choose(r.id,area)}}><button type="button" disabled={busy||dirty} title="현재 분석 버전 기준 · 이전 버전의 확정 건수는 제외" aria-label={`${customerReceiptId(r)} ${label.replace(/^\d+\. /,'')} 분석 ${count.analyzed??'없음'}건, 확정 ${count.approved}건, 조건부 승인 ${count.conditional}건. 결과 보기`}><span>분석 {count.analyzed??'—'} · 확정 {count.approved}</span>{count.conditional>0&&<span>조건부 승인 {count.conditional}</span>}</button></td>})}
  </tr>;
  })}{!rows.length&&<tr><td colSpan={8}>{!data&&!error?'자료를 불러오는 중…':'표시할 문서가 없습니다.'}</td></tr>}</tbody></table></div> :tab==='pbom'?<>{pbom?.root?<PbomTable toolbarContainer={pbomToolbar} renderSource={renderSource} rows={pbom.rows.filter(r=>!query||`${JSON.stringify(r)} ${(r.sourceRecordIds??[r.recordId]).map(id=>{const source=data?.records.find(d=>d.id===id);return source?customerReceiptId(source):id}).join(' ')}`.toLowerCase().includes(query.toLowerCase()))} root={pbom.root} onOpenEditor={()=>onOpenBomEditor(pbom.root!.id)}/>:!pbomError&&<p className="production-help">{pbom?'기존 프로젝트의 TOP 품목을 생성하세요.':'BOM을 불러오는 중…'} {pbom&&data?.canReview&&<button disabled={busy} onClick={()=>void run(async()=>{const r=await fetch(`/api/projects/${project.id}/pbom`,{method:'POST'});const d=await r.json();if(!r.ok)throw Error(d.error);refresh()})}>TOP 품목 생성</button>}</p>}</>:<><p className="production-help">AI DATA REVIEW에서 확정한 추출사항입니다.</p><ReviewRequirementsTable rows={confirmedRows.filter(c=>`${JSON.stringify(c.item)}`.toLowerCase().includes(query.toLowerCase())).map(c=>({item:c.item,decision:`확정 v${c.version} · ${uploadTime(c.confirmedAt)}`}))}/></>}
  </section>

@@ -129,3 +129,18 @@ test('approval checks clear after required fields are supplied; optional weight 
  assert.equal(pbomApprovalIssues(buildBomRows([missing],[])).length,1);
  assert.equal(missing.bom.quantity,null);
 });
+
+
+test('list counts distinguish draft, actual approvals and conditional approvals for the current version',()=>{
+ const {reviewAreaCounts}=require('../lib/customer-review-contract.ts');
+ const items=['a','b','c'].map(id=>({...draft().items[0],id}));
+ const review={recordId:'raw-1',version:2,draft:{...draft(),items}};
+ const approved=(id,version=2,recordId='raw-1',status='approved')=>({id,recordId,version,item:{...items[0],id,approval:{status,issues:[]}}});
+ const records=[approved('a'),approved('a'),approved('b',2,'raw-1','conditional'),approved('c',1),approved('c',2,'other'),{...approved('c'),item:{...items[2],area:'extract'}}];
+ assert.deepEqual(reviewAreaCounts(review,records,'pbom'),{analyzed:3,approved:1,conditional:1});
+ assert.deepEqual(reviewAreaCounts(review,[],'pbom'),{analyzed:3,approved:0,conditional:0});
+ assert.deepEqual(reviewAreaCounts({...review,version:3},records,'pbom'),{analyzed:3,approved:0,conditional:0});
+ assert.deepEqual(reviewAreaCounts(undefined,records,'pbom'),{analyzed:null,approved:0,conditional:0});
+ const legacy=approved('a');delete legacy.item.approval;
+ assert.equal(reviewAreaCounts(review,[legacy],'pbom').approved,1);
+});

@@ -45,3 +45,13 @@ export function applyDrawingRootRevision(draft:ReviewDraft,recordId:string):Revi
  if(root.bom!.componentRevision.trim()&&!/^(미확인|unknown|n\/a|—|-)$/i.test(root.bom!.componentRevision.trim()))return draft;
  return {...draft,items:draft.items.map(item=>item.id===root.id?{...item,source:`${item.source} · 도면 표제란 Revision: ${revision}`,bom:{...item.bom!,componentRevision:revision}}:item)};
 }
+
+/** Counts refer to the displayed draft version; previous approvals belong to history. */
+export function reviewAreaCounts(review:ReviewState|undefined,confirmed:ConfirmedReview[],area:ReviewArea){
+ if(!review)return {analyzed:null,approved:0,conditional:0};
+ const items=review.draft.items.filter(item=>item.area===area),ids=new Set(items.map(item=>item.id));
+ const approvals=new Map(confirmed.filter(row=>row.recordId===review.recordId&&row.version===review.version&&row.item.area===area&&ids.has(row.item.id)).map(row=>[row.item.id,row]));
+ let approved=0,conditional=0;
+ for(const row of approvals.values()){if(row.item.approval?.status==='conditional')conditional++;else approved++;}
+ return {analyzed:items.length,approved,conditional};
+}

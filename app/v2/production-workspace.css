@@ -54,9 +54,9 @@
 .customer-document-list th:nth-child(3) { width: 150px; }
 .customer-document-list th:nth-child(5) { width: 110px; }
 .customer-document-list th:nth-child(6) { width: 124px; white-space: nowrap; }
-.customer-document-list .review-count-column { width: 80px; text-align: center; }
+.customer-document-list .review-count-column { width: 164px; text-align: center; white-space: nowrap; }
 .customer-document-list th:nth-child(9),.customer-document-list th:nth-child(10) { width: 140px; }
-.customer-document-list .review-count-column button { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; min-height: var(--v2-control-height); padding-inline: 0; text-align: center; font-variant-numeric: tabular-nums; }
+.customer-document-list .review-count-column button { display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; min-height: var(--v2-control-height); padding-inline: 0; text-align: center; font-variant-numeric: tabular-nums; }
 .cswind-data-table .customer-file-link { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .customer-document-list tr { cursor: pointer; }
 .customer-document-list tr.selected, .customer-document-list tbody tr:hover { background: var(--v2-surface-subtle); }
