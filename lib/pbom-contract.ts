@@ -8,7 +8,7 @@ export const DRAWING_AVAILABILITY_LABELS:Record<typeof DRAWING_AVAILABILITY[numb
  'Need Review':'도면 미확인',
 };
 export const WEIGHT_SOURCES=['Direct from Drawing','Parts List','Calculated from Child BOM','Not Available'] as const;
-export type BomFact={parentId:string|null;section:string;itemDescription:string;position:string;customerItemNumber:string;drawingNumber:string;componentRevision:string;quantity:number|null;unit:string;weight:number|null;weightUnit:string;weightSource:typeof WEIGHT_SOURCES[number];drawingAvailability:typeof DRAWING_AVAILABILITY[number];partType:'ASSEMBLY'|'PART';childrenComplete:boolean};
+export type BomFact={material?:string;parentId:string|null;section:string;itemDescription:string;position:string;customerItemNumber:string;drawingNumber:string;componentRevision:string;quantity:number|null;unit:string;weight:number|null;weightUnit:string;weightSource:typeof WEIGHT_SOURCES[number];drawingAvailability:typeof DRAWING_AVAILABILITY[number];partType:'ASSEMBLY'|'PART';childrenComplete:boolean};
 export type BomInput={id:string;recordId:string;source:string;bom?:BomFact};
 export type BomRow=BomInput & {sourceRecordIds?:string[];bom:BomFact;level:number;path:string;totalQuantity:number|null;calculatedWeight:number|null;calculatedWeightSource:typeof WEIGHT_SOURCES[number];internalPartNumber?:string;partId?:string;match?:'NEW'|'EXISTING'|'NEED_REVIEW'|'MANUAL';changed?:boolean;changeLabel?:string};
 export type BomIdentity={key:string;partId:string;partNumber:string;revision:string};
@@ -23,6 +23,7 @@ export function validateBomFacts(items:BomInput[]){
  const entries=items.filter((i):i is BomInput&{bom:BomFact}=>Boolean(i.bom)),byId=new Map(entries.map(i=>[i.id,i]));
  const identities=new Map<string,BomFact>();
  for(const i of entries){const b=i.bom;
+  if(b.material!==undefined&&typeof b.material!=='string')throw Error('재질은 원본 문자열로 입력하세요.');
   if(!b||!['ASSEMBLY','PART'].includes(b.partType)||typeof b.childrenComplete!=='boolean'||!DRAWING_AVAILABILITY.includes(b.drawingAvailability)||!WEIGHT_SOURCES.includes(b.weightSource)||['section','itemDescription','position','customerItemNumber','drawingNumber','componentRevision','unit','weightUnit'].some(k=>typeof b[k as keyof BomFact]!=='string')||!b.itemDescription.trim())throw Error('BOM 필수 필드 형식을 확인하세요.');
   if(b.quantity!==null&&(typeof b.quantity!=='number'||!Number.isFinite(b.quantity)||b.quantity<=0))throw Error('수량은 양수 또는 미확인(null)이어야 합니다.');
   if(b.weight!==null&&(typeof b.weight!=='number'||!Number.isFinite(b.weight)||b.weight<0))throw Error('중량은 0 이상 또는 미확인(null)이어야 합니다.');

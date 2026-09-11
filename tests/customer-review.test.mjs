@@ -71,3 +71,16 @@ test('validation errors retain their reason and do not overwrite prior data',asy
  const service=createCustomerReviewService({access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})},{list:async()=>({reviews:[]}),save:()=>assert.fail('must not save')},{get:async()=>({body:new Blob(['pdf']).stream()})},async()=>({answer:'추출',draft:bad}));
  await assert.rejects(service.analyze(scope,'raw-1',['raw-1'],'분석'),e=>e.status===422&&e.message.includes('분석 항목의 분류·근거'));
 });
+
+test('new PBOM parts carry source material into the existing specification field',async()=>{
+ const {createNumberedPart}=require('../db/repositories/pbom-repository.ts');
+ const {productParts}=require('../db/schema.ts');
+ let created;
+ const tx={
+  insert:table=>({values:value=>({onConflictDoNothing:()=>({returning:async()=>{if(table===productParts){created=value;return [value]}return []}})})}),
+  update:()=>({set:()=>({where:()=>({returning:async()=>[{prefix:'P',separator:'-',digits:6,nextSequence:2}]})})}),
+  select:()=>({from:()=>({where:()=>({limit:async()=>[]})})})
+ };
+ await createNumberedPart(tx,scope,'PLATE','PART','EA','S355J2');
+ assert.equal(created.spec,'S355J2');assert.equal(created.name,'PLATE');
+});

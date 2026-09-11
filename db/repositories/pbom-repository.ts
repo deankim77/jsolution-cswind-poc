@@ -15,13 +15,13 @@ const now=()=>Math.floor(Date.now()/1000);
 const scoped=(t:{companyId:AnyPgColumn;projectId:AnyPgColumn},s:CustomerDataScope)=>and(eq(t.companyId,s.companyId),eq(t.projectId,s.projectId));
 export async function lockPbomCompany(tx:Tx,companyId:string){await tx.select({id:companies.id}).from(companies).where(eq(companies.id,companyId)).for('update');}
 /** Uses the existing company setting and history; same namespace as manual PART creation. */
-export async function createNumberedPart(tx:Tx,s:{companyId:string;userId:string},name:string,partType:string,unit='EA'){
+export async function createNumberedPart(tx:Tx,s:{companyId:string;userId:string},name:string,partType:string,unit='EA',spec=''){
  await tx.insert(partNumberSettings).values({companyId:s.companyId,updatedAt:now()}).onConflictDoNothing();
  for(let attempt=0;attempt<10000;attempt++){
   const [setting]=await tx.update(partNumberSettings).set({nextSequence:sql`${partNumberSettings.nextSequence}+1`,updatedAt:now()}).where(eq(partNumberSettings.companyId,s.companyId)).returning();
   const partNumber=formatPartNumber(setting,setting.nextSequence-1),t=now();
   const [duplicate]=await tx.select({id:productParts.id}).from(productParts).where(and(eq(productParts.companyId,s.companyId),sql`LOWER(${productParts.partNumber})=LOWER(${partNumber})`)).limit(1);if(duplicate)continue;
-  const [part]=await tx.insert(productParts).values({id:randomUUID(),companyId:s.companyId,partNumber,name,partType,unit,createdBy:s.userId,createdAt:t,updatedAt:t}).onConflictDoNothing().returning();
+  const [part]=await tx.insert(productParts).values({id:randomUUID(),companyId:s.companyId,partNumber,name,partType,unit,spec,createdBy:s.userId,createdAt:t,updatedAt:t}).onConflictDoNothing().returning();
   if(!part)continue;
   await tx.insert(partNumberHistory).values({id:randomUUID(),companyId:s.companyId,partId:part.id,partNumber,ruleCode:`${setting.prefix}${setting.separator}SEQ${setting.digits}`,createdBy:s.userId,createdAt:t});return part;
  }
@@ -87,7 +87,7 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
  const baseline:WithdrawalBaseline[]=[];
  const nodeParts=new Map<string,string>(),byKey=new Map((await identityRows(tx,s)).map(i=>[i.key,i]));
  for(const row of rows){const b=row.bom,key=bomIdentity(b);let match=byKey.get(key);
-  if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit);await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
+  if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.material?.trim()||'');await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
   else {
    const [part]=await tx.select().from(productParts).where(and(eq(productParts.id,match.partId),eq(productParts.companyId,s.companyId)));
    const role=['ASSEMBLY','SUB_ASSEMBLY'].includes(part.partType)?'ASSEMBLY':'PART';
