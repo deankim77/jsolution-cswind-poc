@@ -1,14 +1,14 @@
 import {defaultDocumentRootQuantity,validateBomFacts,type BomFact} from './pbom-contract';
 import {TRR_SECTIONS} from './trr-contract';
 export const REVIEW_TYPES = {unclassified:'분류 확인 필요',drawing:'도면',bom:'부품 목록',specification:'사양서',requirement:'요구사항',report:'기술 보고서',work_instruction:'작업기준서',inspection:'검사기준서',other:'기타'} as const;
-export const REVIEW_AREAS = {pbom:'3. PBOM',extract:'4. AI 추출사항',trr:'5. TRR'} as const;
+export const REVIEW_AREAS = {pbom:'3. BOM',extract:'4. AI 추출사항',trr:'5. TRR'} as const;
 export const REVIEW_USE_TARGETS=['TTR','조립기준','검사기준','작업방법','기타'] as const;
 export type ReviewArea=keyof typeof REVIEW_AREAS;
 export type BulkReviewArea=Exclude<ReviewArea,'trr'>;
 export type ReviewUseTarget=typeof REVIEW_USE_TARGETS[number];
 export type MissingReviewData={field:string;reason:string};
 export type ReviewItem={id:string;area:ReviewArea;title:string;detail:string;source:string;recordId:string;trrSection?:typeof TRR_SECTIONS[number];trrKind?:'current'|'historical';useTargets?:ReviewUseTarget[];assy?:string;part?:string;itemNumber?:string;itemName?:string;bom?:BomFact;approval?:{status:'conditional'|'approved';issues:string[]}};
-export type ReviewDraft={analysisMode?:'text';documentType:keyof typeof REVIEW_TYPES;documentTypeConfirmed?:boolean;drawingNumber:string;revisionLabel:string;summary:string;missingData?:MissingReviewData[];uncertainties:string[];items:ReviewItem[]};
+export type ReviewDraft={analysisMode?:'text';documentType:keyof typeof REVIEW_TYPES;documentTypeConfirmed?:boolean;drawingTitle?:string;drawingNumber:string;revisionLabel:string;summary:string;missingData?:MissingReviewData[];uncertainties:string[];items:ReviewItem[]};
 export type ReviewMessage={role:'user'|'assistant';content:string};
 export type ReviewState={recordId:string;version:number;draft:ReviewDraft;messages:ReviewMessage[];updatedBy:string;updatedAt:number};
 export type ConfirmedReview={id:string;recordId:string;version:number;item:ReviewItem;confirmedBy:string;confirmedAt:number};
@@ -35,6 +35,7 @@ export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDra
   const invalid=(field:string,expected:string):never=>{throw new Error(`분석 결과 ${field}: ${expected}`)};
   if(!d||typeof d!=='object'||Array.isArray(d))invalid('draft','분석 결과 객체가 필요합니다.');
   if(!Object.hasOwn(REVIEW_TYPES,d.documentType))invalid('documentType','지원하는 문서 종류 코드가 필요합니다.');
+  if(d.drawingTitle!==undefined&&typeof d.drawingTitle!=='string')invalid('drawingTitle','문자열이 필요합니다.');
   for(const key of ['drawingNumber','revisionLabel','summary'] as const)if(typeof d[key]!=='string')invalid(key,'문자열이 필요합니다.');
   if(d.documentTypeConfirmed!==undefined&&typeof d.documentTypeConfirmed!=='boolean')invalid('documentTypeConfirmed','참/거짓 값이 필요합니다.');
   if(!Array.isArray(d.uncertainties))invalid('uncertainties','문자열 배열이 필요합니다.');

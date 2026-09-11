@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
+import React from "react";
 import {useCallback,useEffect,useMemo,useRef,useState,type ComponentType,type CSSProperties} from "react";
 import {
   AlertTriangle,Bell,CalendarDays,ChartNoAxesGantt,Check,ChevronDown,Clock3,CircleDollarSign,
@@ -29,6 +30,7 @@ import {
   type AiDraftRequest,type ArtifactPreviewData,type ContextItem,type IntegratedSearchResult,type PortfolioProjectPreset,
   type ReportAiRequest,type V2Project,
 } from "./deferred-workspaces";
+import ProductionDrawings from "./production-drawings";
 import ProductionWorkspace,{productionTabs,type ProductionTab} from "./production-workspace";
 import { PRODUCTION_PROJECT_CODE } from "../../lib/customer-data-contract";
 import {loadPinnedTabs,type PinnedView} from "./pinned-tabs-settings";
@@ -90,7 +92,7 @@ export default function NewWorkViewApp(){
   const [loadError,setLoadError]=useState("");
   const [view,setView]=useState<WorkView>("list");
   const [productionOpen,setProductionOpen]=useState(false);
-  const [productionTab,setProductionTab]=useState<ProductionTab>("customer");
+  const [productionTab,setProductionTab]=useState<ProductionTab|"drawings">("customer");
   const closeCustomerAi=useCallback(()=>{setPanelOpen(false)},[]);
   const [contextOpen,setContextOpen]=useState(true);
   const [selectedId,setSelectedId]=useState("");
@@ -135,7 +137,7 @@ export default function NewWorkViewApp(){
   const askConfirm=(title:string,message:string,danger=false)=>new Promise<boolean>(resolve=>{confirmResolver.current=resolve;setConfirmDialog({title,message,danger})});
   const closeConfirm=(value:boolean)=>{confirmResolver.current?.(value);confirmResolver.current=null;setConfirmDialog(null)};
   const openWorkspaceTab=(tab:WorkspaceTab)=>{setWorkspaceTabs(current=>current.some(item=>item.key===tab.key)?current:[...current,tab]);setActiveWorkspaceTab(tab.key);setWorkspaceViewState(tab.view)};
-  const openBomEditor=(rootId:string)=>openWorkspaceTab({key:`product-data:${rootId}`,view:"product-data",entityId:rootId,title:"PBOM 편집"});
+  const openBomEditor=(rootId:string)=>openWorkspaceTab({key:`product-data:${rootId}`,view:"product-data",entityId:rootId,title:"BOM 편집"});
   const openBomCompare=(leftRootId:string,rightRootId?:string)=>{if(!leftRootId)return;const key=`bom-compare:${leftRootId}${rightRootId?`:${rightRootId}`:""}`;openWorkspaceTab({key,view:"bom-compare",entityId:leftRootId,editId:rightRootId,title:"BOM 비교"})};
   useEffect(()=>{setProductionOpen(project?.projectTypeCode===PRODUCTION_PROJECT_CODE);setProductionTab("customer");setPanelOpen(false)},[project?.id,project?.projectTypeCode]);
   const setWorkspaceView=(next:WorkspaceView)=>{if(next==="issues")setIssueProjectPreset("");if(next==="wbs"&&project){openWorkspaceTab({key:`wbs:${project.id}`,view:"wbs",entityId:project.id,title:`WBS · ${project.name}`});return}openWorkspaceTab(genericWorkspaceTab(next))};
@@ -287,7 +289,7 @@ export default function NewWorkViewApp(){
   const activeWorkspace=workspaceTabs.find(item=>item.key===activeWorkspaceTab);
 
   return <main className={`wv2 ${contextOpen?"context-open":""} ${panelOpen?"panel-open":""}`}>
-    <GlobalRail onSearch={()=>setGlobalOpen(true)} onView={setWorkspaceView} active={workspaceView} />
+    <GlobalRail onSearch={()=>setGlobalOpen(true)} onView={setWorkspaceView} active={workspaceView} productionProject={project?.projectTypeCode===PRODUCTION_PROJECT_CODE} />
      {contextOpen&&<ContextNav project={project} projects={projects} user={sessionUser} active={workspaceView} onView={setWorkspaceView} onProject={next=>{setProject(next);setSelectedId("");setPanelOpen(false);if(workspaceView==="wbs")openWorkspaceTab({key:`wbs:${next.id}`,view:"wbs",entityId:next.id,title:`WBS · ${next.name}`})}} onClose={()=>setContextOpen(false)}/>}
     <section className="wv2-workspace">
       <header className="wv2-topbar">
@@ -330,11 +332,11 @@ export default function NewWorkViewApp(){
         </header>
         {statusNotice&&<p className="wv2-status-notice">{statusNotice}</p>}
         <nav className="wv2-view-tabs" aria-label="Work View">
-          {viewTabs.map(([key,label,Icon])=><button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{closeCustomerAi();setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button>)}
+          {viewTabs.map(([key,label,Icon])=><React.Fragment key={key}>{key==="edit"&&project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<><button className={productionOpen&&productionTab==="drawings"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("drawings");setProductionOpen(true)}}><FileText size={18}/>도면</button><button className={productionOpen&&productionTab==="pbom"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("pbom");setProductionOpen(true)}}><Table2 size={18}/>BOM</button></>}<button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{closeCustomerAi();setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button></React.Fragment>)}
           {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<span className="production-tab-spacer"/>}
-          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&productionTabs.map(([key,label])=><button key={key} className={productionOpen&&productionTab===key?"active":""} onClick={()=>{closeCustomerAi();setProductionTab(key);setProductionOpen(true)}}>{label}</button>)}
+          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&productionTabs.filter(([key])=>key!=="pbom").map(([key,label])=><button key={key} className={productionOpen&&productionTab===key?"active":""} onClick={()=>{closeCustomerAi();setProductionTab(key);setProductionOpen(true)}}>{label}</button>)}
         </nav>
-        {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?<ProductionWorkspace key={project.id} project={project} tab={productionTab} panelHidden={panelOpen} onCloseAi={closeCustomerAi} onOpenFilter={openWorkspaceFilter} onOpenBomEditor={openBomEditor}/>:<>
+        {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?productionTab==="drawings"?<ProductionDrawings key={project.id} projectId={project.id}/>:<ProductionWorkspace key={project.id} project={project} tab={productionTab} panelHidden={panelOpen} onCloseAi={closeCustomerAi} onOpenFilter={openWorkspaceFilter} onOpenBomEditor={openBomEditor}/>:<>
         <div className="wv2-toolbar">
           <button className="wv2-add" disabled={project.status!=="preparing"} onClick={()=>addTask()}><Plus size={18}/> 업무 추가 <ChevronDown size={18}/></button>
           <label><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="WBS, 업무, 담당자 검색"/></label>

@@ -9,7 +9,7 @@ import './customer-analysis-results.css';
 
 type Props={url:string;recordId:string;version:number;projectId:string;projectName:string;fileName:string;busy:boolean;canReview:boolean;hasConfirmed:boolean;onBusy:(value:boolean)=>void;onApplied:()=>void;onArea?:(area:ReviewArea)=>void;children?:ReactNode};
 type ReviewListResponse={reviews:ReviewState[]};
-const areaNames:Record<ReviewArea,string>={pbom:'PBOM',extract:'AI 추출사항',trr:'TRR'};
+const areaNames:Record<ReviewArea,string>={pbom:'BOM',extract:'AI 추출사항',trr:'TRR'};
 function legacyMissingData(draft:ReviewDraft):MissingReviewData[]{
  if(draft.missingData?.length)return draft.missingData;
  return draft.uncertainties.slice(0,12).map(text=>{
