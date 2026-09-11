@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+const require=createRequire(import.meta.url),ts=require('typescript');
+require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
+const {resolveDrawingTitle}=require('../lib/production-drawing-metadata.ts');
+const item=(name,overrides={})=>({recordId:'doc',area:'pbom',bom:{parentId:null,drawingNumber:'DWG',partType:'PART',itemDescription:name},...overrides});
+const draft=(items,extra={})=>({drawingNumber:'DWG',items,...extra});
+test('explicit Drawing Title wins',()=>assert.equal(resolveDrawingTitle(draft([item('Part')],{drawingTitle:' Drawing title '}),'doc'),'Drawing title'));
+test('old drafts use representative Item Description including standalone PART',()=>assert.equal(resolveDrawingTitle(draft([item('Bracket')]),'doc'),'Bracket'));
+test('child parts and other documents/drawings cannot supply title',()=>assert.equal(resolveDrawingTitle(draft([item('Other',{recordId:'other'}),item('Child',{bom:{parentId:'root',drawingNumber:'DWG',itemDescription:'Child'}}),item('Wrong',{bom:{parentId:null,drawingNumber:'OTHER',itemDescription:'Wrong'}})]),'doc'),''));
+test('conflicting representative names stay unresolved',()=>assert.equal(resolveDrawingTitle(draft([item('A'),item('B')]),'doc'),''));
+test('repeated identical representative names resolve',()=>assert.equal(resolveDrawingTitle(draft([item('A'),item('A')]),'doc'),'A'));
