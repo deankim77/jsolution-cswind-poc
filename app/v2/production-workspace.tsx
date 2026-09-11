@@ -39,7 +39,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const accept=(result:any)=>{if(!mounted.current)return;if(result.review){setPreviousDraft(draftRef.current);setReviews(values=>[result.review,...values.filter(r=>r.recordId!==result.review.recordId)]);setNotice('AI 분석 초안을 갱신했습니다. 확정 전 DATA입니다.');}};
  const post=async(body:unknown)=>{const r=await fetch(`${url}/review`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw Error(d.error);return d;};
  const run=async(action:()=>Promise<void>)=>{if(busy)return;setBusy(true);setError('');try{await action()}catch(e){setError((e as Error).message)}finally{if(mounted.current)setBusy(false)}};
- const analyze=()=>run(async()=>{const result=await post({recordId:selected,recordIds:[...new Set([selected,...checked])],message:'선택 문서 1건을 기준으로 문서 타입을 분류하고 PBOM과 AI 추출사항을 작성해 주세요. AI 추출사항은 활용 대상, 관련 ASSY/PART, 품번·품명과 추출 내용을 구조화하고 원본에 없는 내용은 만들지 마세요.'});accept(result)});
+ const analyze=()=>run(async()=>{const result=await post({recordId:selected,recordIds:[selected],message:'선택 문서 1건을 기준으로 문서 타입을 분류하고 PBOM과 AI 추출사항을 작성해 주세요. AI 추출사항은 활용 대상, 관련 ASSY/PART, 품번·품명과 추출 내용을 구조화하고 원본에 없는 내용은 만들지 마세요.'});accept(result)});
  const choose=(id:string,area='summary')=>{if(busy||dirty)return;onCloseAi();setSelected(id);setReviewTab(area);setPanelWide(false);setNotice('');setError('');};
  const close=()=>{if(busy)return;if(dirty&&!window.confirm('저장하지 않은 초안을 버리고 닫을까요?'))return;setSelected('');setDirty(false);};
  const popup=(id:string)=>{window.open(`${url}/${id}?preview=1&popup=1`,'_blank','popup,width=1200,height=900,noopener,noreferrer');};

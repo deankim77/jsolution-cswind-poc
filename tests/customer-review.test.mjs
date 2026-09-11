@@ -42,3 +42,26 @@ test('new AI responses cannot save unstructured BOM facts or use output examples
  await assert.rejects(createCustomerReviewService(raw,reviews,storage,async()=>{throw Error('must not call provider')}).analyze(scope,'raw-1',['raw-1'],'분석'));
  assert.equal(saved,0);
 });
+
+test('chat prepares authorized original files without analyzing or modifying drafts',async()=>{
+ const accessed=[],existing={recordId:'raw-1',draft:draft()};
+ const raw={get:async(s,id)=>{accessed.push(id);if(id!=='raw-1')throw Error('access denied');return {fileName:'drawing.png',fileSize:3,fileKey:'image'}}};
+ const reviews={list:async()=>({reviews:[existing,{recordId:'hidden',draft:draft()}]}),save:()=>assert.fail('chat must not save a draft')};
+ const storage={get:async()=>({body:new Blob(['png']).stream()})};
+ const service=createCustomerReviewService(raw,reviews,storage,()=>assert.fail('chat must not invoke analysis'));
+ const result=await service.prepareChat(scope,'raw-1',['raw-1'],'도면 설명');
+ assert.equal(result.files[0].mime,'image/png');assert.equal(result.files[0].bytes.toString(),'png');assert.deepEqual(result.drafts,[existing]);
+ await assert.rejects(service.prepareChat(scope,'raw-1',['raw-1','hidden'],'비교'),/access denied/);
+ assert.deepEqual(accessed,['raw-1','raw-1','hidden']);
+});
+test('analysis rejects multiple originals before loading files',async()=>{
+ const service=createCustomerReviewService({access:async()=>({canReview:true}),get:()=>assert.fail('must reject before file read')},{},{},()=>assert.fail('must not call AI'));
+ await assert.rejects(service.analyze(scope,'raw-1',['raw-1','raw-2'],'분석'),error=>error.status===400);
+});
+test('compact reanalysis prompt keeps identity references but omits prior long answers',()=>{
+ const {buildCustomerAnalysisPrompt}=require('../services/customer-review-prompts.ts');
+ const d=draft();d.summary='old-summary-marker';d.items[0].detail='old-detail-marker';
+ const prompt=buildCustomerAnalysisPrompt('raw-1',d,'분석');
+ assert.ok(prompt.includes('part-1'));assert.ok(!prompt.includes('old-summary-marker'));assert.ok(!prompt.includes('old-detail-marker'));
+ assert.ok(prompt.includes('componentRevision'));assert.ok(prompt.includes('useTargets'));
+});

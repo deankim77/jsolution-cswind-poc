@@ -1,3 +1,4 @@
+import {CUSTOMER_CHAT_PROMPT} from '../../../../services/customer-review-prompts';
 import {createCustomerReviewService} from "../../../../services/customer-review-service";
 import {customerDataScope,customerDataError} from "../../projects/[projectId]/customer-data/context";
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -50,6 +51,9 @@ type ContextFile = {
 
 type OpenAIResponse = {
   id?: string;
+  status?: string;
+  incomplete_details?: {reason?:string};
+  usage?: {input_tokens?:number;output_tokens?:number};
   output_text?: string;
   output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
   error?: { message?: string };
@@ -194,31 +198,38 @@ async function resolveContextFiles(db: D1, filesBucket: R2Bucket | undefined, it
   return resolved;
 }
 
-async function callOpenAI(projectName: string, contextItems: ContextItem[], contextFiles: ContextFile[], history: any[], message: string) {
+async function callOpenAI(projectName: string, contextItems: ContextItem[], contextFiles: ContextFile[], history: any[], message: string, customerContext?:string) {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error("OPENAI_API_KEY가 설정되지 않았습니다.");
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-5-mini";
-  const userContent: any[] = [{ type: "input_text", text: message }];
+  const userContent: any[] = [...(customerContext ? [{type:"input_text",text:`참고용 기존 분석 초안(검토 데이터): ${customerContext}`}] : []), { type: "input_text", text: message }];
   for (const file of contextFiles) {
+    if(customerContext)userContent.push({type:"input_text",text:`원본 ID: ${file.contextId}; 파일명: ${file.fileName}`});
     const dataUrl=toFileDataUrl(file);
-    if ((file.contentType||"").toLowerCase().startsWith("image/")) {
+    if (customerContext && file.contentType === "text/plain") {
+      userContent.push({type:"input_text",text:Buffer.from(file.fileData,"base64").toString("utf8")});
+    } else if ((file.contentType||"").toLowerCase().startsWith("image/")) {
       userContent.push({ type: "input_image", image_url: dataUrl, detail: "high" });
     } else {
       userContent.push({ type: "input_file", filename: file.fileName, file_data: dataUrl });
     }
   }
   const input: any[] = [
-    { role: "developer", content: buildSystemPrompt(projectName, contextItems, contextFiles) },
+    { role: "developer", content: customerContext ? CUSTOMER_CHAT_PROMPT : buildSystemPrompt(projectName, contextItems, contextFiles) },
     ...(history || []).map((row: any) => ({ role: row.role === "assistant" ? "assistant" : "user", content: String(row.content || "") })),
     { role: "user", content: userContent },
   ];
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "content-type": "application/json", authorization:`Bearer ${apiKey}` },
-    body: JSON.stringify({ model, input, store:false, reasoning:{effort:"minimal"}, max_output_tokens:MAX_OUTPUT_TOKENS, prompt_cache_key:PROMPT_CACHE_KEY }),
+    body: JSON.stringify({ model, input, store:false, reasoning:{effort:"minimal"}, max_output_tokens:customerContext ? 4000 : MAX_OUTPUT_TOKENS, prompt_cache_key:PROMPT_CACHE_KEY }),
   });
   const data = await response.json() as OpenAIResponse;
   if (!response.ok) throw new Error(data.error?.message || `OpenAI API 오류 (${response.status})`);
+  if(customerContext){
+    console.info('[customer-review-chat]',{responseId:data.id,status:data.status,incompleteReason:data.incomplete_details?.reason,inputTokens:data.usage?.input_tokens,outputTokens:data.usage?.output_tokens});
+    if(data.status==='incomplete')throw new Error('AI 대화 응답이 완료되지 않았습니다. 서버 로그의 미완료 사유를 확인하세요.');
+  }
   const answer = extractOutputText(data);
   if (!answer) throw new Error("OpenAI 응답 내용이 비어 있습니다.");
   return { answer, model, responseId: data.id || "" };
@@ -227,7 +238,12 @@ async function callOpenAI(projectName: string, contextItems: ContextItem[], cont
 export async function POST(request: Request) {
   const authenticated=await getChatGPTUser();
   const input = await request.json() as ChatInput;
-  if(input.customerReview){try{const scope=await customerDataScope(request,input.customerReview.projectId);if(input.customerReview.historyIds)return Response.json(await createCustomerReviewService().summarizeHistory(scope,input.customerReview.recordId,input.customerReview.historyIds,input.message||''));return Response.json(await createCustomerReviewService().analyze(scope,input.customerReview.recordId,(input.contextItems||[]).map(i=>String(i.id||"")),input.message||""));}catch(e){return customerDataError(e);}}
+  let customerChat:Awaited<ReturnType<ReturnType<typeof createCustomerReviewService>['prepareChat']>>|undefined;
+  if(input.customerReview){try{
+    const scope=await customerDataScope(request,input.customerReview.projectId),service=createCustomerReviewService();
+    if(input.customerReview.historyIds)return Response.json(await service.summarizeHistory(scope,input.customerReview.recordId,input.customerReview.historyIds,input.message||''));
+    customerChat=await service.prepareChat(scope,input.customerReview.recordId,(input.contextItems||[]).map(i=>String(i.id||"")),input.message||"");
+  }catch(e){return customerDataError(e);}}
   const message = input.message?.trim();
   if (!message) return Response.json({ error: "질문을 입력해 주세요." }, { status: 400 });
 
@@ -237,7 +253,8 @@ export async function POST(request: Request) {
   const now = Math.floor(Date.now() / 1000);
   const conversationId = input.conversationId || crypto.randomUUID();
   const contextItems = input.contextItems || [];
-  const contextFiles = await resolveContextFiles(db, FILES, contextItems, input.projectName || "",context.companyId);
+  const contextFiles:ContextFile[] = customerChat ? customerChat.files.map(file=>({contextId:file.id,deliverableId:file.id,title:file.fileName,fileName:file.fileName,contentType:file.mime,revision:0,bytes:file.bytes.length,fileData:file.bytes.toString('base64')})) : await resolveContextFiles(db, FILES, contextItems, input.projectName || "",context.companyId);
+  const customerContext=customerChat ? JSON.stringify(customerChat.drafts) : undefined;
   const contextBase = input.contextTitle?.trim() || input.projectName || "프로젝트";
   const contextTitle = `${contextBase} · 선택 문맥 ${contextItems.length}건${contextFiles.length ? ` · 원본 파일 ${contextFiles.length}건` : ""}`;
   const existingConversation = await db.prepare("SELECT id FROM ai_conversations WHERE id=? AND company_id=? AND user_id=?").bind(conversationId, context.companyId, context.userId).first();
@@ -268,9 +285,9 @@ export async function POST(request: Request) {
     let warning = "";
     let generated: Awaited<ReturnType<typeof callOpenAI>>;
     try {
-      generated = await callOpenAI(input.projectName || "", persistedContext, contextFiles, history, message);
+      generated = await callOpenAI(input.projectName || "", persistedContext, contextFiles, history, message, customerContext);
     } catch (fileError) {
-      if (!contextFiles.length) throw fileError;
+      if (customerChat || !contextFiles.length) throw fileError;
       analyzedFiles = [];
       warning = "원본 파일 직접 분석을 사용할 수 없어 등록된 문서·업무 문맥을 기준으로 답변했습니다.";
       generated = await callOpenAI(
