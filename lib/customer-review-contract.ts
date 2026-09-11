@@ -32,6 +32,18 @@ export function normalizeStoredReviewDraft(value:ReviewDraft):ReviewDraft {
 }
 export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDraft {
   const d=value as ReviewDraft;
+  const invalid=(field:string,expected:string):never=>{throw new Error(`분석 결과 ${field}: ${expected}`)};
+  if(!d||typeof d!=='object'||Array.isArray(d))invalid('draft','분석 결과 객체가 필요합니다.');
+  if(!Object.hasOwn(REVIEW_TYPES,d.documentType))invalid('documentType','지원하는 문서 종류 코드가 필요합니다.');
+  for(const key of ['drawingNumber','revisionLabel','summary'] as const)if(typeof d[key]!=='string')invalid(key,'문자열이 필요합니다.');
+  if(d.documentTypeConfirmed!==undefined&&typeof d.documentTypeConfirmed!=='boolean')invalid('documentTypeConfirmed','참/거짓 값이 필요합니다.');
+  if(!Array.isArray(d.uncertainties))invalid('uncertainties','문자열 배열이 필요합니다.');
+  d.uncertainties.forEach((entry,index)=>{if(typeof entry!=='string')invalid(`uncertainties[${index+1}]`,'문자열이 필요합니다.');});
+  if(d.missingData!==undefined){
+   if(!Array.isArray(d.missingData)||d.missingData.length>50)invalid('missingData','최대 50개의 field/reason 배열이 필요합니다.');
+   d.missingData.forEach((entry,index)=>{for(const key of ['field','reason'] as const)if(!entry||typeof entry[key]!=='string'||!entry[key].trim())invalid(`missingData[${index+1}].${key}`,'빈 값이 아닌 문자열이 필요합니다.');});
+  }
+  if(!Array.isArray(d.items)||d.items.length>300)invalid('items','최대 300개의 분석 항목 배열이 필요합니다.');
   if(!d||!Object.hasOwn(REVIEW_TYPES,d.documentType)||(d.documentTypeConfirmed!==undefined&&typeof d.documentTypeConfirmed!=='boolean')||typeof d.drawingNumber!=='string'||typeof d.revisionLabel!=='string'||typeof d.summary!=='string'||(d.missingData!==undefined&&(!Array.isArray(d.missingData)||d.missingData.length>50||d.missingData.some(x=>!x||typeof x.field!=='string'||!x.field.trim()||typeof x.reason!=='string'||!x.reason.trim())))||!Array.isArray(d.uncertainties)||d.uncertainties.some(x=>typeof x!=='string')||!Array.isArray(d.items)||d.items.length>300)throw new Error('분석 결과 형식을 확인하세요.');
   const items=(d.items as unknown as StoredReviewItem[]).map(normalizeReviewItem),ids=new Set<string>();
   for(const i of items){if(!i||!i.id||ids.has(i.id)||!Object.hasOwn(REVIEW_AREAS,i.area)||!allowedIds.includes(i.recordId)||(['title','detail','source'] as const).some(k=>typeof i[k]!=='string'||!i[k].trim()))throw new Error('분석 항목의 분류·근거를 확인하세요.');if(i.area==='extract'&&(!i.useTargets?.length||i.useTargets.some(target=>!(REVIEW_USE_TARGETS as readonly string[]).includes(target))))throw new Error('AI 추출사항의 활용 대상을 확인하세요.');ids.add(i.id);}

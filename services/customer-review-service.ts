@@ -1,4 +1,5 @@
 import {prepareReviewNumbers} from './customer-review-numbers';
+import {prepareReviewResponse} from './customer-review-response';
 import {createCustomerDataRepository,type CustomerDataScope} from '../db/repositories/customer-data-repository';
 import {createCustomerReviewRepository} from '../db/repositories/customer-review-repository';
 import {getStorageAdapter} from '../lib/storage-adapter';
@@ -53,7 +54,7 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  const result=await provider(prompt,files,true);
  let draft;
  try{
-  draft=validateReviewDraft(prepareReviewNumbers(result.draft),unique);
+  draft=validateReviewDraft(prepareReviewNumbers(prepareReviewResponse(result.draft)),unique);
   draft.documentTypeConfirmed=false;
   if(record.sourcePurpose==='ttr'&&draft.items.some(i=>i.area==='pbom'))throw Error('TRR 자료에서는 PBOM을 생성할 수 없습니다.');
   if(draft.documentType!=='drawing'&&draft.items.some(i=>i.area==='pbom'))throw Error('PBOM은 도면의 부품표에서만 추출할 수 있습니다.');
