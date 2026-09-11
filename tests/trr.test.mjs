@@ -10,11 +10,11 @@ const {validateTrrExtraction}=require('../lib/trr-contract.ts');
 const scope={companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']};
 const fact={kind:'current',summary:'조립 토크',facts:[{section:'조립',title:'체결 토크',detail:'320 Nm',reference:'p.1 §2'}]};
 function fixture(){
- const state={versions:[],records:[],job:null,calls:0,fail:false,writeFail:false,locked:false};
+ const state={versions:[],records:[],job:null,calls:0,fail:false,writeFail:false,locked:false,responses:[]};
  const files=new Map();
  const repo={list:async()=>({...state,canGenerate:true}),claim:async()=>state.locked?null:'token',heartbeat:async()=>{},finish:async(s,t,error)=>{state.job={status:error?'failed':'completed',error,updatedAt:0}},projectName:async()=> 'T800',save:async(s,t,data)=>{const row=structuredClone({...data,version:state.versions.length+1,createdAt:0,createdBy:'u'});state.versions.unshift(row);return {row,duplicate:false}},get:async(s,id)=>{const row=state.versions.find(v=>v.id===id);if(!row)throw Error('access denied');return row}};
  const storage={get:async key=>({body:new Blob([files.get(key)??'source']).stream()}),put:async(key,bytes)=>{if(state.writeFail)throw Error('storage failed');files.set(key,bytes)},delete:async key=>files.delete(key)};
- const service=createTrrService(repo,{list:async()=>({records:state.records})},storage,async()=>{state.calls++;if(state.fail)throw Error('AI failed');return structuredClone(fact)});
+ const service=createTrrService(repo,{list:async()=>({records:state.records})},storage,async()=>{state.calls++;if(state.fail)throw Error('AI failed');return structuredClone(state.responses.shift()??fact)});
  const add=(id,purpose='ttr')=>state.records.push({id,rawDataId:id,fileName:id+'.pdf',sourcePurpose:purpose,fileSize:5,fileKey:id,checksum:id,revision:1});
  return {state,files,service,add};
 }
@@ -40,4 +40,19 @@ test('source evidence is required and preview escapes source instructions and ma
  assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}));
  const doc={projectName:'T800',version:1,sources:[{id:'one',fileName:'sample.pdf',revision:1,kind:'historical',facts:[{...fact.facts[0],detail:'<script>alert(1)</script> 280 Nm'}]}]};
  const preview=previewTrr(doc,'V001');assert.ok(!preview.includes('<script>'));assert.match(preview,/과거 사례 참고/);assert.match(preview,/280 Nm/);assert.equal(Buffer.from(createTrrDocx(doc)).subarray(0,2).toString(),'PK');
+});
+test('section punctuation is normalized without accepting unknown classifications',()=>{
+ const value={...fact,facts:[{...fact.facts[0],section:' 제작 / 용접 / NDT '}]};
+ assert.equal(validateTrrExtraction(value).facts[0].section,'제작·용접·NDT');
+ assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],section:'알 수 없음'}]}),/1번.*section/);
+ assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}),/1번.*reference/);
+});
+test('invalid extraction gets one repair attempt and persistent failure identifies its source',async()=>{
+ const invalid={...fact,facts:[{...fact.facts[0],reference:''}]};
+ const f=fixture();f.add('spec');f.state.responses=[invalid,fact];await f.service.generate(scope);
+ assert.equal(f.state.calls,2);assert.equal(f.state.versions.length,1);
+ const first=JSON.stringify(f.state.versions[0]);f.add('bad');f.state.responses=[invalid,invalid];
+ await assert.rejects(f.service.generate(scope),/bad.pdf: TRR 1번.*reference/);
+ assert.equal(f.state.calls,4);assert.match(f.state.job.error,/bad.pdf/);
+ assert.equal(f.state.versions.length,1);assert.equal(JSON.stringify(f.state.versions[0]),first);
 });

@@ -9,9 +9,19 @@ export const trrVersionLabel=(version:number)=>`V${String(version).padStart(3,'0
 export function validateTrrExtraction(value:unknown):Pick<TrrSource,'kind'|'summary'|'facts'>{
  const v=value as Pick<TrrSource,'kind'|'summary'|'facts'>;
  if(!v||!['current','historical'].includes(v.kind)||typeof v.summary!=='string'||!v.summary.trim()||v.summary.length>500||!Array.isArray(v.facts)||v.facts.length>150||!v.facts.length)throw Error('TRR 추출 형식 또는 내용이 비어 있습니다.');
- for(const f of v.facts)if(!f||!TRR_SECTIONS.includes(f.section)||[f.title,f.detail,f.reference].some(s=>typeof s!=='string'||!s.trim()||s.length>6000))throw Error('TRR 항목의 본문·출처를 확인하세요.');
+ const sectionKey=(s:string)=>s.normalize('NFKC').replace(/[\s·ㆍ・/,&＋+\-]/g,'').toUpperCase();
+ const facts=v.facts.map((f,index)=>{
+  if(!f||typeof f.section!=='string')throw Error(`TRR ${index+1}번 항목: section(본문 분류)이 없습니다.`);
+  const section=TRR_SECTIONS.find(s=>sectionKey(s)===sectionKey(f.section));
+  if(!section)throw Error(`TRR ${index+1}번 항목: section(본문 분류)이 지정된 분류와 일치하지 않습니다.`);
+  for(const [field,label] of [['title','제목'],['detail','본문'],['reference','출처']] as const){
+   if(typeof f[field]!=='string'||!f[field].trim())throw Error(`TRR ${index+1}번 항목: ${field}(${label})가 비어 있습니다.`);
+   if(f[field].length>6000)throw Error(`TRR ${index+1}번 항목: ${field}(${label})가 6,000자를 초과합니다.`);
+  }
+  return {section,title:f.title.trim(),detail:f.detail.trim(),reference:f.reference.trim()};
+ });
  if(JSON.stringify(v).length>150000)throw Error('TRR 추출 내용이 너무 큽니다.');
- return {kind:v.kind,summary:v.summary,facts:v.facts.map(({section,title,detail,reference})=>({section,title,detail,reference}))};
+ return {kind:v.kind,summary:v.summary.trim(),facts};
 }
 export function trrChangeSummary(previous:TrrSource[],current:TrrSource[]){
  const added=current.filter(s=>!previous.some(p=>p.rawDataId===s.rawDataId));
