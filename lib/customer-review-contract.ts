@@ -51,10 +51,10 @@ export function reviewAreaCounts(review:ReviewState|undefined,confirmed:Confirme
  if(!review)return {analyzed:null,approved:0,conditional:0};
  const rows=confirmed.filter(row=>row.recordId===review.recordId&&row.item.area===area);
  const approvedRows=rows.filter(row=>row.item.approval?.status!=='conditional');
- // PBOM is confirmed as a whole document, so count its last applied snapshot.
+ // Conditional approval also completes review; count the latest PBOM approval snapshot.
  const appliedVersion=Math.max(0,...approvedRows.map(row=>row.version));
- const approved=new Set(approvedRows.filter(row=>area!=='pbom'||row.version===appliedVersion).map(row=>row.item.id)).size;
  const latestVersion=Math.max(0,...rows.map(row=>row.version));
+ const approved=new Set(rows.filter(row=>area!=='pbom'||row.version===latestVersion).map(row=>row.item.id)).size;
  const conditional=new Set(rows.filter(row=>row.version===latestVersion&&row.item.approval?.status==='conditional'&&row.version>appliedVersion).map(row=>row.item.id)).size;
  return {analyzed:review.draft.items.filter(item=>item.area===area).length,approved,conditional};
 }
