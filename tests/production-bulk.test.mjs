@@ -8,6 +8,12 @@ require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.r
 const {bulkCell,updateBulkCell,mergeBulkEdits,parseGridClipboard,activeBulkRows}=require('../lib/production-bulk-edit.ts');
 const item=(id='i')=>({id,recordId:'raw',area:'extract',title:'Note',detail:'Original',source:'page 1 notes',useTargets:['기타'],assy:'',part:'',itemNumber:'',itemName:''});
 const source=()=>({id:'confirmed',companyId:'c',projectId:'p',recordId:'raw',version:1,item:item(),confirmedBy:'u',confirmedAt:1});
+test('TRR display and editing preserve legacy target identity',()=>{
+ const row={...source(),item:{...item(),useTargets:['TTR','기타']}};
+ assert.equal(bulkCell(row,'extract','useTargets'),'TRR / 기타');
+ assert.deepEqual(updateBulkCell(row,'extract','useTargets','TRR / 기타').item.useTargets,['TTR','기타']);
+ assert.deepEqual(mergeBulkEdits([row],[row],'extract'),[row]);
+});
 test('clipboard handles Excel tabs, CRLF and quoted multiline cells',()=>{
  assert.deepEqual(parseGridClipboard('A\t"line1\nline2"\r\nB\t"say ""yes"""\r\n'),[['A','line1\nline2'],['B','say "yes"']]);
  assert.throws(()=>parseGridClipboard('"unfinished'));

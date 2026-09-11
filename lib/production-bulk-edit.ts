@@ -14,12 +14,12 @@ export function activeBulkRows(rows:ConfirmedReview[],area:ReviewArea):BulkRow[]
  const visit=(row:BulkRow,level:number)=>{if(visited.has(row.id))return;visited.add(row.id);ordered.push({...row,level});result.filter(child=>child.recordId===row.recordId&&child.item.bom?.parentId===row.item.id).sort(order).forEach(child=>visit(child,level+1));};
  result.filter(row=>!row.item.bom?.parentId).sort(order).forEach(row=>visit(row,1));result.sort(order).forEach(row=>visit(row,1));return ordered;
 }
-export function bulkCell(row:BulkRow,area:ReviewArea,key:string){const value=(area==='pbom'?row.item.bom:row.item) as unknown as Record<string,unknown>;const v=value?.[key];return Array.isArray(v)?v.join(' / '):v==null?'':String(v);}
+export function bulkCell(row:BulkRow,area:ReviewArea,key:string){const value=(area==='pbom'?row.item.bom:row.item) as unknown as Record<string,unknown>;const v=value?.[key];return Array.isArray(v)?v.map(entry=>key==='useTargets'&&entry==='TTR'?'TRR':entry).join(' / '):v==null?'':String(v);}
 export function updateBulkCell(row:BulkRow,area:ReviewArea,key:string,text:string):BulkRow{
  if(!bulkFields[area].some(([field])=>field===key))throw Error('편집할 수 없는 컬럼입니다.');
  let value:unknown=text;
  if(area==='pbom'&&['quantity','weight'].includes(key)){const normalized=text.trim().replaceAll(',','');value=normalized===''?null:Number(normalized);if(value!==null&&(!Number.isFinite(value)||Number(value)<0||(key==='quantity'&&Number(value)===0)))throw Error('수량은 양수, 중량은 0 이상으로 입력하세요. 미확인은 빈칸으로 두세요.');}
- if(key==='useTargets'){value=[...new Set(text.split(/[,/\n]/).map(v=>v.trim()).filter(Boolean))];if(!(value as string[]).length||(value as string[]).some(v=>!(REVIEW_USE_TARGETS as readonly string[]).includes(v)))throw Error('활용 대상: TTR / 조립기준 / 검사기준 / 작업방법 / 기타');}
+ if(key==='useTargets'){value=[...new Set(text.split(/[,/\n]/).map(v=>v.trim()==='TRR'?'TTR':v.trim()).filter(Boolean))];if(!(value as string[]).length||(value as string[]).some(v=>!(REVIEW_USE_TARGETS as readonly string[]).includes(v)))throw Error('활용 대상: TRR / 조립기준 / 검사기준 / 작업방법 / 기타');}
  return area==='pbom'?{...row,item:{...row.item,bom:{...row.item.bom!,[key]:value}}}:{...row,item:{...row.item,[key]:value}};
 }
 /** Only whitelisted cell values can cross the editing boundary. */

@@ -18,7 +18,7 @@ import {buildBomRows,type ProjectPbom,type BomRow} from '../../lib/pbom-contract
 import {useCustomerAnalysisJobs} from './use-customer-analysis-jobs';
 import {analysisJobLabel} from '../../lib/customer-analysis-job';
 import './production-workspace.css';
-export const productionTabs=[['customer','고객 Data'],['review','AI Data Review'],['pbom','PBOM'],['extract','AI 추출사항'],['ttr','TTR']] as const;
+export const productionTabs=[['customer','고객 Data'],['review','AI Data Review'],['pbom','PBOM'],['extract','AI 추출사항'],['ttr','TRR']] as const;
 export type ProductionTab=typeof productionTabs[number][0];
 export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,onOpenBomEditor,panelHidden=false}:{onOpenBomEditor:(rootId:string)=>void;onOpenFilter:(config:WorkspaceFilterConfig)=>void;project:V2Project;tab:ProductionTab;panelHidden?:boolean;onCloseAi:()=>void}){
  const [data,setData]=useState<CustomerDataList|null>(null),[reviews,setReviews]=useState<ReviewState[]>([]),[confirmed,setConfirmed]=useState<ConfirmedReview[]>([]),[reload,setReload]=useState(0),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[type,setType]=useState(''),[status,setStatus]=useState(''),[selected,setSelected]=useState(''),[checked,setChecked]=useState<string[]>([]),[draft,setDraft]=useState<ReviewDraft|null>(null),[itemIds,setItemIds]=useState<string[]>([]),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false);

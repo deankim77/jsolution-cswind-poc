@@ -19,7 +19,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  const [state,setState]=useState<BulkState|null>(null),[cells,setCells]=useState<Cells>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const url=`/api/projects/${projectId}/production-bulk`,columns=bulkFields[area],editing=Boolean(state?.lock?.mine),rows=state?.rows??[];
  const editorRows=area==='pbom'?(pbom?.rows??[]).flatMap(p=>{const row=rows.find(r=>r.id===p.confirmationId||(r.recordId===p.recordId&&r.item.id===p.sourceItemId));return row?[row]:[]}):rows;
- const targets=rows.map(row=>(cells[row.id]?.useTargets??bulkCell(row,'extract','useTargets')).split(/[,/\n]/).map(value=>value.trim()).filter(Boolean));
+ const targets=rows.map(row=>(cells[row.id]?.useTargets??bulkCell(row,'extract','useTargets')).split(/[,/\n]/).map(value=>value.trim()==='TRR'?'TTR':value.trim()).filter(Boolean));
  const identityValue=(row:BulkRow,key:'assy'|'part'|'itemNumber'|'itemName')=>(cells[row.id]?.[key]??bulkCell(row,'extract',key)).trim();
  const identityOptions=(key:'assy'|'part'|'itemNumber'|'itemName')=>[...new Set(rows.map(row=>identityValue(row,key)))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
  const visibleExtract=(row:BulkRow)=>(targetFilter==='ALL'||(targets[rows.findIndex(value=>value.id===row.id)]??[]).includes(targetFilter))&&(['assy','part','itemNumber','itemName'] as const).every(key=>!identityFilters[key]||JSON.stringify(identityValue(row,key))===identityFilters[key]);

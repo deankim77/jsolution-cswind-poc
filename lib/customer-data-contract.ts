@@ -1,6 +1,6 @@
 export const CUSTOMER_INTAKE_GROUPS={unclassified:'미분류',a_bt:'Category A · BT',a_wt:'Category A · WT',a_im:'Category A · IM',a_common:'Category A · 공통',b_initial:'Category B · 초기 BOM',b_change:'Category B · 변경',b_missing:'Category B · 누락 도면',b_parts:'Category B · 부품 목록',common:'A/B 공통'} as const;
 export type CustomerIntakeGroup=keyof typeof CUSTOMER_INTAKE_GROUPS;
-export const CUSTOMER_SOURCE_PURPOSES={bom:'BOM AI 추출',ttr:'TTR 문서 작성',input:'분석용 원본',template:'출력 템플릿',example:'출력 예시'} as const;
+export const CUSTOMER_SOURCE_PURPOSES={bom:'BOM AI 추출',ttr:'TRR 문서 작성',input:'분석용 원본',template:'출력 템플릿',example:'출력 예시'} as const;
 export type CustomerSourcePurpose=keyof typeof CUSTOMER_SOURCE_PURPOSES;
 export const PRODUCTION_PROJECT_CODE = "PRODUCTION";
 export const CUSTOMER_DOCUMENT_TYPES = {
@@ -8,7 +8,7 @@ export const CUSTOMER_DOCUMENT_TYPES = {
   requirement: "요구사항", report: "기술 보고서", other: "기타",
 } as const;
 export const CUSTOMER_IMPACT_TARGETS = {
-  unclassified: "미분류", pbom: "PBOM", requirement: "TTR / Requirement",
+  unclassified: "미분류", pbom: "PBOM", requirement: "TRR / Requirement",
   process: "Process Readiness", multiple: "복수 영역",
 } as const;
 export const MAX_CUSTOMER_FILE_BYTES = 50 * 1024 * 1024;

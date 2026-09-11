@@ -27,7 +27,7 @@ export default function CustomerDataWorkspace({project,embedded=false,purposeSco
  const uploadPurposes=purposeScope?[purposeScope]:['bom','ttr'] as const;
  const body=<><div className="wv2-toolbar">
  {open?<button disabled={uploading} onClick={()=>{setOpen(false)}}><ArrowLeft size={18}/>목록으로</button>:<><label><Search size={18}/><input aria-label="원본 검색" value={query} onChange={e=>setQuery(e.target.value)} placeholder="자료 ID·파일명·담당자 검색"/></label><button onClick={()=>setReload(v=>v+1)}><RefreshCw size={18}/>새로고침</button></>}
- <span className="cswind-data-count">{open?(purposeScope?'TTR 자료 일괄 업로드':'고객 자료 일괄 업로드'):`${rows.length}개 원본 · 최신 업로드순`}</span>
+ <span className="cswind-data-count">{open?(purposeScope?'TRR 자료 일괄 업로드':'고객 자료 일괄 업로드'):`${rows.length}개 원본 · 최신 업로드순`}</span>
  {!open&&<button className="wv2-add customer-source-register" disabled={!data?.canUpload} onClick={()=>{setResults([]);setOpen(true)}}><Plus size={18}/>원본 등록</button>}
  </div><section className="wv2-canvas customer-intake-canvas">
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}
