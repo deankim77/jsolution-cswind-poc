@@ -103,7 +103,7 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
      {shown.map(c=><td key={c.key} data-column={c.key} title={c.key==='description'?row.bom.itemDescription:c.key==='source'?row.source:undefined}>{renderCell?renderCell(c.key,row,cell(c.key,row,children)):cell(c.key,row,children)}</td>)}
      {editable&&<td><button type="button" onClick={()=>setEditing(row.id)}>수정</button></td>}
     </tr>;})}
-    {!displayed.length&&<tr><td colSpan={shown.length+(editable?1:0)}>표시할 구조화 BOM이 없습니다.</td></tr>}
+    {(!rows.length||(filtering&&!matching.length))&&<tr><td colSpan={shown.length+(editable?1:0)}>{rows.length?'필터에 맞는 BOM이 없습니다.':'표시할 구조화 BOM이 없습니다.'}</td></tr>}
    </tbody>
   </table></div>
   {selected&&onEdit&&<PbomEditDialog key={selected.id} row={selected} rows={rows} onSave={onEdit} onClose={()=>setEditing('')}/>}
