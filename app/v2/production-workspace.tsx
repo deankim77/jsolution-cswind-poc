@@ -31,6 +31,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const mounted=useRef(true);useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
  const url=`/api/projects/${project.id}/customer-data`,current=reviews.find(r=>r.recordId===selected),record=data?.records.find(r=>r.id===selected);
  const refresh=useCallback(()=>setReload(x=>x+1),[]);
+ useEffect(()=>{const saved=(event:MessageEvent)=>{if(event.origin===window.location.origin&&event.data?.type==='production-bulk-saved'&&event.data.projectId===project.id)refresh();};window.addEventListener('message',saved);return()=>window.removeEventListener('message',saved)},[project.id,refresh]);
  const analysis=useCustomerAnalysisJobs(url,refresh),selectedJob=analysis.jobs.find(j=>j.recordId===selected),analyzing=analysis.isPending(selected),mutationBusy=busy||analyzing;
  useEffect(()=>{const c=new AbortController();setError('');Promise.all([fetch(url,{signal:c.signal}),fetch(`${url}/review`,{signal:c.signal})].map(async r=>{const res=await r,d=await res.json();if(!res.ok)throw Error(d.error);return d})).then(([d,r])=>{setData(d);setReviews(r.reviews);setConfirmed(r.confirmed)}).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[url,reload]);
  useEffect(()=>{if(tab!=='review'&&tab!=='pbom')return;const c=new AbortController();setPbomError('');fetch(`/api/projects/${project.id}/pbom`,{signal:c.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);setPbom(d)}).catch(e=>{if(!c.signal.aborted)setPbomError(e.message)});return()=>c.abort()},[project.id,tab,reload]);
@@ -55,7 +56,6 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const areaIds=itemIds.filter(id=>areaItems.some(i=>i.id===id));
  const selectTab=(key:string)=>{setReviewTab(key);setEditing('');setItemIds([]);};
  if(tab==='customer')return <CustomerDataWorkspace key={project.id} project={project} embedded/>;
- useEffect(()=>{const saved=(event:MessageEvent)=>{if(event.origin===window.location.origin&&event.data?.type==='production-bulk-saved'&&event.data.projectId===project.id)refresh();};window.addEventListener('message',saved);return()=>window.removeEventListener('message',saved)},[project.id]);
  const renderSource=(ids:string[])=> <div className="customer-source-links">{[...new Set(ids.filter(Boolean))].map(id=>{const source=data?.records.find(r=>r.id===id);return source?<CustomerSourceLink key={id} record={source}/>:<span key={id} title={id}>{data?'원본 확인 필요':'자료 조회 중…'}</span>})}</div>;
  const confirmedRows=confirmed.filter(c=>c.item.area===tab&&!confirmed.some(n=>n.recordId===c.recordId&&n.item.id===c.item.id&&n.version>c.version));
  const chatIds=[...new Set([selected,...checked])];
