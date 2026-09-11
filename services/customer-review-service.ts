@@ -48,11 +48,16 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  if(typeof recordId!=='string'||!Array.isArray(ids)||ids.some(id=>typeof id!=='string')||!ids.includes(recordId)||ids.length!==1||typeof message!=='string'||!message.trim()||message.length>8000)throw new CustomerDataError('분석할 원본 문서 1건과 요청을 확인하세요.');
  const unique=[recordId],files=await loadFiles(s,unique);
  const reviewState=await reviews.list(s),current=reviewState.reviews.find(r=>r.recordId===recordId);
- const prompt=buildCustomerAnalysisPrompt(recordId);
+ const record=await raw.get(s,recordId);
+ const prompt=buildCustomerAnalysisPrompt(recordId,record.sourcePurpose);
  const result=await provider(prompt,files,true);
  let draft;
  try{
   draft=validateReviewDraft(prepareReviewNumbers(result.draft),unique);
+  draft.documentTypeConfirmed=false;
+  if(record.sourcePurpose==='ttr'&&draft.items.some(i=>i.area==='pbom'))throw Error('TRR 자료에서는 PBOM을 생성할 수 없습니다.');
+  if(draft.documentType!=='drawing'&&draft.items.some(i=>i.area==='pbom'))throw Error('PBOM은 도면의 부품표에서만 추출할 수 있습니다.');
+  if(record.sourcePurpose==='ttr'&&draft.items.some(i=>i.area!=='trr'))throw Error('TRR 자료의 반영 목차를 확인하세요.');
   if(draft.items.some(i=>i.area==='pbom'&&!i.bom))throw Error('PBOM 항목에 부품 정보가 없습니다.');
  }catch(reason){
   const detail=reason instanceof Error?reason.message:'분석 결과 형식 오류';
@@ -65,5 +70,5 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  },
  async save(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);const current=(await reviews.list(s)).reviews.find(r=>r.recordId===id);if(!current)throw new CustomerDataError('먼저 AI 분석을 실행하세요.');const allowed=(await raw.list(s)).records.map(r=>r.id);let draft;try{draft=validateReviewDraft(input.draft,allowed);}catch(e){throw new CustomerDataError((e as Error).message);}return reviews.save(s,id,input.version,draft,current.messages,'manual');},
  async cancel(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);if(!Object.hasOwn(REVIEW_AREAS,input.area)||!Array.isArray(input.confirmationIds)||input.confirmationIds.some((id:unknown)=>typeof id!=='string'))throw new CustomerDataError('취소할 확정 내역을 확인하세요.');return reviews.cancel(s,id,input.area,input.confirmationIds);},
- async confirm(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);if(!Number.isInteger(input.version)||!Array.isArray(input.itemIds)||input.itemIds.some((x:unknown)=>typeof x!=='string'))throw new CustomerDataError('확정 요청을 확인하세요.');return reviews.confirm(s,id,input.version,input.itemIds);}
+ async confirm(s:CustomerDataScope,id:string,input:any){await raw.get(s,id);if(!Number.isInteger(input.version)||!Array.isArray(input.itemIds)||input.itemIds.some((x:unknown)=>typeof x!=='string'))throw new CustomerDataError('확정 요청을 확인하세요.');const current=(await reviews.list(s)).reviews.find(r=>r.recordId===id);if(current?.draft.items.some(i=>i.area==='trr'&&input.itemIds.includes(i.id)))throw new CustomerDataError('TRR 탭의 TRR 반영 버튼을 사용하세요.');return reviews.confirm(s,id,input.version,input.itemIds);}
 };}

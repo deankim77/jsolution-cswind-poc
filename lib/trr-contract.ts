@@ -1,10 +1,10 @@
 export const TRR_SECTIONS=['일반 기술정보','자재','제작·용접·NDT','표면처리','조립','품질·검사','보관·운송·안전','변경·주의사항'] as const;
-export type TrrFact={section:typeof TRR_SECTIONS[number];title:string;detail:string;reference:string};
-export type TrrSource={id:string;rawDataId:string;fileName:string;checksum:string;revision:number;kind:'current'|'historical';summary:string;facts:TrrFact[]};
+export type TrrFact={id?:string;kind?:'current'|'historical';section:typeof TRR_SECTIONS[number];title:string;detail:string;reference:string};
+export type TrrSource={id:string;rawDataId:string;fileName:string;checksum:string;revision:number;reviewVersion?:number;kind:'current'|'historical';summary:string;facts:TrrFact[]};
 export type TrrDocument={projectName:string;version?:number;sources:TrrSource[]};
 export type TrrVersion={id:string;version:number;summary:string;createdAt:number;createdBy:string;sourceCount:number};
 export type TrrStatus={status:string;error:string|null;updatedAt:number}|null;
-export type TrrList={versions:TrrVersion[];job:TrrStatus;canGenerate:boolean};
+export type TrrList={versions:TrrVersion[];job:TrrStatus;canGenerate:boolean;appliedSources?:{id:string;reviewVersion?:number;factCount:number}[]};
 export const trrVersionLabel=(version:number)=>`V${String(version).padStart(3,'0')}`;
 export function validateTrrExtraction(value:unknown):Pick<TrrSource,'kind'|'summary'|'facts'>{
  const v=value as Pick<TrrSource,'kind'|'summary'|'facts'>;
@@ -25,7 +25,7 @@ export function validateTrrExtraction(value:unknown):Pick<TrrSource,'kind'|'summ
 }
 export function trrChangeSummary(previous:TrrSource[],current:TrrSource[]){
  const added=current.filter(s=>!previous.some(p=>p.rawDataId===s.rawDataId));
- const changed=current.filter(s=>previous.some(p=>p.rawDataId===s.rawDataId&&p.checksum!==s.checksum));
+ const changed=current.filter(s=>previous.some(p=>p.rawDataId===s.rawDataId&&(p.checksum!==s.checksum||JSON.stringify(p.facts)!==JSON.stringify(s.facts)||p.reviewVersion!==s.reviewVersion)));
  const removed=previous.filter(p=>!current.some(s=>s.rawDataId===p.rawDataId));
  const parts=[!previous.length?'최초 작성':'',added.length?`자료 ${added.length}건 추가`:'',changed.length?`자료 ${changed.length}건 갱신`:'',removed.length?`자료 ${removed.length}건 제외`:''].filter(Boolean);
  const topics=[...new Set([...added,...changed].flatMap(s=>s.facts.map(f=>f.section)))];

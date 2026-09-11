@@ -6,7 +6,7 @@ import type {ProjectPbom} from '../../lib/pbom-contract';
 import './production-workspace.css';
 import {PencilLine,Save,Undo2,X} from 'lucide-react';
 import {ReviewTargetFilter} from './review-requirements-table';
-import type {ReviewUseTarget,ReviewArea} from '../../lib/customer-review-contract';
+import type {ReviewUseTarget,BulkReviewArea as ReviewArea} from '../../lib/customer-review-contract';
 import {bulkFields,bulkCell,updateBulkCell,parseGridClipboard,type BulkState,type BulkRow} from '../../lib/production-bulk-edit';
 import './production-bulk-dialog.css';
 type Cells=Record<string,Record<string,string>>;

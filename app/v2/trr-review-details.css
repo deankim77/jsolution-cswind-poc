@@ -1,0 +1,12 @@
+.trr-review-details{display:grid;gap:12px;font-size:var(--v2-font-size-body)}
+.trr-review-details .analysis-card{display:grid;gap:12px}
+.trr-review-details label{display:grid;gap:6px}
+.trr-review-details input,.trr-review-details textarea,.trr-review-details select{width:100%;box-sizing:border-box;font:inherit;color:inherit}
+.trr-review-details textarea{resize:vertical}
+.trr-review-fields{display:flex;gap:12px;flex-wrap:wrap}
+.trr-review-fields label{flex:1;min-width:160px}
+.customer-review-canvas:has(.customer-document-list){display:flex;flex-direction:column;overflow:hidden}
+.customer-review-canvas>.cswind-data-table:has(.customer-document-list){flex:1;min-height:0;overflow:auto}
+.customer-document-list thead{position:sticky;top:0;z-index:2;background:var(--v2-surface-table-header)}
+.customer-analysis-results .analysis-data-counts{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.customer-analysis-results .analysis-data-counts>div{flex-wrap:wrap}

@@ -6,7 +6,7 @@ import {auditLogs,bomEditLocks,productBomItems,productParts} from '../schema';
 import {customerPartIdentities,productionBomRoots,customerBomOccurrences} from '../pbom-schema';
 import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
 import {applyConfirmedPbom,lockPbomCompany,numberApprovedPbom} from './pbom-repository';
-import {normalizeReviewItem,validateReviewDraft,type ReviewArea,type ConfirmedReview} from '../../lib/customer-review-contract';
+import {normalizeReviewItem,validateReviewDraft,type BulkReviewArea as ReviewArea,type ConfirmedReview} from '../../lib/customer-review-contract';
 import {activeBulkRows,mergeBulkEdits,type BulkRow} from '../../lib/production-bulk-edit';
 import {bomIdentity} from '../../lib/pbom-contract';
 import {CustomerDataError} from '../../lib/customer-data-contract';

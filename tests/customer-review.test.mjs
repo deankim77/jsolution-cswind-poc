@@ -14,6 +14,21 @@ test('a document without extracted facts may remain unresolved',()=>{const d=dra
 
 const {createCustomerReviewService}=require('../services/customer-review-service.ts');
 const {createCustomerDataService}=require('../services/customer-data-service.ts');
+test('TRR purpose saves review facts with Word destinations without creating PBOM',async()=>{
+ const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'SAF-001.pdf',fileSize:4,fileKey:'x',sourcePurpose:'ttr'})};
+ let resultDraft;
+ const reviews={list:async()=>({reviews:[]}),save:async(s,id,v,d)=>{resultDraft=d;return {recordId:id,version:1,draft:d}}};
+ const d=draft();d.documentType='report';d.items=[{id:'safety',area:'trr',recordId:'raw-1',title:'인양 주의',detail:'과거 프로젝트 인양 사례',source:'p.1',trrSection:'보관·운송·안전',trrKind:'historical'}];
+ const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob(['pdf']).stream()})},async prompt=>{assert.match(prompt,/PBOM은 생성하지 않는다/);assert.match(prompt,/trrSection/);return {draft:d,answer:'검토 초안'}});
+ await service.analyze(scope,'raw-1',['raw-1'],'분석');
+ assert.equal(resultDraft.items[0].area,'trr');assert.equal(resultDraft.items[0].trrSection,'보관·운송·안전');
+ d.items[0].trrSection='틀린 목차';await assert.rejects(service.analyze(scope,'raw-1',['raw-1'],'재분석'),/반영 목차/);
+});
+test('TRR input cannot create PBOM even when the provider returns it',async()=>{
+ const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'spec.pdf',fileSize:4,fileKey:'x',sourcePurpose:'ttr'})};
+ const service=createCustomerReviewService(raw,{list:async()=>({reviews:[]}),save:()=>assert.fail('must not save')},{get:async()=>({body:new Blob(['pdf']).stream()})},async()=>({draft:draft(),answer:'wrong'}));
+ await assert.rejects(service.analyze(scope,'raw-1',['raw-1'],'분석'),/TRR 자료에서는 PBOM/);
+});
 const scope={companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']};
 test('AI analysis saves only a draft; no confirmation is invoked',async()=>{
  let saved=0,confirmed=0;const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'test.pdf',fileSize:4,fileKey:'x'})};

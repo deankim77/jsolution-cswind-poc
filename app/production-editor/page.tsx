@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState} from 'react';
 import ProductionBulkDialog from '../v2/production-bulk-dialog';
-import type {ReviewArea} from '../../lib/customer-review-contract';
+import type {BulkReviewArea as ReviewArea} from '../../lib/customer-review-contract';
 import {customerReceiptId} from '../../lib/customer-data-contract';
 export default function ProductionEditorPage(){
  const [context,setContext]=useState<{projectId:string;projectName:string;area:ReviewArea}|null>(null),[sources,setSources]=useState<Record<string,string>>({});

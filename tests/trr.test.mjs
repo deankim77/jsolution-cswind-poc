@@ -10,49 +10,69 @@ const {validateTrrExtraction}=require('../lib/trr-contract.ts');
 const scope={companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']};
 const fact={kind:'current',summary:'조립 토크',facts:[{section:'조립',title:'체결 토크',detail:'320 Nm',reference:'p.1 §2'}]};
 function fixture(){
- const state={versions:[],records:[],job:null,calls:0,fail:false,writeFail:false,locked:false,responses:[]};
+ const state={versions:[],records:[],reviews:[],job:null,writeFail:false,locked:false,canReview:true};
  const files=new Map();
  const repo={list:async()=>({...state,canGenerate:true}),claim:async()=>state.locked?null:'token',heartbeat:async()=>{},finish:async(s,t,error)=>{state.job={status:error?'failed':'completed',error,updatedAt:0}},projectName:async()=> 'T800',save:async(s,t,data)=>{const row=structuredClone({...data,version:state.versions.length+1,createdAt:0,createdBy:'u'});state.versions.unshift(row);return {row,duplicate:false}},get:async(s,id)=>{const row=state.versions.find(v=>v.id===id);if(!row)throw Error('access denied');return row}};
- const storage={get:async key=>({body:new Blob([files.get(key)??'source']).stream()}),put:async(key,bytes)=>{if(state.writeFail)throw Error('storage failed');files.set(key,bytes)},delete:async key=>files.delete(key)};
- const service=createTrrService(repo,{list:async()=>({records:state.records})},storage,async()=>{state.calls++;if(state.fail)throw Error('AI failed');return structuredClone(state.responses.shift()??fact)});
- const add=(id,purpose='ttr')=>state.records.push({id,rawDataId:id,fileName:id+'.pdf',sourcePurpose:purpose,fileSize:5,fileKey:id,checksum:id,revision:1});
- return {state,files,service,add};
+ const storage={get:async key=>({body:new Blob([files.get(key)]).stream()}),put:async(key,bytes)=>{if(state.writeFail)throw Error('storage failed');files.set(key,bytes)},delete:async key=>files.delete(key)};
+ const service=createTrrService(repo,{access:async()=>({canReview:state.canReview}),get:async(s,id)=>{const r=state.records.find(r=>r.id===id);if(!r)throw Error('access denied');return r}},storage,{list:async()=>({reviews:state.reviews})});
+ const add=(id,purpose='ttr')=>{
+  state.records.push({id,rawDataId:id,fileName:id+'.pdf',sourcePurpose:purpose,fileSize:5,fileKey:id,checksum:id,revision:1});
+  state.reviews.push({recordId:id,version:1,draft:{documentType:'report',drawingNumber:'',revisionLabel:'',summary:'기술 검토',uncertainties:[],items:[{id:id+'-fact',recordId:id,area:'trr',trrSection:'조립',trrKind:'current',title:'체결 토크',detail:'320 Nm',source:'p.1 §2'}]}});
+ };
+ const apply=(id,version=1)=>service.generate(scope,{recordId:id,version});
+ return {state,files,service,add,apply};
 }
-test('new reports preserve previous snapshots and reuse unchanged source analysis',async()=>{
- const f=fixture();f.add('one');await f.service.generate(scope);const first=JSON.stringify(f.state.versions[0]);
- assert.equal(f.state.versions[0].document.version,1);assert.equal(f.files.size,1);
- await f.service.generate(scope);assert.equal(f.state.versions.length,1);assert.equal(f.state.calls,1);
- f.add('two');await f.service.generate(scope);assert.equal(f.state.versions.length,2);assert.equal(f.state.calls,2);assert.equal(f.files.size,2);assert.equal(JSON.stringify(f.state.versions[1]),first);assert.match(f.state.versions[0].summary,/1건 추가.*조립/);
- const comparison=await f.service.comparison(scope,f.state.versions.map(v=>v.id));assert.match(comparison.text,/V001/);assert.match(comparison.text,/320 Nm/);
+test('manual reflection uses only the requested review and preserves cumulative Word versions',async()=>{
+ const f=fixture();f.add('one');f.add('two');
+ assert.equal(f.state.versions.length,0);
+ await f.apply('one');const first=JSON.stringify(f.state.versions[0]);
+ assert.equal(f.state.versions[0].document.sources.length,1);
+ assert.equal(f.state.versions[0].document.sources[0].reviewVersion,1);
+ await f.apply('one');assert.equal(f.state.versions.length,1);assert.equal(f.files.size,1);
+ await f.apply('two');assert.equal(f.state.versions.length,2);assert.equal(f.state.versions[0].document.sources.length,2);
+ assert.equal(JSON.stringify(f.state.versions[1]),first);assert.match(f.state.versions[0].summary,/two.pdf.*1건 추가/);
+ const result=await f.service.list(scope);assert.equal(result.appliedSources.length,2);
 });
-test('analysis and file storage failures never advance or overwrite the last report',async()=>{
- const f=fixture();f.add('one');await f.service.generate(scope);const first=JSON.stringify(f.state.versions[0]);f.add('two');f.state.fail=true;
- await assert.rejects(f.service.generate(scope),/AI failed/);assert.equal(f.state.job.status,'failed');assert.equal(f.state.versions.length,1);assert.equal(JSON.stringify(f.state.versions[0]),first);
- f.state.fail=false;f.state.writeFail=true;await assert.rejects(f.service.generate(scope),/storage failed/);assert.equal(f.files.size,1);assert.equal(f.state.versions.length,1);
+test('revised review replaces one source without duplicating facts or changing other sources',async()=>{
+ const f=fixture();f.add('one');f.add('two');await f.apply('one');await f.apply('two');
+ const previous=JSON.stringify(f.state.versions),review=f.state.reviews[0];
+ review.version=2;review.draft.items[0].detail='280 Nm';review.draft.items[0].trrSection='품질·검사';
+ // Merely editing/re-extracting a review does not alter Word.
+ assert.equal(JSON.stringify(f.state.versions),previous);
+ await f.apply('one',2);
+ assert.equal(f.state.versions.length,3);assert.equal(f.state.versions[0].document.sources.length,2);
+ const doc=f.state.versions[0].document;
+ assert.equal(doc.sources.find(s=>s.id==='one').facts[0].detail,'280 Nm');
+ assert.equal(doc.sources.find(s=>s.id==='two').facts[0].detail,'320 Nm');
+ assert.match(f.state.versions[0].summary,/갱신.*품질·검사/);
+ assert.equal(JSON.stringify(f.state.versions.slice(1)),previous);
+ const compare=await f.service.comparison(scope,f.state.versions.slice(0,2).map(v=>v.id));assert.match(compare.text,/280 Nm/);assert.match(compare.text,/320 Nm/);
 });
-test('BOM-only reception does not create a TRR and active locks prevent generation',async()=>{
- const f=fixture();f.add('drawing','bom');await f.service.generate(scope);assert.equal(f.state.calls,0);f.add('spec');f.state.locked=true;await f.service.generate(scope);assert.equal(f.state.calls,0);
+test('invalid or stale drafts, missing selection, unauthorized and locked requests cannot generate',async()=>{
+ const f=fixture();f.add('one');
+ await assert.rejects(f.service.generate(scope),/검토한 문서/);
+ await assert.rejects(f.apply('one',0),/변경/);
+ await assert.rejects(f.apply('foreign'),/access denied/);
+ f.state.canReview=false;await assert.rejects(f.apply('one'),/PM/);f.state.canReview=true;
+ f.state.locked=true;await assert.rejects(f.apply('one'),/진행 중/);f.state.locked=false;
+ f.state.reviews[0].draft.items[0].source='';await assert.rejects(f.apply('one'),/근거/);
+ assert.equal(f.files.size,0);assert.equal(f.state.versions.length,0);
+});
+test('Word storage failure never advances a version or overwrites the previous report',async()=>{
+ const f=fixture();f.add('one');await f.apply('one');const first=JSON.stringify(f.state.versions[0]);f.add('two');f.state.writeFail=true;
+ await assert.rejects(f.apply('two'),/storage failed/);assert.equal(f.state.job.status,'failed');assert.equal(f.files.size,1);assert.equal(f.state.versions.length,1);assert.equal(JSON.stringify(f.state.versions[0]),first);
+});
+test('raw-only inputs cannot be reflected without TRR review facts',async()=>{
+ const f=fixture();f.add('one');f.state.reviews[0].draft.items=[];
+ await assert.rejects(f.apply('one'),/추출 내용/);
+ f.state.reviews=[];await assert.rejects(f.apply('one'),/분석 결과/);assert.equal(f.files.size,0);
 });
 test('comparison rejects duplicate, excessive, and inaccessible versions',async()=>{
  const f=fixture();await assert.rejects(f.service.comparison(scope,['one','one']));await assert.rejects(f.service.comparison(scope,Array.from({length:6},(_,i)=>String(i))));await assert.rejects(f.service.comparison(scope,['foreign','other']),/access denied/);
 });
-test('source evidence is required and preview escapes source instructions and markup',()=>{
- assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}));
- const doc={projectName:'T800',version:1,sources:[{id:'one',fileName:'sample.pdf',revision:1,kind:'historical',facts:[{...fact.facts[0],detail:'<script>alert(1)</script> 280 Nm'}]}]};
- const preview=previewTrr(doc,'V001');assert.ok(!preview.includes('<script>'));assert.match(preview,/과거 사례 참고/);assert.match(preview,/280 Nm/);assert.equal(Buffer.from(createTrrDocx(doc)).subarray(0,2).toString(),'PK');
-});
-test('section punctuation is normalized without accepting unknown classifications',()=>{
- const value={...fact,facts:[{...fact.facts[0],section:' 제작 / 용접 / NDT '}]};
- assert.equal(validateTrrExtraction(value).facts[0].section,'제작·용접·NDT');
- assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],section:'알 수 없음'}]}),/1번.*section/);
- assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}),/1번.*reference/);
-});
-test('invalid extraction gets one repair attempt and persistent failure identifies its source',async()=>{
- const invalid={...fact,facts:[{...fact.facts[0],reference:''}]};
- const f=fixture();f.add('spec');f.state.responses=[invalid,fact];await f.service.generate(scope);
- assert.equal(f.state.calls,2);assert.equal(f.state.versions.length,1);
- const first=JSON.stringify(f.state.versions[0]);f.add('bad');f.state.responses=[invalid,invalid];
- await assert.rejects(f.service.generate(scope),/bad.pdf: TRR 1번.*reference/);
- assert.equal(f.state.calls,4);assert.match(f.state.job.error,/bad.pdf/);
- assert.equal(f.state.versions.length,1);assert.equal(JSON.stringify(f.state.versions[0]),first);
+test('source evidence and known sections are required; preview escapes content and labels historical facts',()=>{
+ assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}),/reference/);
+ assert.equal(validateTrrExtraction({...fact,facts:[{...fact.facts[0],section:'제작 / 용접 / NDT'}]}).facts[0].section,'제작·용접·NDT');
+ const doc={projectName:'T800',version:1,sources:[{id:'one',fileName:'sample.pdf',revision:1,kind:'current',facts:[{...fact.facts[0],kind:'historical',detail:'<script>alert(1)</script> 280 Nm'}]}]};
+ const preview=previewTrr(doc,'V001');assert.ok(!preview.includes('<script>'));assert.match(preview,/과거 사례 참고/);assert.match(preview,/5. 조립/);assert.equal(Buffer.from(createTrrDocx(doc)).subarray(0,2).toString(),'PK');
 });

@@ -1,5 +1,4 @@
 import { createCustomerDataService } from "../../../../../services/customer-data-service";
-import {scheduleTrr} from '../../../../../services/trr-service';
 import { MAX_CUSTOMER_FILE_BYTES, CustomerDataError } from "../../../../../lib/customer-data-contract";
 import { customerDataError, customerDataScope } from "./context";
 type Params = { params: Promise<{ projectId: string }> };
@@ -21,8 +20,6 @@ export async function POST(request: Request, { params }: Params) {
     }
     if (Number(request.headers.get("content-length")) > MAX_CUSTOMER_FILE_BYTES + 1024 * 1024) throw new CustomerDataError("파일은 50MB 이하로 등록하세요.", 413);
     const record=await service.upload(scope, await request.formData(), true);
-    let trrWarning='';
-    try{await scheduleTrr(scope);}catch{trrWarning='원본은 등록됐지만 TRR 생성을 시작하지 못했습니다. TRR 탭에서 다시 생성해 주세요.';}
-    return Response.json({record,trrWarning}, { status: 201 });
+    return Response.json({record}, { status: 201 });
   } catch (reason) { return customerDataError(reason); }
 }

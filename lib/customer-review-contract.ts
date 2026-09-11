@@ -1,11 +1,13 @@
 import {defaultDocumentRootQuantity,validateBomFacts,type BomFact} from './pbom-contract';
+import {TRR_SECTIONS} from './trr-contract';
 export const REVIEW_TYPES = {unclassified:'분류 확인 필요',drawing:'도면',bom:'부품 목록',specification:'사양서',requirement:'요구사항',report:'기술 보고서',work_instruction:'작업기준서',inspection:'검사기준서',other:'기타'} as const;
-export const REVIEW_AREAS = {pbom:'3. PBOM',extract:'4. AI 추출사항'} as const;
+export const REVIEW_AREAS = {pbom:'3. PBOM',extract:'4. AI 추출사항',trr:'5. TRR'} as const;
 export const REVIEW_USE_TARGETS=['TTR','조립기준','검사기준','작업방법','기타'] as const;
 export type ReviewArea=keyof typeof REVIEW_AREAS;
+export type BulkReviewArea=Exclude<ReviewArea,'trr'>;
 export type ReviewUseTarget=typeof REVIEW_USE_TARGETS[number];
 export type MissingReviewData={field:string;reason:string};
-export type ReviewItem={id:string;area:ReviewArea;title:string;detail:string;source:string;recordId:string;useTargets?:ReviewUseTarget[];assy?:string;part?:string;itemNumber?:string;itemName?:string;bom?:BomFact;approval?:{status:'conditional'|'approved';issues:string[]}};
+export type ReviewItem={id:string;area:ReviewArea;title:string;detail:string;source:string;recordId:string;trrSection?:typeof TRR_SECTIONS[number];trrKind?:'current'|'historical';useTargets?:ReviewUseTarget[];assy?:string;part?:string;itemNumber?:string;itemName?:string;bom?:BomFact;approval?:{status:'conditional'|'approved';issues:string[]}};
 export type ReviewDraft={analysisMode?:'text';documentType:keyof typeof REVIEW_TYPES;documentTypeConfirmed?:boolean;drawingNumber:string;revisionLabel:string;summary:string;missingData?:MissingReviewData[];uncertainties:string[];items:ReviewItem[]};
 export type ReviewMessage={role:'user'|'assistant';content:string};
 export type ReviewState={recordId:string;version:number;draft:ReviewDraft;messages:ReviewMessage[];updatedBy:string;updatedAt:number};
@@ -16,7 +18,12 @@ const supportedStoredAreas=['pbom','extract','trr','readiness','work'] as const;
 const legacyTarget=(area:string):ReviewUseTarget=>area==='trr'?'TTR':area==='work'?'작업방법':'기타';
 export function normalizeReviewItem(value:StoredReviewItem):ReviewItem {
  if(!value||!supportedStoredAreas.includes(value.area as typeof supportedStoredAreas[number]))throw new Error('지원하지 않는 AI 분석 영역입니다.');
- const area:ReviewArea=value.area==='pbom'?'pbom':'extract';
+ if(value.area==='trr'&&typeof value.trrSection==='string'){
+  const key=(s:string)=>s.normalize('NFKC').replace(/[\s·ㆍ・/,&＋+\-]/g,'').toUpperCase();
+  value={...value,trrSection:TRR_SECTIONS.find(s=>key(s)===key(value.trrSection!))??value.trrSection};
+ }
+ // Older 'trr' rows were use-target notes, without a Word destination.
+ const area:ReviewArea=value.area==='pbom'?'pbom':value.area==='trr'&&value.trrSection!==undefined?'trr':'extract';
  const targets=Array.isArray(value.useTargets)?value.useTargets.filter((target):target is ReviewUseTarget=>typeof target==='string'&&(REVIEW_USE_TARGETS as readonly string[]).includes(target)):[];
  return {...value,area,useTargets:area==='pbom'?undefined:(targets.length?[...new Set(targets)]:[legacyTarget(value.area)]),assy:typeof value.assy==='string'?value.assy.trim():'',part:typeof value.part==='string'?value.part.trim():'',itemNumber:typeof value.itemNumber==='string'?value.itemNumber.trim():'',itemName:typeof value.itemName==='string'?value.itemName.trim():''};
 }
@@ -29,6 +36,7 @@ export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDra
   const items=(d.items as unknown as StoredReviewItem[]).map(normalizeReviewItem),ids=new Set<string>();
   for(const i of items){if(!i||!i.id||ids.has(i.id)||!Object.hasOwn(REVIEW_AREAS,i.area)||!allowedIds.includes(i.recordId)||(['title','detail','source'] as const).some(k=>typeof i[k]!=='string'||!i[k].trim()))throw new Error('분석 항목의 분류·근거를 확인하세요.');if(i.area==='extract'&&(!i.useTargets?.length||i.useTargets.some(target=>!(REVIEW_USE_TARGETS as readonly string[]).includes(target))))throw new Error('AI 추출사항의 활용 대상을 확인하세요.');ids.add(i.id);}
   if(items.some(i=>i.bom&&i.area!=='pbom'))throw new Error('BOM 구조는 PBOM 항목에만 저장할 수 있습니다.');
+  for(const i of items.filter(i=>i.area==='trr'))if(!TRR_SECTIONS.includes(i.trrSection!)||!['current','historical'].includes(i.trrKind??'')||[i.title,i.detail,i.source].some(v=>v.length>6000))throw new Error('TRR 반영 목차·자료 구분·본문 길이를 확인하세요.');
   validateBomFacts(items);
   const result={...d,missingData:d.missingData?.map(x=>({field:x.field.trim(),reason:x.reason.trim()})),items:items.map(defaultDocumentRootQuantity)};
   if(JSON.stringify(result).length>200000)throw new Error('분석 결과가 너무 큽니다.');

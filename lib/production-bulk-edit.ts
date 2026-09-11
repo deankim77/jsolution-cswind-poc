@@ -1,4 +1,4 @@
-import {REVIEW_USE_TARGETS,type ReviewArea,type ReviewItem,type ConfirmedReview} from './customer-review-contract';
+import {REVIEW_USE_TARGETS,type BulkReviewArea as ReviewArea,type ReviewItem,type ConfirmedReview} from './customer-review-contract';
 export type BulkRow={id:string;recordId:string;version:number;item:ReviewItem;partNumber?:string;level?:number};
 export type BulkState={rows:BulkRow[];canEdit:boolean;lock:null|{mine:boolean;token?:string;owner:string}};
 export const bulkFields={pbom:[['section','SECTION'],['itemDescription','Item Description'],['position','POS'],['customerItemNumber','Item No.'],['drawingNumber','Drawing No.'],['componentRevision','CompRev'],['quantity','Qty Per Unit'],['unit','수량 단위'],['weight','Weight'],['weightUnit','중량 단위'],['material','Material']],extract:[['useTargets','활용 대상'],['assy','ASSY'],['part','PART'],['itemNumber','품번'],['itemName','추출 항목'],['detail','AI 추출 내용']]} as const;

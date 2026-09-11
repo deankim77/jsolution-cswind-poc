@@ -6,7 +6,7 @@ export function trrBlocks(doc:TrrDocument):Block[]{
  const blocks:Block[]=[{text:'J SOLUTION',style:'Subtitle'},{text:`${doc.projectName} TRR`,style:'Title'},{text:'Technical Review Report',style:'Subtitle'},{text:'검토용 보고서'},{text:'서명 및 검토',style:'Heading1',page:true},{text:'작성자: ____________________    작성일: ____________________'},{text:'검토자: ____________________    검토일: ____________________'},{text:'승인자: ____________________    승인일: ____________________'},{text:'목차',style:'Heading1',page:true},...TRR_SECTIONS.map((s,i)=>({text:`${i+1}. ${s}`})),{text:'9. 참조자료'}];
  if(doc.version)blocks.splice(4,0,{text:trrVersionLabel(doc.version)});
  TRR_SECTIONS.forEach((section,index)=>{blocks.push({text:`${index+1}. ${section}`,style:'Heading1',page:index===0});let count=0;
-  for(const source of doc.sources)for(const fact of source.facts.filter(f=>f.section===section)){count++;blocks.push({text:fact.title,style:'Heading2'},{text:source.kind==='historical'?`과거 사례 참고 · ${fact.detail}`:fact.detail},{text:`근거: ${source.fileName} · ${fact.reference}`});}
+  for(const source of doc.sources)for(const fact of source.facts.filter(f=>f.section===section)){count++;blocks.push({text:fact.title,style:'Heading2'},{text:(fact.kind??source.kind)==='historical'?`과거 사례 참고 · ${fact.detail}`:fact.detail},{text:`근거: ${source.fileName} · ${fact.reference}`});}
   if(!count)blocks.push({text:'등록 자료에서 확인된 내용이 없습니다.'});
  });
  blocks.push({text:'9. 참조자료',style:'Heading1'});doc.sources.forEach((s,i)=>blocks.push({text:`${i+1}. ${s.fileName} | 자료 ID ${s.id} | 원본 Revision ${s.revision} | ${s.kind==='historical'?'과거 사례':'현재 기술자료'}`}));return blocks;
