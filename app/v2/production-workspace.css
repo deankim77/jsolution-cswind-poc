@@ -73,6 +73,18 @@
 .requirements-table td button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .requirements-table th:has(input) { width: 44px; }
 
+/* Keep the review metadata compact and reserve room for the full edit label. */
+.review-panel-body .requirements-table { min-width: 720px; }
+.review-panel-body .requirements-table th:nth-child(2) { width: 88px; }
+.review-panel-body .requirements-table th:nth-child(3),
+.review-panel-body .requirements-table th:nth-child(4) { width: 84px; }
+.review-panel-body .requirements-table th:nth-child(5) { width: 160px; }
+.review-panel-body .requirements-table th:last-child { width: 76px; }
+.review-panel-body .requirements-table td:nth-child(6) { white-space: normal; overflow-wrap: anywhere; padding-block: 8px; }
+.review-panel-body .requirements-table th:last-child,
+.review-panel-body .requirements-table td:last-child { text-align: center; }
+.review-panel-body .requirements-table td:last-child button { overflow: visible; text-overflow: clip; }
+
 .customer-source-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 .pbom-edit-dialog:not([open]) { display: none; }
