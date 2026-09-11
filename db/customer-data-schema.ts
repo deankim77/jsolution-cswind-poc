@@ -29,7 +29,7 @@ export const customerRawData = pgTable("customer_raw_data", {
   reviewedAt: integer("reviewed_at"),
 }, table => [
   check("customer_raw_data_intake_ck",sql`${table.intakeGroup} IN ('unclassified','a_bt','a_wt','a_im','a_common','b_initial','b_change','b_missing','b_parts','common')`),
-  check("customer_raw_data_purpose_ck",sql`${table.sourcePurpose} IN ('input','template','example')`),
+  check("customer_raw_data_purpose_ck",sql`${table.sourcePurpose} IN ('bom','ttr','input','template','example')`),
   uniqueIndex("customer_raw_data_receipt_uq").on(table.receiptNumber),
   uniqueIndex("customer_raw_data_revision_uq").on(table.projectId, table.rawDataId, table.revision),
   uniqueIndex("customer_raw_data_scope_uq").on(table.companyId, table.projectId, table.id),

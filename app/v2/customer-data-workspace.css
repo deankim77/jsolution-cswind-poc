@@ -29,3 +29,12 @@
 .cswind-data-table th { height: var(--v2-wbs-header-height); }
 .cswind-data-table td { height: var(--v2-wbs-row-height); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cswind-data-table th, .cswind-data-table td { box-sizing: border-box; }
+
+.wv2-toolbar > button.customer-source-register { background: var(--v2-color-primary); color: var(--v2-surface-content); border-color: var(--v2-color-primary); }
+.wv2-toolbar > button.customer-source-register:hover:not(:disabled),
+.wv2-toolbar > button.customer-source-register:focus-visible { background: var(--v2-color-primary-dark); color: var(--v2-surface-content); border-color: var(--v2-color-primary-dark); }
+.customer-intake-canvas .customer-thumb { display: flex; align-items: center; justify-content: center; width: var(--v2-control-height); height: var(--v2-control-height); }
+.customer-intake-canvas .customer-thumb img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.customer-upload-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--v2-space-4, 16px); }
+@media (max-width: 640px) { .customer-upload-cards { grid-template-columns: 1fr; } }
