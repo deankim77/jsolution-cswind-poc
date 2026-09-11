@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {createRequire} from 'node:module';
-const require=createRequire(import.meta.url);
-const entry=require.resolve('vinext');
+import {fileURLToPath} from 'node:url';
+const entry=fileURLToPath(import.meta.resolve('vinext'));
 const file=path.join(path.dirname(entry),'server/request-pipeline.js');
 const source=fs.readFileSync(file,'utf8');
 const before='cloned = new Request(request, { headers });';
