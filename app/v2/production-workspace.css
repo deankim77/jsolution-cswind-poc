@@ -129,3 +129,16 @@
 .pbom-part-tree-label > svg { flex-shrink: 0; }
 .pbom-part-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--muted); }
 .pbom-part-dot.is-assembly { background: var(--v2-color-primary); }
+
+/* Confirmed extraction list: compact metadata and a flexible, padded text column. */
+.customer-review-canvas > .ai-extract-filter { margin: 0; padding: 8px 12px; gap: 8px; background: var(--v2-surface-content); border-bottom: 1px solid var(--v2-border-color); font-size: var(--v2-font-size-control); }
+.customer-review-canvas > .ai-extract-filter button { display: inline-flex; align-items: center; gap: 4px; min-height: var(--v2-control-height); padding: 0 10px; border-radius: var(--v2-radius-sm); font: inherit; line-height: var(--v2-line-height-body); cursor: pointer; }
+.customer-review-canvas > .cswind-data-table:has(.ai-extract-table) { max-width: 100%; overflow: auto; }
+.customer-review-canvas .ai-extract-table { min-width: 960px; }
+.customer-review-canvas .ai-extract-table th:nth-child(1) { width: 120px; }
+.customer-review-canvas .ai-extract-table th:nth-child(2) { width: 140px; }
+.customer-review-canvas .ai-extract-table th:nth-child(3) { width: 120px; }
+.customer-review-canvas .ai-extract-table th:nth-child(4) { width: 200px; }
+.customer-review-canvas .ai-extract-table th { padding: 8px 12px; white-space: nowrap; }
+.customer-review-canvas .ai-extract-table td { padding: 12px; vertical-align: top; line-height: var(--v2-line-height-body); }
+.customer-review-canvas .ai-extract-table td.ai-extract-detail { white-space: pre-wrap; overflow-wrap: anywhere; line-height: var(--v2-line-height-body); }
