@@ -1,16 +1,15 @@
-import type {ReviewDraft} from './customer-review-contract';
+import type {BomRow} from './pbom-contract';
 
-/** Resolve document metadata without borrowing names from child parts or other drawings. */
-export function resolveDrawingTitle(draft: ReviewDraft, recordId: string): string {
-  const title = draft.drawingTitle?.trim();
-  if (title) return title;
-  const drawingNumber = draft.drawingNumber.trim();
-  if (!drawingNumber) return '';
-  const names = new Set(draft.items
-    .filter(item => item.recordId === recordId && item.area === 'pbom'
-      && item.bom?.parentId === null
-      && item.bom.drawingNumber.trim() === drawingNumber)
-    .map(item => item.bom!.itemDescription.trim())
-    .filter(Boolean));
-  return names.size === 1 ? [...names][0] : '';
+/** Use the same project BOM as the BOM tab; identify document roots by source linkage. */
+export function resolveBomDrawingMetadata(rows: BomRow[], recordId: string) {
+  const documentRows = rows.filter(row => row.recordId === recordId || row.sourceRecordIds?.includes(recordId));
+  const ids = new Set(documentRows.map(row => row.id));
+  const roots = documentRows.filter(row => !row.bom.parentId || !ids.has(row.bom.parentId));
+  const values = roots.map(({bom}) => ({
+    title: bom.itemDescription.trim(),
+    drawingNumber: bom.drawingNumber.trim(),
+    revisionLabel: bom.componentRevision.trim(),
+  }));
+  const unique = [...new Map(values.map(value => [JSON.stringify(value), value])).values()];
+  return unique.length === 1 ? unique[0] : {title: '', drawingNumber: '', revisionLabel: ''};
 }
