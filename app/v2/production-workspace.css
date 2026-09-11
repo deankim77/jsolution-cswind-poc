@@ -31,7 +31,7 @@
 .review-save-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; flex-shrink: 0; }
 .review-panel-body .review-decision button { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; box-sizing: border-box; width: auto; height: var(--v2-control-height); min-height: var(--v2-control-height); margin: 0; padding: 0 10px; line-height: var(--v2-line-height-body); font-family: inherit; font-size: var(--v2-font-size-control); white-space: nowrap; }
 .review-panel-body .review-decision button[hidden] { display: none; }
-.review-draft button:not(.wv2-panel-save), .production-table button { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; background: var(--v2-surface-content); color: var(--v2-color-primary); cursor: pointer; }
+.review-draft button:not(.wv2-panel-save):not(:where(.customer-analysis-results button)), .production-table button { font: inherit; min-height: var(--v2-control-height); border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); padding: 6px 10px; background: var(--v2-surface-content); color: var(--v2-color-primary); cursor: pointer; }
 .review-draft button:disabled { opacity: .5; cursor: default; }
 .review-confirm, .review-uncertain { padding: 12px; background: var(--v2-surface-subtle); }
 .review-detail-text { white-space: pre-wrap; }
