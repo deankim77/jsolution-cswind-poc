@@ -1,3 +1,4 @@
+import {assertNoProductionBulkLock} from './production-bulk-lock';
 import {defaultDocumentRootQuantity} from '../../lib/pbom-contract';
 import {applyConfirmedPbom,withdrawConfirmedPbom,lockPbomCompany} from './pbom-repository';
 import {randomUUID} from 'node:crypto';
@@ -20,6 +21,7 @@ export function createCustomerReviewRepository(db=getDb()) {
  async list(s:CustomerDataScope){await customerDataAccess(db,s);const reviews=(await db.select().from(customerReviews).where(where(s))).map(row=>({...row,draft:normalizeStoredReviewDraft(row.draft)}));const confirmed=(await db.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId))).orderBy(desc(customerConfirmedData.confirmedAt))).map(normalizeConfirmed);return {reviews,confirmed};},
  async save(s:CustomerDataScope,recordId:string,version:number,draft:ReviewDraft,messages:ReviewMessage[],kind:'analysis'|'manual'='manual'){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
+ await assertNoProductionBulkLock(tx,s);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 분석·수정할 수 있습니다.',403);
  const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if((old?.version??0)!==version)throw new CustomerDataError('다른 담당자가 수정했습니다. 최신 결과를 다시 불러오세요.',409);
@@ -29,6 +31,7 @@ export function createCustomerReviewRepository(db=getDb()) {
  });},
  async confirmDocumentType(s:CustomerDataScope,recordId:string,version:number,documentType:ReviewDraft['documentType']){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
+ await assertNoProductionBulkLock(tx,s);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 문서 타입을 확정할 수 있습니다.',403);
  const [old]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!old||old.version!==version)throw new CustomerDataError('분석 결과가 변경되었습니다. 다시 확인하세요.',409);
@@ -39,6 +42,7 @@ export function createCustomerReviewRepository(db=getDb()) {
  });},
  async confirm(s:CustomerDataScope,recordId:string,version:number,itemIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
+ await assertNoProductionBulkLock(tx,s);
  const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 확정할 수 있습니다.',403);
  const [review]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!review||review.version!==version)throw new CustomerDataError('검토 결과가 변경되었습니다. 다시 확인하세요.',409);
@@ -51,6 +55,7 @@ export function createCustomerReviewRepository(db=getDb()) {
  });},
  async cancel(s:CustomerDataScope,recordId:string,area:ReviewArea,confirmationIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);
+ await assertNoProductionBulkLock(tx,s);
  const permission=await customerDataAccess(tx,s,true);if(!permission.canReview)throw new CustomerDataError('PM 또는 PL만 확정을 취소할 수 있습니다.',403);
  const all=(await tx.select().from(customerConfirmedData).where(and(eq(customerConfirmedData.companyId,s.companyId),eq(customerConfirmedData.projectId,s.projectId),eq(customerConfirmedData.recordId,recordId))));
  const active=all.filter(row=>normalizeReviewItem(row.item as never).area===area);

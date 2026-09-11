@@ -85,6 +85,13 @@
       "when": 1789050000001,
       "tag": "0011_customer_receipt_number",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789130000000,
+      "tag": "0012_production_bulk_locks",
+      "breakpoints": true
     }
   ]
 }

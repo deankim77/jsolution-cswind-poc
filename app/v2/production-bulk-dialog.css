@@ -1,0 +1,16 @@
+.wv2-module-dialog.production-bulk-dialog { position: fixed; inset: 12px; margin: auto; width: calc(100vw - 24px); height: calc(100dvh - 24px); max-width: none; max-height: none; padding: 0; box-sizing: border-box; background: var(--v2-surface-content); color: var(--v2-color-ink); }
+.production-bulk-dialog[open] { display: flex; flex-direction: column; }
+.production-bulk-dialog:not([open]) { display: none; }
+.production-bulk-dialog > header,.production-bulk-dialog > .wv2-toolbar,.production-bulk-dialog > p { flex-shrink: 0; }
+.production-bulk-dialog .production-bulk-toolbar { flex-wrap: wrap; }
+.production-bulk-scroll { min-height: 0; flex: 1; overflow: auto; }
+.production-bulk-grid { table-layout: fixed; min-width: max-content; border-collapse: separate; border-spacing: 0; }
+.production-bulk-grid th { position: sticky; top: 0; z-index: 1; min-width: 150px; white-space: nowrap; }
+.production-bulk-grid th:first-child { min-width: 60px; }
+.production-bulk-grid th.production-bulk-detail { min-width: 600px; }
+.production-bulk-grid td { padding: 4px; vertical-align: top; }
+.production-bulk-grid td:first-child { padding: 8px 12px; }
+.production-bulk-grid input,.production-bulk-grid textarea { box-sizing: border-box; width: 100%; min-width: 140px; min-height: var(--v2-control-height); margin: 0; padding: 8px; border: 1px solid transparent; border-radius: var(--v2-radius-sm); background: transparent; color: inherit; font-family: inherit; font-size: var(--v2-font-size-body); line-height: var(--v2-line-height-body); }
+.production-bulk-grid textarea { min-width: 580px; min-height: 90px; resize: vertical; }
+.production-bulk-grid input:focus,.production-bulk-grid textarea:focus { outline: 2px solid var(--v2-color-primary); outline-offset: -2px; }
+.production-bulk-grid .production-bulk-changed { background: var(--v2-surface-warning); }

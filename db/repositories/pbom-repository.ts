@@ -1,3 +1,4 @@
+import {assertNoProductionBulkLock} from './production-bulk-lock';
 import {planPbomWithdrawal,type WithdrawalBaseline} from '../../lib/pbom-withdrawal';
 import {randomUUID} from 'node:crypto';
 import type {AnyPgColumn} from 'drizzle-orm/pg-core';
@@ -67,7 +68,8 @@ export function createPbomRepository(db=getDb()){return {
  async initialize(s:CustomerDataScope){return db.transaction(async tx=>{await lockPbomCompany(tx,s.companyId);const p=await customerDataAccess(tx,s,true);if(!p.canReview)throw new CustomerDataError('PM 또는 PL만 TOP을 생성할 수 있습니다.',403);const [project]=await tx.select().from(projectsDb).where(and(eq(projectsDb.id,s.projectId),eq(projectsDb.companyId,s.companyId)));return ensureProductionBomRoot(tx,s,project.name);});}
 };}
 /** Called in the review confirmation transaction: confirmation and BOM changes commit together. */
-export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[]){
+export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[],force=false){
+ await assertNoProductionBulkLock(tx,s,'pbom');
  if(items.some(i=>!i.bom||i.recordId!==recordId))throw new CustomerDataError('이 문서의 구조화된 BOM을 먼저 재분석하세요.',422);
  const rows=buildBomRows(items,await identityRows(tx,s));
  const issues=pbomApprovalIssues(rows);if(issues.length)return {conditional:true,issues};
@@ -81,7 +83,7 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
  if(locks.length!==affected.size)throw new CustomerDataError('TOP 또는 하위 ASSY가 편집 중입니다. 체크인 후 확정하세요.',409);
  const occurrenceRows=await tx.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s));
  const previous=occurrenceRows.filter(o=>o.recordId===recordId);
- if(previous.length&&previous.every(o=>o.version===version)&&previous.length===items.length){await tx.delete(bomEditLocks).where(inArray(bomEditLocks.id,lockIds));return;}
+ if(!force&&previous.length&&previous.every(o=>o.version===version)&&previous.length===items.length){await tx.delete(bomEditLocks).where(inArray(bomEditLocks.id,lockIds));return;}
  const baselineLogs=previous.length?await tx.select().from(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityId,recordId),eq(auditLogs.action,'PBOM_CONFIRM_BASELINE'))):[];
  const priorBaseline=baselineLogs.map(log=>JSON.parse(log.detail||'{}')).filter(log=>log.projectId===s.projectId).sort((a,b)=>(b.sequence??0)-(a.sequence??0)||b.version-a.version)[0];
  const baseline:WithdrawalBaseline[]=[];

@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Save,X} from 'lucide-react';
+import {createPortal} from 'react-dom';
 import {REVIEW_USE_TARGETS,type ReviewItem,type ReviewUseTarget} from '../../lib/customer-review-contract';
 import './review-requirements-table.css';
 
@@ -37,13 +38,14 @@ function ReviewItemEditDialog({item,disabled,onSave,onClose}:{item:ReviewItem;di
  </dialog>;
 }
 
-export default function ReviewRequirementsTable({rows,selected,onSelect,onEdit,disabled=false}:{rows:Row[];selected?:string[];onSelect?:(ids:string[])=>void;onEdit?:(item:ReviewItem)=>void|Promise<void>;disabled?:boolean;renderSource?:unknown}){
+export default function ReviewRequirementsTable({rows,selected,onSelect,onEdit,disabled=false,toolbarContainer}:{toolbarContainer?:HTMLElement|null;rows:Row[];selected?:string[];onSelect?:(ids:string[])=>void;onEdit?:(item:ReviewItem)=>void|Promise<void>;disabled?:boolean;renderSource?:unknown}){
  const [filter,setFilter]=useState<'ALL'|ReviewUseTarget>('ALL'),[editing,setEditing]=useState('');
  const filtered=useMemo(()=>filter==='ALL'?rows:rows.filter(({item})=>targetLabel(item).includes(filter)),[rows,filter]);
  const active=rows.find(({item})=>item.id===editing)?.item;
  const selectedVisible=filtered.filter(({item})=>selected?.includes(item.id)).length;
+ const filterControls=<div className="ai-extract-filter" role="group" aria-label="활용 대상 필터"><span>활용 대상</span><button type="button" className={filter==='ALL'?'active':''} onClick={()=>setFilter('ALL')}>전체 <b>{rows.length}</b></button>{REVIEW_USE_TARGETS.map(target=>{const count=rows.filter(({item})=>targetLabel(item).includes(target)).length;return <button type="button" key={target} className={filter===target?'active':''} onClick={()=>setFilter(target)}>{target} <b>{count}</b></button>})}</div>;
  return <>
-  <div className="ai-extract-filter" role="group" aria-label="활용 대상 필터"><span>활용 대상</span><button type="button" className={filter==='ALL'?'active':''} onClick={()=>setFilter('ALL')}>전체 <b>{rows.length}</b></button>{REVIEW_USE_TARGETS.map(target=>{const count=rows.filter(({item})=>targetLabel(item).includes(target)).length;return <button type="button" key={target} className={filter===target?'active':''} onClick={()=>setFilter(target)}>{target} <b>{count}</b></button>})}</div>
+  {toolbarContainer?createPortal(filterControls,toolbarContainer):toolbarContainer===undefined?filterControls:null}
   <div className="cswind-data-table"><table className="production-table requirements-table ai-extract-table"><thead><tr>{onSelect&&<th className="ai-extract-check"><input aria-label="AI 추출사항 전체 선택" type="checkbox" disabled={disabled||!filtered.length} checked={filtered.length>0&&selectedVisible===filtered.length} onChange={e=>{const visibleIds=new Set(filtered.map(r=>r.item.id));const keep=(selected??[]).filter(id=>!visibleIds.has(id));onSelect(e.target.checked?[...keep,...filtered.map(r=>r.item.id)]:keep)}}/></th>}<th>활용 대상</th><th>ASSY</th><th>PART</th><th>품번 / 품명</th><th>AI 추출 내용</th>{onEdit&&<th className="ai-extract-edit-column">수정</th>}</tr></thead><tbody>{filtered.map(({item})=><tr key={item.id}>{onSelect&&<td className="ai-extract-check"><input aria-label={`${item.title} 선택`} type="checkbox" disabled={disabled} checked={selected?.includes(item.id)??false} onChange={e=>onSelect(e.target.checked?[...(selected??[]),item.id]:(selected??[]).filter(id=>id!==item.id))}/></td>}<td><div className="ai-extract-targets">{targetLabel(item).map(target=><span key={target}>{target}</span>)}</div></td><td title={item.assy||''}>{item.assy||'—'}</td><td title={item.part||''}>{item.part||'—'}</td><td title={itemIdentity(item)}>{itemIdentity(item)}</td><td className="ai-extract-detail" title={item.detail}>{item.detail}</td>{onEdit&&<td className="ai-extract-edit-column"><button type="button" disabled={disabled} onClick={()=>setEditing(item.id)}>수정</button></td>}</tr>)}{!filtered.length&&<tr><td colSpan={(onSelect?1:0)+(onEdit?6:5)}>해당 활용 대상의 AI 추출사항이 없습니다.</td></tr>}</tbody></table></div>
   {active&&onEdit&&<ReviewItemEditDialog item={active} disabled={disabled} onSave={onEdit} onClose={()=>setEditing('')}/>} 
  </>;
