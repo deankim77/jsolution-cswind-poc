@@ -4,17 +4,24 @@ import PbomTable,{type ColumnKey} from './pbom-table';
 import type {ProjectPbom} from '../../lib/pbom-contract';
 import './production-workspace.css';
 import {PencilLine,Save,Undo2,X} from 'lucide-react';
-import type {ReviewArea} from '../../lib/customer-review-contract';
+import {ReviewTargetFilter} from './review-requirements-table';
+import type {ReviewUseTarget,ReviewArea} from '../../lib/customer-review-contract';
 import {bulkFields,bulkCell,updateBulkCell,parseGridClipboard,type BulkState,type BulkRow} from '../../lib/production-bulk-edit';
 import './production-bulk-dialog.css';
 type Cells=Record<string,Record<string,string>>;
 export default function ProductionBulkDialog({projectId,projectName,area,onClose,onSaved,sources}:{sources:Record<string,string>;projectId:string;projectName:string;area:ReviewArea;onClose:()=>void;onSaved:()=>void}){
+ const [targetFilter,setTargetFilter]=useState<'ALL'|ReviewUseTarget>('ALL');
+ const [identityFilters,setIdentityFilters]=useState({assy:'',part:''});
  const baseline=useRef<Cells>({});
  const inputs=useRef(new Map<string,HTMLInputElement|HTMLTextAreaElement>());
  const [pbom,setPbom]=useState<ProjectPbom|null>(null),[toolbar,setToolbar]=useState<HTMLDivElement|null>(null);
  const [state,setState]=useState<BulkState|null>(null),[cells,setCells]=useState<Cells>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const url=`/api/projects/${projectId}/production-bulk`,columns=bulkFields[area],editing=Boolean(state?.lock?.mine),rows=state?.rows??[];
  const editorRows=area==='pbom'?(pbom?.rows??[]).flatMap(p=>{const row=rows.find(r=>r.id===p.confirmationId||(r.recordId===p.recordId&&r.item.id===p.sourceItemId));return row?[row]:[]}):rows;
+ const targets=rows.map(row=>(cells[row.id]?.useTargets??bulkCell(row,'extract','useTargets')).split(/[,/\n]/).map(value=>value.trim()).filter(Boolean));
+ const identityValue=(row:BulkRow,key:'assy'|'part')=>(cells[row.id]?.[key]??bulkCell(row,'extract',key)).trim();
+ const identityOptions=(key:'assy'|'part')=>[...new Set(rows.map(row=>identityValue(row,key)))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ const visibleExtract=(row:BulkRow)=>(targetFilter==='ALL'||(targets[rows.findIndex(value=>value.id===row.id)]??[]).includes(targetFilter))&&(['assy','part'] as const).every(key=>!identityFilters[key]||JSON.stringify(identityValue(row,key))===identityFilters[key]);
  const accept=(next:BulkState,view=pbom)=>{setState(next);const values=Object.fromEntries(next.rows.map(row=>[row.id,Object.fromEntries(columns.map(([key])=>[key,bulkCell(row,area,key)]))]));
   if(area==='pbom')for(const p of view?.rows??[]){const row=next.rows.find(r=>r.id===p.confirmationId||(r.recordId===p.recordId&&r.item.id===p.sourceItemId));if(row)for(const [key] of columns)values[row.id][key]=bulkCell({...row,item:{...row.item,bom:p.bom}},area,key);}
   baseline.current=values;setCells(values);
@@ -57,7 +64,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  return <main className="production-bulk-window" aria-labelledby="production-bulk-title">
  <header className="production-bulk-heading"><h2 id="production-bulk-title">{area==='pbom'?'PBOM':'AI 추출사항'} 전체수정</h2><span>{projectName}</span></header>
  <div className="production-bulk-toolbar">
- <div className="production-bulk-view-controls pbom-toolbar-slot" ref={setToolbar}/>
+ <div className="production-bulk-view-controls pbom-toolbar-slot" ref={setToolbar}>{area==='extract'&&<ReviewTargetFilter targets={targets} filter={targetFilter} onChange={setTargetFilter}/>}</div>
  <span className="production-bulk-status" role="status">{area==='pbom'?pbom?.rows.length??0:rows.length}개 행 · 변경 {changed}개{busy?' · 처리 중…':editing?' · 편집 중':state?.lock?' · 다른 사용자 편집 중':' · 조회'}</span>
  <button type="button" className={!editing?"production-bulk-primary":undefined} title="편집 모드로 전환하고 다른 사용자의 동시 수정을 잠급니다." disabled={busy||!state?.canEdit||Boolean(state?.lock)||!editorRows.length} onClick={()=>void run(async()=>{await request('checkout');await reload();setNotice('');})}><PencilLine size={18}/>편집 모드(체크아웃)</button>
  <button type="button" className={editing?"production-bulk-primary":undefined} title="변경 내용을 저장하고 편집을 완료합니다." disabled={busy||!editing} onClick={()=>void run(async()=>{const edited=rows.map(row=>columns.reduce<BulkRow>((next,[key])=>cells[row.id]?.[key]===baseline.current[row.id]?.[key]?next:updateBulkCell(next,area,key,cells[row.id]?.[key]??''),row));const result=await request('checkin',{rows:edited});setState(s=>s?{...s,lock:null}:s);onSaved();await reload();setNotice(`${result.changed}개 행 저장 완료`);})}><Save size={18}/>편집 완료(체크인)</button>
@@ -69,7 +76,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  {area==='pbom'?<PbomTable compact rows={pbom?.rows??[]} root={pbom?.root} toolbarContainer={toolbar} renderSource={ids=>ids.map(id=>sources[id]||id).join(', ')} renderCell={(key,row,fallback:ReactNode)=>{
   const original=rows.find(r=>r.id===row.confirmationId||(r.recordId===row.recordId&&r.item.id===row.sourceItemId)),field=fields[key];
   return editing&&original&&field?renderInput(original,field,key):fallback;
- }}/>:<div className="production-bulk-scroll"><table className="production-table production-bulk-grid"><colgroup><col style={{width:52}}/>{columns.map(([key])=><col key={key} style={{width:key==='detail'?undefined:key==='useTargets'?110:key==='itemName'?180:140}}/>)}</colgroup><thead><tr><th scope="col">순번</th>{columns.map(([key,label])=><th key={key}>{label}</th>)}</tr></thead><tbody>{editorRows.map((row,index)=><tr key={row.id}><td className="production-bulk-sequence">{index+1}</td>{columns.map(([key,label])=><td key={key}>{renderInput(row,key,label)}</td>)}</tr>)}{!rows.length&&<tr><td colSpan={columns.length+1}>{state?'편집할 승인 항목이 없습니다.':'불러오는 중…'}</td></tr>}</tbody></table></div>}
+ }}/>:<div className="production-bulk-scroll"><table className="production-table production-bulk-grid"><colgroup><col style={{width:52}}/>{columns.map(([key])=><col key={key} style={{width:key==='detail'?undefined:key==='useTargets'?110:key==='itemName'?180:140}}/>)}</colgroup><thead><tr><th scope="col">순번</th>{columns.map(([key,label])=><th key={key}>{label}{(key==='assy'||key==='part')&&<select className="production-bulk-column-filter" aria-label={`${label} 필터`} value={identityFilters[key]} onChange={e=>setIdentityFilters(current=>({...current,[key]:e.target.value}))}><option value="">전체</option>{identityOptions(key).map(value=><option key={value} value={JSON.stringify(value)}>{value||'(빈 값)'}</option>)}</select>}</th>)}</tr></thead><tbody>{editorRows.map((row,index)=><tr key={row.id} hidden={!visibleExtract(row)}><td className="production-bulk-sequence">{index+1}</td>{columns.map(([key,label])=><td key={key}>{renderInput(row,key,label)}</td>)}</tr>)}{!editorRows.some(visibleExtract)&&<tr><td colSpan={columns.length+1}>{state?'선택한 필터에 해당하는 AI 추출사항이 없습니다.':'불러오는 중…'}</td></tr>}</tbody></table></div>}
  </div>
  </main>;
 }
