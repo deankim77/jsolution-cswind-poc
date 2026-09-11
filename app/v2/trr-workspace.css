@@ -1,0 +1,5 @@
+.trr-canvas { overflow: auto; }
+.trr-canvas > .cswind-data-table { overflow: visible; }
+.trr-history-table thead th { position: sticky; top: 0; z-index: 1; background: var(--v2-surface-table-header); }
+.trr-history-table td.trr-summary { white-space: normal; min-width: 240px; max-width: 480px; padding-top: 8px; padding-bottom: 8px; line-height: 1.5; }
+.trr-history-table td button, .trr-history-table td a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--v2-control-height); min-height: var(--v2-control-height); color: var(--v2-color-primary); }

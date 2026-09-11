@@ -3,6 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {FileText,Search,RefreshCw,Save,Filter,ExternalLink,PencilLine} from 'lucide-react';
 import CommonAiChatPanel from '../common-ai-chat-panel';
 import CustomerDataWorkspace,{uploadTime} from './customer-data-workspace';
+import TrrWorkspace from './trr-workspace';
 import type {V2Project} from './project-workspaces';
 import type {CustomerDataList} from '../../lib/customer-data-contract';
 import {REVIEW_AREAS,REVIEW_TYPES,reviewAreaCounts,type ReviewArea,type ReviewState,type ReviewDraft,type ConfirmedReview} from '../../lib/customer-review-contract';
@@ -56,7 +57,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const areaIds=itemIds.filter(id=>areaItems.some(i=>i.id===id));
  const selectTab=(key:string)=>{setReviewTab(key);setEditing('');setItemIds([]);};
  if(tab==='customer')return <CustomerDataWorkspace key={project.id} project={project} embedded/>;
- if(tab==='ttr')return <CustomerDataWorkspace key={`${project.id}:ttr`} project={project} embedded purposeScope="ttr"/>;
+ if(tab==='ttr')return <TrrWorkspace key={project.id} project={project} onCloseAi={onCloseAi}/>;
  const renderSource=(ids:string[])=> <div className="customer-source-links">{[...new Set(ids.filter(Boolean))].map(id=>{const source=data?.records.find(r=>r.id===id);return source?<CustomerSourceLink key={id} record={source}/>:<span key={id} title={id}>{data?'원본 확인 필요':'자료 조회 중…'}</span>})}</div>;
  const confirmedRows=confirmed.filter(c=>c.item.area===tab&&!confirmed.some(n=>n.recordId===c.recordId&&n.item.id===c.item.id&&n.version>c.version));
  const chatIds=[...new Set([selected,...checked])];
