@@ -157,3 +157,5 @@
 .customer-review-canvas .ai-extract-table td { height: var(--v2-control-height); }
 .review-panel-body .ai-extract-table th { width: auto; }
 .review-panel-body .ai-extract-table td.ai-extract-detail { white-space: pre-wrap; padding-block: 4px; }
+
+.production-table .ai-extract-sequence { text-align: center; font-variant-numeric: tabular-nums; }
