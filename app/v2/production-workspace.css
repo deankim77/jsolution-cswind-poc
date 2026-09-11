@@ -85,6 +85,17 @@
 .review-panel-body .requirements-table td:last-child { text-align: center; }
 .review-panel-body .requirements-table td:last-child button { overflow: visible; text-overflow: clip; }
 
+.wv2-module-dialog.ai-extract-edit-dialog { position: fixed; inset: 0; margin: auto; max-width: calc(100vw - 36px); max-height: calc(100dvh - 36px); box-sizing: border-box; }
+.wv2-module-dialog.ai-extract-edit-dialog:not([open]) { display: none; }
+.ai-extract-edit-dialog .ai-extract-edit-fields { min-width: 0; margin: 0; padding: 8px 0; }
+.ai-extract-edit-dialog .ai-extract-edit-fields > label { min-width: 0; }
+.ai-extract-edit-dialog .ai-extract-target-picker label { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ai-extract-edit-dialog .ai-extract-target-picker input[type="checkbox"] { width: var(--v2-icon-size); height: var(--v2-icon-size); flex: 0 0 var(--v2-icon-size); margin: 0; padding: 0; }
+.ai-extract-edit-dialog .ai-extract-target-picker label > span { white-space: nowrap; }
+.ai-extract-edit-dialog .ai-extract-source-note p { overflow-wrap: anywhere; }
+.wv2-module-dialog.ai-extract-edit-dialog footer button { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; min-height: var(--v2-control-height); }
+.wv2-module-dialog.ai-extract-edit-dialog footer button svg { flex-shrink: 0; }
+
 .customer-source-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 .pbom-edit-dialog:not([open]) { display: none; }
