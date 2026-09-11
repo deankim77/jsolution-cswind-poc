@@ -131,16 +131,18 @@ test('approval checks clear after required fields are supplied; optional weight 
 });
 
 
-test('list counts distinguish draft, actual approvals and conditional approvals for the current version',()=>{
+
+test('list counts retain actual approvals after reanalysis, deduplicate snapshots and exclude conditional approvals',()=>{
  const {reviewAreaCounts}=require('../lib/customer-review-contract.ts');
- const items=['a','b','c'].map(id=>({...draft().items[0],id}));
- const review={recordId:'raw-1',version:2,draft:{...draft(),items}};
- const approved=(id,version=2,recordId='raw-1',status='approved')=>({id,recordId,version,item:{...items[0],id,approval:{status,issues:[]}}});
- const records=[approved('a'),approved('a'),approved('b',2,'raw-1','conditional'),approved('c',1),approved('c',2,'other'),{...approved('c'),item:{...items[2],area:'extract'}}];
- assert.deepEqual(reviewAreaCounts(review,records,'pbom'),{analyzed:3,approved:1,conditional:1});
- assert.deepEqual(reviewAreaCounts(review,[],'pbom'),{analyzed:3,approved:0,conditional:0});
- assert.deepEqual(reviewAreaCounts({...review,version:3},records,'pbom'),{analyzed:3,approved:0,conditional:0});
+ const review={recordId:'raw-1',version:3,draft:{...draft(),items:['new-a','new-b'].map(id=>({...draft().items[0],id}))}};
+ const row=(id,version,status='approved',area='pbom',recordId='raw-1')=>({id,recordId,version,item:{...draft().items[0],id,area,approval:{status,issues:[]}}});
+ const old=row('old-a',1);delete old.item.approval;
+ assert.deepEqual(reviewAreaCounts(review,[old,old],'pbom'),{analyzed:2,approved:1,conditional:0});
+ const records=[old,row('b',2),row('c',2),row('b',2),row('new-a',3,'conditional'),row('new-b',3,'conditional'),row('foreign',3,'approved','pbom','other')];
+ assert.deepEqual(reviewAreaCounts(review,records,'pbom'),{analyzed:2,approved:2,conditional:2});
+ assert.deepEqual(reviewAreaCounts(review,[...records,row('new-a',4),row('new-b',4)],'pbom'),{analyzed:2,approved:2,conditional:0});
+ assert.deepEqual(reviewAreaCounts(review,[],'pbom'),{analyzed:2,approved:0,conditional:0});
+ const extracts=[row('a',1,'approved','extract'),row('a',2,'approved','extract'),row('b',2,'approved','extract')];
+ assert.deepEqual(reviewAreaCounts(review,extracts,'extract'),{analyzed:0,approved:2,conditional:0});
  assert.deepEqual(reviewAreaCounts(undefined,records,'pbom'),{analyzed:null,approved:0,conditional:0});
- const legacy=approved('a');delete legacy.item.approval;
- assert.equal(reviewAreaCounts(review,[legacy],'pbom').approved,1);
 });

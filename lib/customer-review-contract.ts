@@ -46,12 +46,15 @@ export function applyDrawingRootRevision(draft:ReviewDraft,recordId:string):Revi
  return {...draft,items:draft.items.map(item=>item.id===root.id?{...item,source:`${item.source} · 도면 표제란 Revision: ${revision}`,bom:{...item.bom!,componentRevision:revision}}:item)};
 }
 
-/** Counts refer to the displayed draft version; previous approvals belong to history. */
+/** Latest analysis and active confirmations are independent; reanalysis does not cancel approvals. */
 export function reviewAreaCounts(review:ReviewState|undefined,confirmed:ConfirmedReview[],area:ReviewArea){
  if(!review)return {analyzed:null,approved:0,conditional:0};
- const items=review.draft.items.filter(item=>item.area===area),ids=new Set(items.map(item=>item.id));
- const approvals=new Map(confirmed.filter(row=>row.recordId===review.recordId&&row.version===review.version&&row.item.area===area&&ids.has(row.item.id)).map(row=>[row.item.id,row]));
- let approved=0,conditional=0;
- for(const row of approvals.values()){if(row.item.approval?.status==='conditional')conditional++;else approved++;}
- return {analyzed:items.length,approved,conditional};
+ const rows=confirmed.filter(row=>row.recordId===review.recordId&&row.item.area===area);
+ const approvedRows=rows.filter(row=>row.item.approval?.status!=='conditional');
+ // PBOM is confirmed as a whole document, so count its last applied snapshot.
+ const appliedVersion=Math.max(0,...approvedRows.map(row=>row.version));
+ const approved=new Set(approvedRows.filter(row=>area!=='pbom'||row.version===appliedVersion).map(row=>row.item.id)).size;
+ const latestVersion=Math.max(0,...rows.map(row=>row.version));
+ const conditional=new Set(rows.filter(row=>row.version===latestVersion&&row.item.approval?.status==='conditional'&&row.version>appliedVersion).map(row=>row.item.id)).size;
+ return {analyzed:review.draft.items.filter(item=>item.area===area).length,approved,conditional};
 }
