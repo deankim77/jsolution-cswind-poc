@@ -22,6 +22,23 @@ function fixture(){
  const apply=(id,version=1)=>service.generate(scope,{recordId:id,version});
  return {state,files,service,add,apply};
 }
+test('selected confirmation preserves unselected facts and cancellation saves a new snapshot',async()=>{
+ const f=fixture();f.add('one');f.add('two');await f.apply('two');
+ const draft=f.state.reviews[0].draft;
+ draft.items.push({...draft.items[0],id:'extra',title:'추가 조건',detail:'확인 필요'});
+ const input={recordId:'one',version:1,action:'confirm',itemIds:['one-fact'],wordVersion:1};
+ await f.service.generate(scope,input);
+ assert.equal(f.state.versions[0].document.sources.find(s=>s.id==='one').facts.length,1);
+ assert.equal(f.state.versions[0].document.sources.find(s=>s.id==='one').reviewVersion,undefined);
+ const old=JSON.stringify(f.state.versions[0]);
+ await assert.rejects(()=>f.service.generate(scope,input),/Word 버전이 변경/);
+ await f.service.generate(scope,{...input,itemIds:['extra'],wordVersion:2});
+ assert.equal(f.state.versions[0].document.sources.find(s=>s.id==='one').facts.length,2);
+ assert.equal(JSON.stringify(f.state.versions[1]),old);
+ await f.service.generate(scope,{recordId:'one',version:1,action:'cancel',wordVersion:3});
+ assert.deepEqual(f.state.versions[0].document.sources.map(s=>s.id),['two']);
+ assert.equal(f.state.versions.length,4);
+});
 test('manual reflection uses only the requested review and preserves cumulative Word versions',async()=>{
  const f=fixture();f.add('one');f.add('two');
  assert.equal(f.state.versions.length,0);
