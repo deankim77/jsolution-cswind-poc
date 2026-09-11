@@ -1,6 +1,7 @@
 export const CUSTOMER_INTAKE_GROUPS={unclassified:'미분류',a_bt:'Category A · BT',a_wt:'Category A · WT',a_im:'Category A · IM',a_common:'Category A · 공통',b_initial:'Category B · 초기 BOM',b_change:'Category B · 변경',b_missing:'Category B · 누락 도면',b_parts:'Category B · 부품 목록',common:'A/B 공통'} as const;
 export type CustomerIntakeGroup=keyof typeof CUSTOMER_INTAKE_GROUPS;
-export const CUSTOMER_SOURCE_PURPOSES={bom:'BOM AI 추출',ttr:'TRR 문서 작성',input:'분석용 원본',template:'출력 템플릿',example:'출력 예시'} as const;
+// Preserve legacy purpose keys; present the two current upload purposes consistently.
+export const CUSTOMER_SOURCE_PURPOSES={bom:'BOM AI 추출',ttr:'TRR 문서 작성',input:'BOM AI 추출',template:'TRR 문서 작성',example:'TRR 문서 작성'} as const;
 export type CustomerSourcePurpose=keyof typeof CUSTOMER_SOURCE_PURPOSES;
 export const PRODUCTION_PROJECT_CODE = "PRODUCTION";
 export const CUSTOMER_DOCUMENT_TYPES = {

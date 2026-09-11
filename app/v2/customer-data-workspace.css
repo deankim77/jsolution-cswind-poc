@@ -37,4 +37,6 @@
 .customer-intake-canvas .customer-thumb img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
 
 .customer-upload-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--v2-space-4, 16px); }
+.customer-upload-area .customer-upload-guidance { font-size: var(--v2-font-size-card-title); line-height: 1.6; margin: 0 0 16px; color: var(--v2-color-ink); }
+.customer-upload-cards .customer-drop strong { font-size: var(--v2-font-size-section-title); }
 @media (max-width: 640px) { .customer-upload-cards { grid-template-columns: 1fr; } }
