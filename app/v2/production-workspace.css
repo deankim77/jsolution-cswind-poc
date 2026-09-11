@@ -146,3 +146,5 @@
 .wv2-toolbar .ai-extract-toolbar-slot { min-width: 0; }
 .wv2-toolbar .ai-extract-filter { margin: 0; gap: 8px; font-size: var(--v2-font-size-control); }
 .wv2-toolbar .ai-extract-filter button { min-height: var(--v2-control-height); border-radius: var(--v2-radius-sm); font: inherit; line-height: var(--v2-line-height-body); }
+
+.wv2-toolbar > button.production-edit-all { display: inline-flex; align-items: center; gap: 6px; min-height: var(--v2-control-height); padding: 6px 10px; border: 1px solid var(--v2-color-primary); border-radius: var(--v2-radius-sm); background: var(--v2-color-primary); color: var(--v2-surface-content); font: inherit; cursor: pointer; }

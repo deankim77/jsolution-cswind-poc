@@ -33,7 +33,9 @@ const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
 const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
 const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
-export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell}:{renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
+const compactWidths:Record<ColumnKey,number>={part:170,status:120,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
+
+export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell}:{compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [columnMenuOpen,setColumnMenuOpen]=useState(false);
  const review=variant==='review';
@@ -82,7 +84,8 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
  return <>
   {toolbarContainer?createPortal(controls,toolbarContainer):toolbarContainer===undefined?controls:null}
   {columnsError&&<p role="status" className="production-help">{columnsError} <button type="button" onClick={retryColumns}>다시 시도</button></p>}
-  <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table">
+  <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table" style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
+   {compact&&<colgroup>{shown.map(c=><col key={c.key} style={{width:compactWidths[c.key]}}/>)}</colgroup>}
    <thead><tr>{shown.map(c=><th key={c.key}>{c.label}</th>)}{editable&&<th>검토</th>}</tr></thead>
    <tbody>
     {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}</tr>}

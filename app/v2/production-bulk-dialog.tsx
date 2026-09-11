@@ -51,7 +51,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  if(r<0||c<0)return null;
  const common={value:cells[row.id]?.[key]??'',readOnly:!editing||busy,'aria-label':`${r+1}행 ${label}`,onChange:(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>put(row.id,key,e.target.value),onKeyDown:(e:React.KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>)=>keyDown(e,r,c),onPaste:(e:React.ClipboardEvent)=>paste(e,r,c),onFocus:(e:React.FocusEvent<HTMLInputElement|HTMLTextAreaElement>)=>e.currentTarget.select(),className:cells[row.id]?.[key]!==baseline.current[row.id]?.[key]?'production-bulk-changed':undefined};
  const ref=(el:HTMLInputElement|HTMLTextAreaElement|null)=>{if(el)inputs.current.set(`${r}:${c}`,el);else inputs.current.delete(`${r}:${c}`)};
- return key==='detail'?<textarea {...common} ref={ref}/>:<input {...common} ref={ref}/>;
+ return key==='detail'?<textarea {...common} rows={1} ref={ref}/>:<input {...common} ref={ref}/>;
  };
  const fields:Partial<Record<ColumnKey,string>>={description:'itemDescription',position:'position',item:'customerItemNumber',drawing:'drawingNumber',revision:'componentRevision',quantity:'quantity',unit:'unit',weight:'weight'};
  return <main className="production-bulk-window" aria-labelledby="production-bulk-title">
@@ -66,10 +66,10 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  </div>
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status" className="production-bulk-notice">{notice}</p>}
  <div className="production-bulk-body">
- {area==='pbom'?<PbomTable rows={pbom?.rows??[]} root={pbom?.root} toolbarContainer={toolbar} renderSource={ids=>ids.map(id=>sources[id]||id).join(', ')} renderCell={(key,row,fallback:ReactNode)=>{
+ {area==='pbom'?<PbomTable compact rows={pbom?.rows??[]} root={pbom?.root} toolbarContainer={toolbar} renderSource={ids=>ids.map(id=>sources[id]||id).join(', ')} renderCell={(key,row,fallback:ReactNode)=>{
   const original=rows.find(r=>r.id===row.confirmationId||(r.recordId===row.recordId&&r.item.id===row.sourceItemId)),field=fields[key];
   return editing&&original&&field?renderInput(original,field,key):fallback;
- }}/>:<div className="production-bulk-scroll"><table className="production-table production-bulk-grid"><colgroup>{columns.map(([key])=><col key={key} style={{width:key==='detail'?720:key==='itemName'?240:180}}/>)}</colgroup><thead><tr>{columns.map(([key,label])=><th key={key}>{label}</th>)}</tr></thead><tbody>{editorRows.map(row=><tr key={row.id}>{columns.map(([key,label])=><td key={key}>{renderInput(row,key,label)}</td>)}</tr>)}{!rows.length&&<tr><td colSpan={columns.length}>{state?'편집할 승인 항목이 없습니다.':'불러오는 중…'}</td></tr>}</tbody></table></div>}
+ }}/>:<div className="production-bulk-scroll"><table className="production-table production-bulk-grid"><colgroup><col style={{width:52}}/>{columns.map(([key])=><col key={key} style={{width:key==='detail'?undefined:key==='useTargets'?110:key==='itemName'?180:140}}/>)}</colgroup><thead><tr><th scope="col">순번</th>{columns.map(([key,label])=><th key={key}>{label}</th>)}</tr></thead><tbody>{editorRows.map((row,index)=><tr key={row.id}><td className="production-bulk-sequence">{index+1}</td>{columns.map(([key,label])=><td key={key}>{renderInput(row,key,label)}</td>)}</tr>)}{!rows.length&&<tr><td colSpan={columns.length+1}>{state?'편집할 승인 항목이 없습니다.':'불러오는 중…'}</td></tr>}</tbody></table></div>}
  </div>
  </main>;
 }
