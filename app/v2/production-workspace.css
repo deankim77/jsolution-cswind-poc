@@ -60,7 +60,7 @@
 .cswind-data-table .customer-file-link { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .customer-document-list tr { cursor: pointer; }
 .customer-document-list tr.selected, .customer-document-list tbody tr:hover { background: var(--v2-surface-subtle); }
-.review-panel-body .review-draft { border: 0; }
+.review-panel-body .review-draft { border: 0; overflow: visible; }
 .review-panel-body .review-confirm-actions { position: sticky; top: 0; background: var(--v2-surface-content); z-index: 1; }
 
 .pbom-table-scroll { max-width: 100%; overflow: auto; }
