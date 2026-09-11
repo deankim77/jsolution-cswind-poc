@@ -1,3 +1,4 @@
+import {prepareReviewNumbers} from './customer-review-numbers';
 import {createCustomerDataRepository,type CustomerDataScope} from '../db/repositories/customer-data-repository';
 import {createCustomerReviewRepository} from '../db/repositories/customer-review-repository';
 import {getStorageAdapter} from '../lib/storage-adapter';
@@ -51,7 +52,7 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  const result=await provider(prompt,files,true);
  let draft;
  try{
-  draft=validateReviewDraft(result.draft,unique);
+  draft=validateReviewDraft(prepareReviewNumbers(result.draft),unique);
   if(draft.items.some(i=>i.area==='pbom'&&!i.bom))throw Error('PBOM 항목에 부품 정보가 없습니다.');
  }catch(reason){
   const detail=reason instanceof Error?reason.message:'분석 결과 형식 오류';

@@ -84,3 +84,14 @@ test('new PBOM parts carry source material into the existing specification field
  await createNumberedPart(tx,scope,'PLATE','PART','EA','S355J2');
  assert.equal(created.spec,'S355J2');assert.equal(created.name,'PLATE');
 });
+
+test('missing or unreadable optional numbers preserve the extracted parts list',async()=>{
+ const {prepareReviewNumbers}=require('../services/customer-review-numbers.ts');
+ const root={parentId:null,section:'',itemDescription:'JIB',position:'',customerItemNumber:'JIB-A',drawingNumber:'JIB-01',componentRevision:'R00',quantity:'1',unit:'EA',weight:'',weightUnit:null,weightSource:null,partType:'ASSEMBLY',drawingAvailability:'Drawing Found',childrenComplete:true};
+ const original=draft();original.items=[{...original.items[0],id:'root',bom:root},{...original.items[0],id:'part',bom:{...root,parentId:'root',partType:'PART',customerItemNumber:'PART-1',quantity:'2',weight:'판독불가'}}];
+ const prepared=validateReviewDraft(prepareReviewNumbers(original),['raw-1']);
+ assert.equal(prepared.items.length,2);assert.equal(prepared.items[1].bom.quantity,2);assert.equal(prepared.items[1].bom.weight,null);assert.equal(prepared.items[0].bom.weight,null);
+ assert.ok(prepared.uncertainties.some(s=>s.includes('판독불가')));assert.equal(original.items[0].bom.weight,'');
+ for(const weight of ['1,260',1260]){const d=draft();d.items[0].bom={...root,weight,weightUnit:'kg',weightSource:'Parts List'};assert.equal(validateReviewDraft(prepareReviewNumbers(d),['raw-1']).items[0].bom.weight,1260);}
+ const d=draft();d.items[0].bom={...root,weight:85};const normalized=prepareReviewNumbers(d);assert.equal(normalized.items[0].bom.weight,null);assert.ok(normalized.uncertainties[0].includes('85'));
+});
