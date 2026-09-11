@@ -1,7 +1,7 @@
 import {defaultDocumentRootQuantity} from '../../lib/pbom-contract';
 import {applyConfirmedPbom,withdrawConfirmedPbom,lockPbomCompany} from './pbom-repository';
 import {randomUUID} from 'node:crypto';
-import {and,eq,desc,inArray} from 'drizzle-orm';
+import {and,eq,desc,inArray,sql} from 'drizzle-orm';
 import {getDb} from '../index';
 import {customerReviews,customerConfirmedData} from '../customer-review-schema';
 import {auditLogs} from '../schema';
@@ -43,11 +43,11 @@ export function createCustomerReviewRepository(db=getDb()) {
  const [review]=await tx.select().from(customerReviews).where(and(where(s),eq(customerReviews.recordId,recordId)));
  if(!review||review.version!==version)throw new CustomerDataError('검토 결과가 변경되었습니다. 다시 확인하세요.',409);
  const draft=normalizeStoredReviewDraft(review.draft),items=draft.items.filter(i=>itemIds.includes(i.id)).map(defaultDocumentRootQuantity);if(!items.length||items.length!==new Set(itemIds).size)throw new CustomerDataError('확정할 항목을 선택하세요.');
- const bomItems=items.filter(i=>i.area==='pbom');
- if(bomItems.length){const allBom=draft.items.filter(i=>i.area==='pbom');if(bomItems.length!==allBom.length)throw new CustomerDataError('이 문서의 전체 BOM 구조를 함께 선택하세요.',422);await applyConfirmedPbom(tx,s,recordId,version,bomItems);}
+ const bomItems=items.filter(i=>i.area==='pbom');let approvalIssues:string[]=[];
+ if(bomItems.length){const allBom=draft.items.filter(i=>i.area==='pbom');if(bomItems.length!==allBom.length)throw new CustomerDataError('이 문서의 전체 BOM 구조를 함께 선택하세요.',422);const result=await applyConfirmedPbom(tx,s,recordId,version,bomItems);approvalIssues=result?.issues??[];}
  const now=Math.floor(Date.now()/1000);
- await tx.insert(customerConfirmedData).values(items.map(item=>({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,recordId,version,itemId:item.id,item,confirmedBy:s.userId,confirmedAt:now}))).onConflictDoNothing();
- await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({version,itemIds}),createdAt:now});return {ok:true};
+ await tx.insert(customerConfirmedData).values(items.map(item=>({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,recordId,version,itemId:item.id,item:{...item,approval:{status:item.area==='pbom'&&approvalIssues.length?'conditional' as const:'approved' as const,issues:item.area==='pbom'?approvalIssues:[]}},confirmedBy:s.userId,confirmedAt:now}))).onConflictDoUpdate({target:[customerConfirmedData.recordId,customerConfirmedData.version,customerConfirmedData.itemId],set:{item:sql`excluded.item`,confirmedBy:s.userId,confirmedAt:now}});
+ await tx.insert(auditLogs).values({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:approvalIssues.length?'CUSTOMER_DATA_CONDITIONALLY_APPROVED':'CUSTOMER_DATA_CONFIRMED',entityType:'CUSTOMER_RAW_DATA',entityId:recordId,detail:JSON.stringify({projectId:s.projectId,version,itemIds,approvalIssues}),createdAt:now});return {ok:true,conditional:approvalIssues.length>0,issues:approvalIssues};
  });},
  async cancel(s:CustomerDataScope,recordId:string,area:ReviewArea,confirmationIds:string[]){return db.transaction(async tx=>{
  await lockPbomCompany(tx,s.companyId);

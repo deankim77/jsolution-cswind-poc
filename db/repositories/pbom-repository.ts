@@ -7,7 +7,7 @@ import {auditLogs,bomEditLocks,bomRevisions,companies,partNumberHistory,partNumb
 import {customerBomOccurrences,customerPartIdentities,productionBomRoots} from '../pbom-schema';
 import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
 import {CustomerDataError} from '../../lib/customer-data-contract';
-import {bomIdentity,buildBomRows,formatPartNumber,type BomFact,type BomRow,type ProjectPbom} from '../../lib/pbom-contract';
+import {bomIdentity,buildBomRows,pbomApprovalIssues,formatPartNumber,type BomFact,type BomRow,type ProjectPbom} from '../../lib/pbom-contract';
 import type {ReviewItem} from '../../lib/customer-review-contract';
 type Db=ReturnType<typeof getDb>;
 type Tx=Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -70,7 +70,7 @@ export function createPbomRepository(db=getDb()){return {
 export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[]){
  if(items.some(i=>!i.bom||i.recordId!==recordId))throw new CustomerDataError('이 문서의 구조화된 BOM을 먼저 재분석하세요.',422);
  const rows=buildBomRows(items,await identityRows(tx,s));
- if(rows.some(r=>r.match==='NEED_REVIEW'||r.bom.quantity===null||!r.bom.unit.trim()))throw new CustomerDataError('품목 식별번호·수량·단위를 확인한 후 확정하세요.',422);
+ const issues=pbomApprovalIssues(rows);if(issues.length)return {conditional:true,issues};
  const [project]=await tx.select().from(projectsDb).where(and(eq(projectsDb.id,s.projectId),eq(projectsDb.companyId,s.companyId)));
  const root=await ensureProductionBomRoot(tx,s,project.name);
  // Acquire the same root lock used by the existing editor, so neither writer can silently overwrite the other.

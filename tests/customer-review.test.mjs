@@ -93,5 +93,39 @@ test('missing or unreadable optional numbers preserve the extracted parts list',
  assert.equal(prepared.items.length,2);assert.equal(prepared.items[1].bom.quantity,2);assert.equal(prepared.items[1].bom.weight,null);assert.equal(prepared.items[0].bom.weight,null);
  assert.ok(prepared.uncertainties.some(s=>s.includes('판독불가')));assert.equal(original.items[0].bom.weight,'');
  for(const weight of ['1,260',1260]){const d=draft();d.items[0].bom={...root,weight,weightUnit:'kg',weightSource:'Parts List'};assert.equal(validateReviewDraft(prepareReviewNumbers(d),['raw-1']).items[0].bom.weight,1260);}
- const d=draft();d.items[0].bom={...root,weight:85};const normalized=prepareReviewNumbers(d);assert.equal(normalized.items[0].bom.weight,null);assert.ok(normalized.uncertainties[0].includes('85'));
+ const d=draft();d.items[0].bom={...root,weight:85};const normalized=prepareReviewNumbers(d);assert.equal(validateReviewDraft(normalized,['raw-1']).items[0].bom.weight,85);assert.ok(normalized.uncertainties[0].includes('85'));
+});
+
+test('conditional confirmation persists missing fields and audit without creating PART or BOM',async()=>{
+ const access=require('../db/repositories/customer-data-repository.ts');
+ const oldAccess=access.customerDataAccess;access.customerDataAccess=async()=>({canReview:true});
+ try{
+  const {createCustomerReviewRepository}=require('../db/repositories/customer-review-repository.ts');
+  const {customerReviews,customerConfirmedData}=require('../db/customer-review-schema.ts');
+  const {auditLogs}=require('../db/schema.ts');
+  const d=draft();d.items[0].bom={parentId:null,section:'',itemDescription:'PLATE',position:'1',customerItemNumber:'',drawingNumber:'',componentRevision:'',quantity:null,unit:'',weight:18.5,weightUnit:'kg',weightSource:'Parts List',drawingAvailability:'Need Review',partType:'PART',childrenComplete:false};
+  d.items.push({...d.items[0],id:'root',bom:{...d.items[0].bom,partType:'ASSEMBLY',customerItemNumber:'ROOT',quantity:1,unit:'PCS'}});d.items[0].bom.parentId='root';
+  const writes=[];
+  const tx={select:()=>({from:table=>{
+   const rows=table===customerReviews?[{version:1,draft:d}]:[];
+   const chain={where:()=>chain,innerJoin:()=>chain,for:()=>chain,then:resolve=>Promise.resolve(rows).then(resolve)};return chain;
+  }}),insert:table=>{assert.ok([customerConfirmedData,auditLogs].includes(table),'must not create PART/BOM');return {values:value=>{writes.push({table,value});return {onConflictDoUpdate:async()=>{}}}}}};
+  const repo=createCustomerReviewRepository({transaction:fn=>fn(tx)});
+  const result=await repo.confirm(scope,'raw-1',1,['part-1','root']);
+  assert.equal(result.conditional,true);assert.match(result.issues[0],/식별번호.*수량.*단위/);
+  const saved=writes.find(w=>w.table===customerConfirmedData).value[0];
+  assert.equal(saved.item.approval.status,'conditional');assert.equal(saved.item.bom.quantity,null);assert.equal(saved.item.bom.weight,18.5);assert.equal(saved.item.bom.unit,'');
+  assert.equal(writes.find(w=>w.table===auditLogs).value.action,'CUSTOMER_DATA_CONDITIONALLY_APPROVED');
+  const {normalizeReviewItem}=require('../lib/customer-review-contract.ts');assert.equal(normalizeReviewItem(saved.item).approval.status,'conditional');
+  writes.length=0;await assert.rejects(repo.confirm(scope,'raw-1',0,['part-1','root']),e=>e.status===409);assert.equal(writes.length,0);
+ }finally{access.customerDataAccess=oldAccess;}
+});
+
+test('approval checks clear after required fields are supplied; optional weight is not a blocker',()=>{
+ const {buildBomRows,pbomApprovalIssues}=require('../lib/pbom-contract.ts');
+ const item={id:'one',recordId:'raw-1',source:'Parts List',bom:{parentId:null,section:'',itemDescription:'PLATE',position:'1',customerItemNumber:'PLATE-1',drawingNumber:'',componentRevision:'',quantity:2,unit:'PCS',weight:null,weightUnit:'',weightSource:'Not Available',drawingAvailability:'Need Review',partType:'ASSEMBLY',childrenComplete:false}};
+ assert.deepEqual(pbomApprovalIssues(buildBomRows([item],[])),[]);
+ const missing={...item,bom:{...item.bom,quantity:null,unit:''}};
+ assert.equal(pbomApprovalIssues(buildBomRows([missing],[])).length,1);
+ assert.equal(missing.bom.quantity,null);
 });

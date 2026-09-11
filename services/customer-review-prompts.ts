@@ -11,6 +11,7 @@ export function buildCustomerAnalysisPrompt(recordId:string){
  return `첨부 원본 1건을 읽고 파트리스트를 PBOM으로 추출한다.
 - 하단 타이틀 블록의 Item No.는 대표 ASSY customerItemNumber, Drawing Title/Item Description은 itemDescription, Drawing No.는 drawingNumber로 읽는다. 품번과 도면번호는 서로 달라도 원문 그대로 둔다.
 - Parts List의 품번·품명·수량·단위·중량을 원문대로 읽는다. Material/재질은 해당 품목의 material에 그대로 넣는다.
+- PCS 열은 quantity와 unit="PCS", KG/PCS 열의 숫자는 개당 중량 weight와 weightUnit="kg", weightSource="Parts List"로 읽는다. 수량을 곱하거나 값이 있는데 null로 두지 않는다.
 - 대표 ASSY 행을 포함하고 부품표 항목은 해당 ASSY의 id를 parentId로 연결한다. 원본에 없는 중간 계층은 만들지 않는다.
 - 도면 Rev는 하단 표제란의 Rev/Revision 또는 Ver/Version 값을 그대로 revisionLabel과 대표 품목의 componentRevision에 넣는다. 부품 행의 Rev는 그 행에 있을 때만 읽고, 없는 값은 빈 문자열로 둔다.
 - 나머지 주기·요구사항은 원본에 명확한 내용만 extract로 추출한다. 활용 대상은 TTR/조립기준/검사기준/작업방법 중 명확할 때만 지정하고 애매하면 기타로 둔다. 해석이 불확실한 내용은 summary에 그대로 설명한다.

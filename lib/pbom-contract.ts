@@ -27,7 +27,7 @@ export function validateBomFacts(items:BomInput[]){
   if(!b||!['ASSEMBLY','PART'].includes(b.partType)||typeof b.childrenComplete!=='boolean'||!DRAWING_AVAILABILITY.includes(b.drawingAvailability)||!WEIGHT_SOURCES.includes(b.weightSource)||['section','itemDescription','position','customerItemNumber','drawingNumber','componentRevision','unit','weightUnit'].some(k=>typeof b[k as keyof BomFact]!=='string')||!b.itemDescription.trim())throw Error('BOM 필수 필드 형식을 확인하세요.');
   if(b.quantity!==null&&(typeof b.quantity!=='number'||!Number.isFinite(b.quantity)||b.quantity<=0))throw Error('수량은 양수 또는 미확인(null)이어야 합니다.');
   if(b.weight!==null&&(typeof b.weight!=='number'||!Number.isFinite(b.weight)||b.weight<0))throw Error('중량은 0 이상 또는 미확인(null)이어야 합니다.');
-  if(b.weight!==null&&(!b.weightUnit.trim()||!['Direct from Drawing','Parts List'].includes(b.weightSource)))throw Error('직접 추출 중량에는 단위와 원본 출처가 필요합니다.');
+  // Preserve readable weight even when its unit/source still needs user review.
   if(b.parentId!==null&&(typeof b.parentId!=='string'||!byId.has(b.parentId)))throw Error('상위 ASSY 행을 확인하세요.');
   if(b.parentId){const parent=byId.get(b.parentId)!;if(parent.recordId!==i.recordId||parent.bom.partType!=='ASSEMBLY')throw Error('동일 문서의 ASSY 아래에 부품을 배치하세요.');}
   else if(b.partType!=='ASSEMBLY')throw Error('문서의 최상위 행은 ASSY여야 합니다.');
@@ -70,4 +70,12 @@ export function bomSectionName(row:BomRow,rows:BomRow[]):string {
   current=current.bom.parentId?byId.get(current.bom.parentId):undefined;
  }
  return '';
+}
+
+/** Missing application fields permit review approval, but never fabricated BOM edges. */
+export function pbomApprovalIssues(rows:BomRow[]){
+ return rows.flatMap(row=>{
+  const missing=[row.match==='NEED_REVIEW'?'품목 식별번호/매칭':'',row.bom.quantity===null?'수량':'',!row.bom.unit.trim()?'단위':''].filter(Boolean);
+  return missing.length?[`${row.bom.customerItemNumber||row.bom.itemDescription||row.id}: ${missing.join('·')} 확인 필요`]:[];
+ });
 }

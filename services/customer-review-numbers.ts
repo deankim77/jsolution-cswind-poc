@@ -19,9 +19,9 @@ export function prepareReviewNumbers(value:any){
   }
   if(bom.weight!==null&&(typeof bom.weightUnit!=='string'||!bom.weightUnit.trim()||!['Direct from Drawing','Parts List'].includes(bom.weightSource))){
    notes.push(`${index+1}번 항목 중량 원문 ${String(item.bom.weight).slice(0,120)}: 단위 또는 출처 확인 필요`);
-   bom.weight=null;
+   // Keep the readable value; missing metadata remains a review note.
   }
-  if(bom.weight===null){
+  {
    if(typeof bom.weightUnit!=='string')bom.weightUnit='';
    if(!['Direct from Drawing','Parts List','Not Available'].includes(bom.weightSource))bom.weightSource='Not Available';
   }

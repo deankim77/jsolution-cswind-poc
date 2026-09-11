@@ -49,6 +49,8 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  let bomRows:BomRow[]=[],bomError='';try{bomRows=buildBomRows(draft?.items.filter(i=>i.area==='pbom')??[],pbom?.identities??[])}catch(e){bomError=(e as Error).message;bomRows=(draft?.items.filter(i=>i.area==='pbom'&&i.bom)??[]).map(i=>({...i,bom:i.bom!,level:1,path:'구조 확인 필요',totalQuantity:null,calculatedWeight:null,calculatedWeightSource:'Not Available',match:'NEED_REVIEW'}));}
  const areaItems=draft?.items.filter(i=>i.area===reviewTab)??[];
  const areaConfirmed=confirmed.filter(c=>c.recordId===selected&&c.item.area===reviewTab);
+ const latestApprovalVersion=Math.max(0,...areaConfirmed.map(c=>c.version));
+ const conditionalIssues=[...new Set(areaConfirmed.filter(c=>c.version===latestApprovalVersion&&c.item.approval?.status==='conditional').flatMap(c=>c.item.approval?.issues??[]))];
  const areaIds=itemIds.filter(id=>areaItems.some(i=>i.id===id));
  const selectTab=(key:string)=>{setReviewTab(key);setEditing('');setItemIds([]);};
  if(tab==='customer')return <CustomerDataWorkspace key={project.id} project={project} embedded/>;
@@ -82,10 +84,11 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  confirmDisabled={dirty||mutationBusy||!data?.canReview||!areaIds.length||(reviewTab==='pbom'&&(!pbom||Boolean(pbomError)||Boolean(bomError)||bomRows.length!==areaItems.length))}
  cancelDisabled={mutationBusy||dirty||!data?.canReview||!areaConfirmed.length}
  onSelectAll={checked=>setItemIds(checked?areaItems.map(i=>i.id):[])}
- onConfirm={()=>void run(async()=>{await post({action:'confirm',recordId:selected,version:current?.version,itemIds:areaIds});setItemIds([]);setNotice('선택한 DATA를 확정했습니다.');refresh()})}
+ onConfirm={()=>void run(async()=>{const result=await post({action:'confirm',recordId:selected,version:current?.version,itemIds:areaIds});setItemIds([]);setNotice(result.conditional?'조건부 승인했습니다. 부족한 정보를 보완한 뒤 다시 확정하면 PART·BOM에 반영됩니다.':'선택한 DATA를 확정했습니다.');refresh()})}
  onCancel={()=>void run(async()=>{const result=await post({action:'cancel',recordId:selected,area:reviewTab,confirmationIds:areaConfirmed.map(c=>c.id)});setItemIds([]);setNotice(result.retained?`확정을 취소했습니다. 기존·공유·수동 변경 BOM ${result.retained}건은 유지했습니다.`:'확정을 취소했습니다.');refresh()})}
  />} </div>}</div>
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status">{notice}</p>}{busy&&<p role="status">AI 처리 중입니다…</p>}
+ {conditionalIssues.length>0&&<p role="status">조건부 승인 · BOM 반영 대기: {conditionalIssues.join(' / ')}</p>}
  {analyzing&&<p role="status">AI 분석 중입니다. 다른 탭이나 문서로 이동해도 분석은 계속됩니다.</p>}
  {selectedJob?.status==='failed'&&<p role="alert" className="wv2-form-error">{selectedJob.error}</p>}
  {selectedJob?.status==='completed'&&<p role="status">AI 분석이 완료되었습니다.</p>}
