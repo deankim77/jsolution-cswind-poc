@@ -28,12 +28,12 @@ const columns=[
  {key:'availability',label:'Drawing Availability'},
  {key:'source',label:'출처 자료'},
 ] as const;
-type ColumnKey=typeof columns[number]['key'];
+export type ColumnKey=typeof columns[number]['key'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
 const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
 const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
-export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource}:{toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
+export default function PbomTable({rows,root,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell}:{renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [columnMenuOpen,setColumnMenuOpen]=useState(false);
  const review=variant==='review';
@@ -87,7 +87,7 @@ export default function PbomTable({rows,root,toolbarContainer,variant="full",edi
    <tbody>
     {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}</tr>}
     {rows.filter(r=>!(root&&!review&&rootCollapsed)&&!hidden(r)).map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>
-     {shown.map(c=><td key={c.key} title={c.key==='description'?row.bom.itemDescription:c.key==='source'?row.source:undefined}>{cell(c.key,row,children)}</td>)}
+     {shown.map(c=><td key={c.key} data-column={c.key} title={c.key==='description'?row.bom.itemDescription:c.key==='source'?row.source:undefined}>{renderCell?renderCell(c.key,row,cell(c.key,row,children)):cell(c.key,row,children)}</td>)}
      {editable&&<td><button type="button" onClick={()=>setEditing(row.id)}>수정</button></td>}
     </tr>;})}
     {!rows.length&&<tr><td colSpan={shown.length+(editable?1:0)}>표시할 구조화 BOM이 없습니다.</td></tr>}
