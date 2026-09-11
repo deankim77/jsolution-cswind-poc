@@ -22,3 +22,8 @@ export function ColumnVisibilityMenu<K extends string>({options,visible,onChange
 export function HierarchyActions({onCollapseAll,onExpandAll,disabled=false}:{onCollapseAll:()=>void;onExpandAll:()=>void;disabled?:boolean}){
  return <><button type="button" className="table-view-action" disabled={disabled} onClick={event=>{event.stopPropagation();onCollapseAll();}}><ChevronsUp size={18}/>모두 접기</button><button type="button" className="table-view-action" disabled={disabled} onClick={event=>{event.stopPropagation();onExpandAll();}}><ChevronsDown size={18}/>모두 펼치기</button></>;
 }
+
+export function ColumnValueFilter({label,values,value,onChange}:{label:string;values:readonly string[];value:string;onChange:(value:string)=>void}){
+ const options=[...new Set(values.map(v=>v.trim()))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ return <select className="table-value-filter" aria-label={`${label} 필터`} value={value} onChange={event=>onChange(event.target.value)}><option value="">전체</option>{options.map(option=><option key={option} value={JSON.stringify(option)}>{option||'(빈 값)'}</option>)}</select>;
+}

@@ -1,10 +1,10 @@
 "use client";
-import {useState,type ReactNode} from 'react';
+import {useState,isValidElement,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {ChevronDown,ChevronRight,Layers3} from 'lucide-react';
 import {useColumnPreferences} from './use-column-preferences';
 import PbomEditDialog from './pbom-edit-dialog';
-import {ColumnVisibilityMenu,HierarchyActions} from './table-view-controls';
+import {ColumnVisibilityMenu,HierarchyActions,ColumnValueFilter} from './table-view-controls';
 import {DRAWING_AVAILABILITY_LABELS,bomSectionName,collapsedBomIdsAtDepth,type BomFact,type BomRow} from '../../lib/pbom-contract';
 
 const show=(n:number|null)=>n===null?'미확인':Number(n.toFixed(6)).toLocaleString();
@@ -43,8 +43,18 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
  const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,initialColumns,lockedColumnKeys,defaultColumnKeys);
  const options=columns.map(column=>({...column,label:review&&column.key==='status'?'품목 구분':column.label}));
  const shown=options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
+ const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
+ const filterKeys:ColumnKey[]=['part','status','section','description','item','drawing','revision','unit','availability','source'];
+ const nodeText=(node:ReactNode):string=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(nodeText).join(' '):isValidElement<{children?:ReactNode}>(node)?nodeText(node.props.children):'';
+ const filterValue=(row:BomRow,key:ColumnKey):string=>key==='part'?row.internalPartNumber??'':key==='status'?labels[row.match??'NEED_REVIEW']:key==='section'?bomSectionName(row,rows):key==='description'?row.bom.itemDescription:key==='source'?(renderSource?nodeText(renderSource(row.sourceRecordIds??[row.recordId])):(row.sourceRecordIds??[row.recordId]).join(', ')):key==='item'?row.bom.customerItemNumber:key==='drawing'?row.bom.drawingNumber:key==='revision'?row.bom.componentRevision:key==='unit'?row.bom.unit:key==='availability'?DRAWING_AVAILABILITY_LABELS[row.bom.drawingAvailability]:'';
+ const filtering=shown.some(c=>Boolean(columnFilters[c.key]));
+ const matching=rows.filter(row=>shown.every(c=>!columnFilters[c.key]||JSON.stringify(filterValue(row,c.key).trim())===columnFilters[c.key]));
+ const included=new Set(matching.map(row=>row.id));
+ if(filtering)for(const row of matching){let parent=row.bom.parentId;const visited=new Set<string>();while(parent&&!visited.has(parent)){visited.add(parent);included.add(parent);parent=rows.find(r=>r.id===parent)?.bom.parentId??null;}}
+
  const selected=rows.find(r=>r.id===editing);
  const hidden=(r:BomRow):boolean=>{let p=r.bom.parentId;const seen=new Set<string>();while(p&&!seen.has(p)){if(collapsed.includes(p))return true;seen.add(p);p=rows.find(x=>x.id===p)?.bom.parentId??null;}return false;};
+ const displayed=filtering?rows.filter(row=>included.has(row.id)):rows.filter(row=>!(root&&!review&&rootCollapsed)&&!hidden(row));
  const toggle=(id:string)=>setCollapsed(v=>v.includes(id)?v.filter(key=>key!==id):[...v,id]);
  const toggleSlot=(row:BomRow,children:boolean)=><span className="pbom-toggle-slot">{children&&<button type="button" aria-expanded={!collapsed.includes(row.id)} aria-label={`${row.bom.itemDescription} ${collapsed.includes(row.id)?'펼치기':'접기'}`} onClick={()=>toggle(row.id)}>{collapsed.includes(row.id)?<ChevronRight size={18}/>:<ChevronDown size={18}/>}</button>}</span>;
  const partLink=(row:BomRow)=>onOpenEditor&&row.partId?<button type="button" onClick={()=>onOpenEditor(row.partId!)}>{row.internalPartNumber}</button>:<strong>{row.internalPartNumber||'확정 시 자동채번'}</strong>;
@@ -86,14 +96,14 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
   {columnsError&&<p role="status" className="production-help">{columnsError} <button type="button" onClick={retryColumns}>다시 시도</button></p>}
   <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table" style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
    {compact&&<colgroup>{shown.map(c=><col key={c.key} style={{width:compactWidths[c.key]}}/>)}</colgroup>}
-   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}</th>)}{editable&&<th>검토</th>}</tr></thead>
+   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}</tr></thead>
    <tbody>
     {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}</tr>}
-    {rows.filter(r=>!(root&&!review&&rootCollapsed)&&!hidden(r)).map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>
+    {displayed.map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>
      {shown.map(c=><td key={c.key} data-column={c.key} title={c.key==='description'?row.bom.itemDescription:c.key==='source'?row.source:undefined}>{renderCell?renderCell(c.key,row,cell(c.key,row,children)):cell(c.key,row,children)}</td>)}
      {editable&&<td><button type="button" onClick={()=>setEditing(row.id)}>수정</button></td>}
     </tr>;})}
-    {!rows.length&&<tr><td colSpan={shown.length+(editable?1:0)}>표시할 구조화 BOM이 없습니다.</td></tr>}
+    {!displayed.length&&<tr><td colSpan={shown.length+(editable?1:0)}>표시할 구조화 BOM이 없습니다.</td></tr>}
    </tbody>
   </table></div>
   {selected&&onEdit&&<PbomEditDialog key={selected.id} row={selected} rows={rows} onSave={onEdit} onClose={()=>setEditing('')}/>}

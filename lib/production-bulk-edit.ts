@@ -1,7 +1,7 @@
 import {REVIEW_USE_TARGETS,type ReviewArea,type ReviewItem,type ConfirmedReview} from './customer-review-contract';
 export type BulkRow={id:string;recordId:string;version:number;item:ReviewItem;partNumber?:string;level?:number};
 export type BulkState={rows:BulkRow[];canEdit:boolean;lock:null|{mine:boolean;token?:string;owner:string}};
-export const bulkFields={pbom:[['section','SECTION'],['itemDescription','Item Description'],['position','POS'],['customerItemNumber','Item No.'],['drawingNumber','Drawing No.'],['componentRevision','CompRev'],['quantity','Qty Per Unit'],['unit','수량 단위'],['weight','Weight'],['weightUnit','중량 단위'],['material','Material']],extract:[['useTargets','활용 대상'],['assy','ASSY'],['part','PART'],['itemNumber','품번'],['itemName','품명'],['detail','AI 추출 내용']]} as const;
+export const bulkFields={pbom:[['section','SECTION'],['itemDescription','Item Description'],['position','POS'],['customerItemNumber','Item No.'],['drawingNumber','Drawing No.'],['componentRevision','CompRev'],['quantity','Qty Per Unit'],['unit','수량 단위'],['weight','Weight'],['weightUnit','중량 단위'],['material','Material']],extract:[['useTargets','활용 대상'],['assy','ASSY'],['part','PART'],['itemNumber','품번'],['itemName','추출 항목'],['detail','AI 추출 내용']]} as const;
 export function activeBulkRows(rows:ConfirmedReview[],area:ReviewArea):BulkRow[]{
  const scoped=rows.filter(r=>r.item.area===area),latest=new Map<string,number>();
  for(const r of scoped)latest.set(r.recordId,Math.max(latest.get(r.recordId)??0,r.version));

@@ -26,3 +26,5 @@
 
 .pbom-toolbar-slot { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .pbom-toolbar-slot .pbom-view-controls { padding: 0; }
+
+.table-value-filter { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 240px; margin-top: 2px; padding: 2px 4px; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); background: var(--v2-surface-content); color: var(--v2-color-ink); font: inherit; }
