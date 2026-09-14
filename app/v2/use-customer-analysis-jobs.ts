@@ -3,7 +3,7 @@ import {readApiJson} from '../../lib/read-api-json';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {isAnalysisPending,type CustomerAnalysisJob} from '../../lib/customer-analysis-job';
 
-export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
+export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void,enabled=true){
  const [jobs,setJobsState]=useState<CustomerAnalysisJob[]>([]),[pollError,setPollError]=useState('');
  const submitting=useRef(new Set<string>()),seen=useRef(new Set<string>()),activeUrl=useRef(url);
  const jobsRef=useRef<CustomerAnalysisJob[]>([]),wake=useRef<()=>void>(()=>{}),completedCallback=useRef(onCompleted);
@@ -14,6 +14,7 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
  },[]);
  activeUrl.current=url;
  useEffect(()=>{
+  if(!enabled)return;
   let disposed=false,inFlight=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
   seen.current.clear();submitting.current.clear();setJobs([]);setPollError('');
   const poll=async()=>{
@@ -41,7 +42,7 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
   wake.current=()=>{if(!disposed&&!inFlight){clearTimeout(timer);timer=setTimeout(poll,3000);}};
   void poll();
   return()=>{disposed=true;controller.abort();clearTimeout(timer);wake.current=()=>{};};
- },[url,setJobs]);
+ },[url,setJobs,enabled]);
  const hasPending=jobs.some(isAnalysisPending);
  useEffect(()=>{if(hasPending)wake.current();},[hasPending]);
  const start=useCallback(async(recordId:string,message:string)=>{

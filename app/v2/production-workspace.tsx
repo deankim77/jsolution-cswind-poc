@@ -26,7 +26,7 @@ import {analysisJobLabel} from '../../lib/customer-analysis-job';
 import './production-workspace.css';
 export const productionTabs=[['customer','고객 Data'],['review','AI Data Review'],['pbom','BOM'],['supplied','사급품'],['extract','AI 추출사항'],['ttr','TRR']] as const;
 export type ProductionTab=typeof productionTabs[number][0];
-export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,onOpenBomEditor,panelHidden=false}:{onOpenBomEditor:(rootId:string)=>void;onOpenFilter:(config:WorkspaceFilterConfig)=>void;project:V2Project;tab:ProductionTab;panelHidden?:boolean;onCloseAi:()=>void}){
+export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,onOpenBomEditor,panelHidden=false,refreshKey=0}:{refreshKey?:number;onOpenBomEditor:(rootId:string)=>void;onOpenFilter:(config:WorkspaceFilterConfig)=>void;project:V2Project;tab:ProductionTab;panelHidden?:boolean;onCloseAi:()=>void}){
  const [data,setData]=useState<CustomerDataList|null>(null),[reviews,setReviews]=useState<ReviewState[]>([]),[confirmed,setConfirmed]=useState<ConfirmedReview[]>([]),[reload,setReload]=useState(0),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[type,setType]=useState(''),[status,setStatus]=useState(''),[selected,setSelected]=useState(''),[checked,setChecked]=useState<string[]>([]),[draft,setDraft]=useState<ReviewDraft|null>(null),[itemIds,setItemIds]=useState<string[]>([]),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false);
  const [filterOpen,setFilterOpen]=useState(false),[filterDraft,setFilterDraft]=useState({type:'',status:''}),[previousDraft,setPreviousDraft]=useState<ReviewDraft|null>(null);
  const [panelWide,setPanelWide]=useState(false),[reviewTab,setReviewTab]=useState<string>('summary'),[editing,setEditing]=useState('');
@@ -41,14 +41,14 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const url=`/api/projects/${project.id}/customer-data`,current=reviews.find(r=>r.recordId===selected),record=data?.records.find(r=>r.id===selected);
  const refresh=useCallback(()=>setReload(x=>x+1),[]);
  useEffect(()=>{const saved=(event:MessageEvent)=>{if(event.origin===window.location.origin&&event.data?.type==='production-bulk-saved'&&event.data.projectId===project.id)refresh();};window.addEventListener('message',saved);return()=>window.removeEventListener('message',saved)},[project.id,refresh]);
- const analysis=useCustomerAnalysisJobs(url,refresh),selectedJob=analysis.jobs.find(j=>j.recordId===selected),analyzing=analysis.isPending(selected),mutationBusy=busy||analyzing;
- useEffect(()=>{const c=new AbortController();
-  const read=async(path:string)=>{const response=await fetch(path,{signal:c.signal}),value=await readApiJson(response);if(!response.ok)throw Error(value.error);return value};
+ const analysis=useCustomerAnalysisJobs(url,refresh,tab==='review'),selectedJob=analysis.jobs.find(j=>j.recordId===selected),analyzing=analysis.isPending(selected),mutationBusy=busy||analyzing;
+ useEffect(()=>{if(!['review','pbom','extract'].includes(tab))return;const c=new AbortController();setError('');setReviewsLoaded(false);
+  const read=async(path:string)=>{const response=await fetch(path,{signal:c.signal,cache:'no-store'}),value=await readApiJson(response);if(!response.ok)throw Error(value.error);return value};
   // Render file metadata immediately; analysis payload must not hold up the list.
   void read(url).then(value=>{if(!c.signal.aborted)setData(value)}).catch(e=>{if(!c.signal.aborted)setError(e.message)});
-  void read(`${url}/review`).then(value=>{if(!c.signal.aborted){setReviews(value.reviews);setConfirmed(value.confirmed);setReviewsLoaded(true)}}).catch(e=>{if(!c.signal.aborted)setError(e.message)});
+  if(tab==='review'||tab==='extract')void read(`${url}/review`).then(value=>{if(!c.signal.aborted){setReviews(value.reviews);setConfirmed(value.confirmed);setReviewsLoaded(true)}}).catch(e=>{if(!c.signal.aborted)setError(e.message)});
   return()=>c.abort();
- },[url,reload]);
+ },[url,tab,refreshKey,reload]);
  useEffect(()=>{setError('');setReviewsLoaded(false);setData(null);setReviews([]);setConfirmed([]);setTrr(null)},[url]);
  useEffect(()=>{if(tab!=='review'&&tab!=='pbom')return;const c=new AbortController();setPbomError('');fetch(`/api/projects/${project.id}/pbom`,{signal:c.signal}).then(async r=>{const d=await readApiJson(r);if(!r.ok)throw Error(d.error);setPbom(d)}).catch(e=>{if(!c.signal.aborted)setPbomError(e.message)});return()=>c.abort()},[project.id,tab,reload]);
  useEffect(()=>{setDraft(current?.draft??null);setDirty(false);setItemIds([]);},[selected,current?.version]);
