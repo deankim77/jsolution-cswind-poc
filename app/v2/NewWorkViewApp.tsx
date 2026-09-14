@@ -92,6 +92,7 @@ export default function NewWorkViewApp(){
   const [loadError,setLoadError]=useState("");
   const [view,setView]=useState<WorkView>("list");
   const [productionOpen,setProductionOpen]=useState(false);
+  const [plmTabActive,setPlmTabActive]=useState(false);
   const [productionRefresh,setProductionRefresh]=useState(0);
   const [pendingProjectBom,setPendingProjectBom]=useState<string|null>(null);
   const [productionTab,setProductionTab]=useState<ProductionTab|"drawings">("customer");
@@ -294,7 +295,7 @@ export default function NewWorkViewApp(){
   const activeWorkspace=workspaceTabs.find(item=>item.key===activeWorkspaceTab);
 
   return <main className={`wv2 ${contextOpen?"context-open":""} ${panelOpen?"panel-open":""}`}>
-    <GlobalRail onSearch={()=>setGlobalOpen(true)} onView={setWorkspaceView} active={workspaceView} productionProject={project?.projectTypeCode===PRODUCTION_PROJECT_CODE} />
+    <GlobalRail onSearch={()=>setGlobalOpen(true)} onView={setWorkspaceView} active={workspaceView} onPlmActiveChange={setPlmTabActive} productionProject={project?.projectTypeCode===PRODUCTION_PROJECT_CODE} />
      {contextOpen&&<ContextNav project={project} projects={projects} user={sessionUser} active={workspaceView} onView={setWorkspaceView} onProject={next=>{setProject(next);setSelectedId("");setPanelOpen(false);if(workspaceView==="wbs")openWorkspaceTab({key:`wbs:${next.id}`,view:"wbs",entityId:next.id,title:`WBS · ${next.name}`})}} onClose={()=>setContextOpen(false)}/>}
     <section className="wv2-workspace">
       <header className="wv2-topbar">
@@ -337,9 +338,9 @@ export default function NewWorkViewApp(){
         </header>
         {statusNotice&&<p className="wv2-status-notice">{statusNotice}</p>}
         <nav className="wv2-view-tabs" aria-label="Work View">
-          {viewTabs.map(([key,label,Icon])=><React.Fragment key={key}>{key==="edit"&&project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<><button className={productionOpen&&productionTab==="drawings"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("drawings");setProductionOpen(true)}}><FileText size={18}/>도면</button><button className={productionOpen&&productionTab==="pbom"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("pbom");setProductionOpen(true)}}><Table2 size={18}/>BOM</button><button className={productionOpen&&productionTab==="supplied"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("supplied");setProductionOpen(true)}}><Table2 size={18}/>사급품</button></>}<button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!productionOpen&&view===key?"active":""} onClick={()=>{closeCustomerAi();setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button></React.Fragment>)}
+          {viewTabs.map(([key,label,Icon])=><React.Fragment key={key}>{key==="edit"&&project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<><button className={!plmTabActive&&productionOpen&&productionTab==="drawings"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("drawings");setProductionOpen(true)}}><FileText size={18}/>도면</button><button className={!plmTabActive&&productionOpen&&productionTab==="pbom"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("pbom");setProductionOpen(true)}}><Table2 size={18}/>BOM</button><button className={!plmTabActive&&productionOpen&&productionTab==="supplied"?"active":""} onClick={()=>{closeCustomerAi();setProductionTab("supplied");setProductionOpen(true)}}><Table2 size={18}/>사급품</button></>}<button key={key} disabled={key==="edit"&&project.status!=="preparing"} className={!plmTabActive&&!productionOpen&&view===key?"active":""} onClick={()=>{closeCustomerAi();setProductionOpen(false);setView(key)}}><Icon size={18}/>{label}</button></React.Fragment>)}
           {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&<span className="production-tab-spacer"/>}
-          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&productionTabs.filter(([key])=>key!=="pbom"&&key!=="supplied").map(([key,label])=><button key={key} className={productionOpen&&productionTab===key?"active":""} onClick={()=>{closeCustomerAi();if(key==="review")setProductionRefresh(n=>n+1);setProductionTab(key);setProductionOpen(true)}}>{label}</button>)}
+          {project.projectTypeCode===PRODUCTION_PROJECT_CODE&&productionTabs.filter(([key])=>key!=="pbom"&&key!=="supplied").map(([key,label])=><button key={key} className={!plmTabActive&&productionOpen&&productionTab===key?"active":""} onClick={()=>{closeCustomerAi();if(key==="review")setProductionRefresh(n=>n+1);setProductionTab(key);setProductionOpen(true)}}>{label}</button>)}
         </nav>
         {productionOpen&&project.projectTypeCode===PRODUCTION_PROJECT_CODE?productionTab==="drawings"?<ProductionDrawings key={project.id} projectId={project.id}/>:<ProductionWorkspace key={project.id} project={project} tab={productionTab} refreshKey={productionRefresh} panelHidden={panelOpen} onCloseAi={closeCustomerAi} onOpenFilter={openWorkspaceFilter} onOpenBomEditor={openBomEditor}/>:<>
         <div className="wv2-toolbar">
