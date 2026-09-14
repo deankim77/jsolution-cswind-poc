@@ -38,7 +38,7 @@
 .wv2-issue-risk-bar>i>span{display:block;width:100%;min-height:0;border-radius:4px 4px 0 0;background:var(--teal)}
 .wv2-issue-risk-bar.risk>i>span{background:#d97706}
 .wv2-issue-risk-bar.collaboration>i>span{background:#4f7db8}
-.wv2-issue-risk-bar>small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted);font-weight:700}
+.wv2-issue-risk-bar>small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--v2-font-size-caption);color:var(--muted);font-weight:700}
 .wv2-issue-risk-histogram-item>b{align-self:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--v2-font-size-caption);font-weight:800}
 
 /* Portfolio dashboard customer Gate matrix: match the card system used above */
@@ -57,3 +57,14 @@
 
 @media(max-width:1280px){.wv2-gate-health{grid-template-columns:repeat(3,minmax(145px,1fr))}.wv2-issue-risk-histogram{overflow-x:auto;grid-template-columns:repeat(10,minmax(105px,1fr))}}
 @media(max-width:720px){.wv2-gate-matrix-table>header,.wv2-gate-matrix-table>.row{min-width:1040px}.wv2-gate-health{grid-template-columns:repeat(2,minmax(140px,1fr))}.wv2-gate-health-guide{justify-content:flex-start;text-align:left}.wv2-issue-risk-histogram{min-height:265px;grid-template-columns:repeat(10,minmax(98px,1fr))}.wv2-gate-customer-matrix>header{align-items:flex-start;flex-direction:column}}
+
+
+/* Project dashboard navigation cards and action section headings. */
+.wv2-project-dashboard .wv2-project-shortcuts{gap:12px;margin-block:16px}
+.wv2-project-dashboard .wv2-project-shortcuts>button{min-height:88px;padding:16px;gap:14px;background:var(--v2-surface-content);border-color:var(--v2-border-color)}
+.wv2-project-dashboard .wv2-project-shortcuts>button>svg{width:28px;height:28px;color:var(--v2-color-primary)}
+.wv2-project-dashboard .wv2-project-shortcuts>button>span{gap:6px}
+.wv2-project-dashboard .wv2-project-shortcuts>button b,
+.wv2-project-dashboard .dashboard-action-grid>section>header>b{font-size:var(--v2-font-size-panel-title);font-weight:var(--v2-font-weight-bold);color:var(--v2-color-ink)}
+.wv2-project-dashboard .wv2-project-shortcuts>button b{white-space:normal;line-height:var(--v2-line-height-body)}
+.wv2-project-dashboard .dashboard-action-grid>section>header{min-height:48px}
