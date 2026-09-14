@@ -36,7 +36,7 @@ const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
 const compactWidths:Record<ColumnKey,number>={part:170,status:120,procurement:100,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
 
-export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell}:{compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
+export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell,extraColumn}:{extraColumn?:{label:string;render:(row:BomRow)=>ReactNode};compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [columnMenuOpen,setColumnMenuOpen]=useState(false);
  const review=variant==='review';
@@ -98,14 +98,14 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
   {columnsError&&<p role="status" className="production-help">{columnsError} <button type="button" onClick={retryColumns}>다시 시도</button></p>}
   <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table" style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
    {compact&&<colgroup>{shown.map(c=><col key={c.key} style={{width:compactWidths[c.key]}}/>)}</colgroup>}
-   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}</tr></thead>
+   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}{extraColumn&&<th>{extraColumn.label}</th>}</tr></thead>
    <tbody>
-    {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}</tr>}
+    {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}{extraColumn&&<td>—</td>}</tr>}
     {displayed.map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>
      {shown.map(c=><td key={c.key} data-column={c.key} title={c.key==='description'?row.bom.itemDescription:c.key==='source'?row.source:undefined}>{renderCell?renderCell(c.key,row,cell(c.key,row,children)):cell(c.key,row,children)}</td>)}
-     {editable&&<td><button type="button" onClick={()=>setEditing(row.id)}>수정</button></td>}
+     {editable&&<td><button type="button" onClick={()=>setEditing(row.id)}>수정</button></td>}{extraColumn&&<td>{extraColumn.render(row)}</td>}
     </tr>;})}
-    {(!rows.length||(filtering&&!matching.length))&&<tr><td colSpan={shown.length+(editable?1:0)}>{rows.length?'필터에 맞는 BOM이 없습니다.':'표시할 구조화 BOM이 없습니다.'}</td></tr>}
+    {(!rows.length||(filtering&&!matching.length))&&<tr><td colSpan={shown.length+(editable?1:0)+(extraColumn?1:0)}>{rows.length?'필터에 맞는 BOM이 없습니다.':'표시할 구조화 BOM이 없습니다.'}</td></tr>}
    </tbody>
   </table></div>
   {selected&&onEdit&&<PbomEditDialog key={selected.id} row={selected} rows={rows} onSave={onEdit} onClose={()=>setEditing('')}/>}

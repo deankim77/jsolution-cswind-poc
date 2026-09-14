@@ -59,13 +59,14 @@ function harness(){
  const apply=async(area='supplied',extra={})=>repo.apply(scope,{recordId:'doc',version:1,area,choices:[{itemId:'row1',parentPartId:'assy',unit:'PCS'}],customerConfirmed:true,fingerprint:(await repo.list(scope)).fingerprint,...extra});
  return {repo,scope,apply,get state(){return state;},deny:()=>{permitted=false;},block:()=>{blocked=true;}};
 }
+function existing(h){h.state.productParts.push({id:'existing',companyId:'c',partNumber:'P-100',name:'Cable',partType:'PART',unit:'PCS'});h.state.productBomItems.push({id:'existing-edge',companyId:'c',parentPartId:'assy',childPartId:'existing',quantity:7,unit:'PCS'});h.state.customerPartIdentities.push({companyId:'c',projectId:'p',customerKey:'ITEM:C1',partId:'existing'});return h;}
 test('customer confirmation is mandatory; analysis/list access never mutates the BOM',async()=>{
  const h=harness();await h.repo.list(h.scope);assert.equal(h.state.customerSuppliedItems.length,0);assert.equal(h.state.productBomItems.length,1);
  await assert.rejects(h.apply('supplied',{customerConfirmed:false}),/고객/);assert.equal(h.state.customerSuppliedItems.length,0);
  await assert.rejects(h.apply('bom'),/먼저 확정/);assert.equal(h.state.bomEditLocks.length,0);
 });
 test('confirmation and re-upload use stable keys; BOM reflection is separate and idempotent',async()=>{
- const h=harness();await h.apply();assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.productBomItems.length,1);
+ const h=existing(harness());await h.apply();assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.productBomItems.length,2);
  assert.equal((await h.apply()).changed,0);
  await h.apply('bom');assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.bomRevisions.length,1);assert.equal(h.state.customerSuppliedItems[0].bomApplied,true);
  assert.equal((await h.apply('bom')).changed,0);assert.equal(h.state.bomRevisions.length,1);
@@ -73,31 +74,31 @@ test('confirmation and re-upload use stable keys; BOM reflection is separate and
  await h.apply('supplied',{recordId:'doc2'});assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.customerSuppliedItems[0].bomApplied,true);
  await h.apply('bom',{recordId:'doc2'});assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.bomRevisions.length,1);
 });
-test('explicit removal retires supply first, then only its BOM connection, retaining PART and revision history',async()=>{
- const h=harness();await h.apply();await h.apply('bom');
+test('explicit removal retires supply without removing the existing BOM or PART',async()=>{
+ const h=existing(harness());await h.apply();await h.apply('bom');
  h.state.customerReviews[0].version=2;Object.assign(h.state.customerReviews[0].draft.suppliedItems[0],{change:'removed',changeText:'CN2 - Item Removed'});
  await h.apply('supplied',{version:2});assert.equal(h.state.customerSuppliedItems[0].status,'removed');assert.equal(h.state.productBomItems.length,2);
- await h.apply('bom',{version:2});assert.equal(h.state.productBomItems.length,1);assert.equal(h.state.productParts.length,3);assert.equal(h.state.bomRevisions.length,2);
+ await h.apply('bom',{version:2});assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.productParts.length,3);assert.equal(h.state.bomRevisions.length,2);
 });
-test('unknown unit and changed review state roll back without parts or BOM writes',async()=>{
+test('unmatched customer number and stale state roll back without parts or BOM writes',async()=>{
  const h=harness();await h.apply();
- await assert.rejects(h.apply('bom',{choices:[{itemId:'row1',parentPartId:'assy'}]}),/단위/);assert.equal(h.state.productParts.length,2);assert.equal(h.state.bomEditLocks.length,0);
+ await assert.rejects(h.apply('bom',{choices:[{itemId:'row1',parentPartId:'assy'}]}),/고객품번/);assert.equal(h.state.productParts.length,2);assert.equal(h.state.bomEditLocks.length,0);
  await assert.rejects(h.apply('bom',{fingerprint:'stale'}),/변경/);
  h.deny();await assert.rejects(h.apply(),/PM/);
 });
-test('BOM quantity updates require selection and cannot modify a shared project assembly',async()=>{
- const h=harness();await h.apply();await h.apply('bom');
+test('supply quantity updates preserve BOM quantities including shared assemblies',async()=>{
+ const h=existing(harness());await h.apply();await h.apply('bom');
  h.state.customerReviews[0].version=2;h.state.customerReviews[0].draft.suppliedItems[0].quantity=5;
- await h.apply('supplied',{version:2});assert.equal(h.state.productBomItems[1].quantity,2);
+ await h.apply('supplied',{version:2});assert.equal(h.state.productBomItems[1].quantity,7);
  h.state.productionBomRoots.push({companyId:'c',projectId:'other',rootPartId:'assy'});
- await assert.rejects(h.apply('bom',{version:2}),/공유/);assert.equal(h.state.productBomItems[1].quantity,2);
- h.state.productionBomRoots.pop();await h.apply('bom',{version:2});assert.equal(h.state.productBomItems[1].quantity,5);
+ await h.apply('bom',{version:2});assert.equal(h.state.productBomItems[1].quantity,7);
+ h.state.productionBomRoots.pop();await h.apply('bom',{version:2});assert.equal(h.state.productBomItems[1].quantity,7);assert.equal(h.state.customerSuppliedItems[0].quantity,5);
 });
 test('replacement chains retire old identities and never invent the replacement description',async()=>{
- const h=harness();await h.apply();await h.apply('bom');
+ const h=existing(harness());await h.apply();await h.apply('bom');
  h.state.customerReviews[0].version=2;Object.assign(h.state.customerReviews[0].draft.suppliedItems[0],{change:'replaced',changeText:'CN2 - Item C1 is replaced by C2',replacementChain:['C1','C2']});
  await h.apply('supplied',{version:2});assert.equal(h.state.customerSuppliedItems.length,2);assert.equal(h.state.customerSuppliedItems[0].status,'removed');assert.equal(h.state.customerSuppliedItems[1].description,'');
- await assert.rejects(h.apply('bom',{version:2}),/품명/);assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.bomRevisions.length,1);assert.equal(h.state.bomEditLocks.length,0);
+ await assert.rejects(h.apply('bom',{version:2}),/고객품번/);assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.bomRevisions.length,1);assert.equal(h.state.bomEditLocks.length,0);
 });
 test('a missing source row does not remove an existing confirmed item',async()=>{
  const h=harness();await h.apply();h.state.customerReviews[0].version=2;
@@ -129,11 +130,20 @@ test('customer item number resolves existing BOM and supplies internal part info
  h.state.productBomItems.push({id:'existing-edge',companyId:'c',parentPartId:'assy',childPartId:'existing',quantity:1,unit:'PCS'});
  h.state.customerBomOccurrences.push({companyId:'c',projectId:'p',bomItemId:'existing-edge',fact:{customerItemNumber:'C1'}});
  await h.apply();const list=await h.repo.list(h.scope);assert.equal(list.entries[0].internalPartNumber,'P-100');assert.equal(list.entries[0].internalPartName,'Existing cable');
- await h.apply('bom');assert.equal(h.state.productParts.length,3);assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.productBomItems[1].quantity,2);
+ await h.apply('bom');assert.equal(h.state.productParts.length,3);assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.productBomItems[1].quantity,1);
 });
 test('one supplied part used by multiple assemblies needs no assembly choice or duplicated quantity',async()=>{
  const h=harness();h.state.productParts.push({id:'part',companyId:'c',partNumber:'P-200',name:'Common bolt',partType:'PART',unit:'PCS'},{id:'assy2',companyId:'c',partNumber:'A2',name:'Assembly2',partType:'ASSEMBLY',unit:'PCS'});
  h.state.productBomItems.push({id:'root2',companyId:'c',parentPartId:'root',childPartId:'assy2',quantity:1,unit:'PCS'},{id:'one',companyId:'c',parentPartId:'assy',childPartId:'part',quantity:4,unit:'PCS'},{id:'two',companyId:'c',parentPartId:'assy2',childPartId:'part',quantity:8,unit:'PCS'});
  h.state.customerPartIdentities.push({companyId:'c',projectId:'p',customerKey:'ITEM:C1',partId:'part'});
  await h.apply();await h.apply('bom',{choices:[{itemId:'row1',partId:'part'}]});assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.customerSuppliedItems[0].partId,'part');assert.equal(h.state.customerSuppliedItems[0].parentPartId,null);assert.deepEqual(h.state.productBomItems.filter(e=>e.childPartId==='part').map(e=>e.quantity),[4,8]);
+});
+
+test('common confirmation cancellation preserves BOM and restores supply records',async()=>{
+ const h=existing(harness()),edges=structuredClone(h.state.productBomItems);
+ const cancel=async area=>h.repo.cancel(h.scope,{recordId:'doc',area,fingerprint:(await h.repo.list(h.scope)).fingerprint});
+ await h.apply();await h.apply('bom');await assert.rejects(cancel('supplied'),/BOM/);
+ await cancel('bom');assert.equal(h.state.customerSuppliedItems[0].bomApplied,false);assert.deepEqual(h.state.productBomItems,edges);assert.equal(h.state.bomRevisions.length,2);
+ await cancel('supplied');assert.equal(h.state.customerSuppliedItems.length,0);assert.deepEqual(h.state.productBomItems,edges);
+ await h.apply();await h.apply('bom');await cancel('bom');await cancel('supplied');assert.equal(h.state.customerSuppliedItems.length,0);
 });

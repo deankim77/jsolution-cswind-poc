@@ -5,7 +5,6 @@
 .supplied-table td:nth-child(5){min-width:200px}
 .supplied-table td{white-space:pre-wrap}
 .supplied-table select,.supplied-table input:not([type=checkbox]){font-size:var(--v2-font-size-control);height:34px;border:1px solid var(--line);border-radius:6px;background:var(--v2-surface-content);color:var(--ink);max-width:230px}
-.supplied-table details{font-size:var(--v2-font-size-caption);color:var(--muted)}
 .supplied-review p{font-size:var(--v2-font-size-body)}
 .supplied-review .review-confirm-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .supplied-review label{display:inline-flex;align-items:center;gap:6px;font-size:var(--v2-font-size-control)}
