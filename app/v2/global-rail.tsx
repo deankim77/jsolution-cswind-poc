@@ -38,7 +38,7 @@ type RailItem={
 };
 
 const primaryNav:RailItem[]=[
-  {label:"전사 대시보드",icon:House,view:"portfolio"},
+  {label:"글로벌 대시보드",icon:House,view:"portfolio"},
   {label:"통합검색",icon:Search},
   {label:"프로젝트 목록",icon:Folders,view:"projects"},
   {label:"문서·산출물",icon:FileText,view:"documents"},

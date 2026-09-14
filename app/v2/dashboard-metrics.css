@@ -1,0 +1,8 @@
+/* Shared AI metrics cards use the existing project dashboard summary dimensions. */
+.wv2-dashboard-metrics{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:9px}
+.wv2-dashboard-metrics>article,.wv2-dashboard-metrics>button{display:flex;min-height:72px;flex-direction:column;justify-content:space-between;border:1px solid var(--line);border-radius:8px;background:var(--v2-surface-content);padding:12px;text-align:left;color:inherit;font:inherit}
+.wv2-dashboard-metrics>button{cursor:pointer}
+.wv2-dashboard-metrics span,.wv2-dashboard-metrics small{color:var(--muted);font-size:var(--v2-font-size-caption);line-height:1.35}
+.wv2-dashboard-metrics b{font-size:var(--v2-font-size-section-title)}
+@media(max-width:1100px){.wv2-dashboard-metrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.wv2-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
