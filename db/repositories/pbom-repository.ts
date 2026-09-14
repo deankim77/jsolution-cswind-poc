@@ -1,3 +1,4 @@
+import {customerSuppliedItems} from '../customer-supplied-schema';
 import {defaultDocumentRootQuantity,validateDocumentBomRoot} from '../../lib/pbom-contract';
 import {sumBomQuantities,sameBomQuantity} from '../../lib/bom-quantities';
 import {activeBulkRows} from '../../lib/production-bulk-edit';
@@ -49,6 +50,7 @@ export function createPbomRepository(db=getDb()){return {
   const confirmed=(await db.select().from(customerConfirmedData).where(scoped(customerConfirmedData,s))).map(r=>({...r,item:normalizeReviewItem(r.item)}));
   if(!root)return {root:null,rows:[],identities,pendingDocuments:new Set(activeBulkRows(confirmed,'pbom').map(r=>r.recordId)).size};
   const [parts,edges,occurrences]=await Promise.all([db.select().from(productParts).where(eq(productParts.companyId,s.companyId)),db.select().from(productBomItems).where(eq(productBomItems.companyId,s.companyId)),db.select().from(customerBomOccurrences).where(scoped(customerBomOccurrences,s))]);
+  const supplied=await db.select().from(customerSuppliedItems).where(scoped(customerSuppliedItems,s));
   const rows:BomRow[]=[];
   const walk=(parent:string,parentRow:string|null,level:number,total:number|null,path:string,seen:Set<string>,parentSource?:typeof occurrences[number])=>{if(seen.has(parent))return;const next=new Set(seen).add(parent);
    for(const edge of edges.filter(e=>e.parentPartId===parent).sort((a,b)=>a.sortOrder-b.sortOrder)){
@@ -62,9 +64,11 @@ export function createPbomRepository(db=getDb()){return {
     const edited=applicable.length>0&&(!sameBomQuantity(sourceQuantity,edge.quantity)||applicable.some(o=>o.fact.unit!==edge.unit));
     const variants:(typeof occurrences[number]|undefined)[]=[applicable[0]];
     for(const primary of variants){const b:BomFact=primary?{...primary.fact,parentId:parentRow,itemDescription:part.spec?.trim()||part.name,quantity:edge.quantity,unit:edge.unit}:{...emptyFact(part.spec?.trim()||part.name),parentId:parentRow,quantity:edge.quantity,unit:edge.unit,partType:['TOP_ITEM','PRODUCT','ASSEMBLY','SUB_ASSEMBLY'].includes(part.partType)?'ASSEMBLY':'PART'};
+     const suppliedEntry=supplied.find(e=>e.parentPartId===edge.parentPartId&&e.partId===edge.childPartId);
+     if(suppliedEntry&&!b.customerItemNumber)b.customerItemNumber=suppliedEntry.itemNumber;
      const id=[parentRow,edge.id,primary?.id??'manual'].filter(Boolean).join('/'),qty=total===null||b.quantity===null?null:total*b.quantity;
      const approval=confirmed.find(c=>c.recordId===primary?.recordId&&c.itemId===primary?.itemId&&c.version===primary?.version);
-     rows.push({id,confirmationId:approval?.id,sourceItemId:primary?.itemId,recordId:primary?.recordId??'',sourceRecordIds:[...new Set(sources.map(o=>o.recordId))],source:sources.map(o=>o.source).join('\n')+(edited?'\n수량·단위: BOM 편집기 변경':'' )||'BOM 편집기에서 추가',bom:b,level,path:`${path} / ${part.partNumber}`,totalQuantity:qty!==null&&Number.isFinite(qty)?qty:null,calculatedWeight:b.weight,calculatedWeightSource:b.weight!==null?b.weightSource:'Not Available',internalPartNumber:part.partNumber,partId:part.id,match:primary?'EXISTING':'MANUAL',changed:edited,changeLabel:edited?'수량·단위 변경':undefined});
+     rows.push({id,procurement:suppliedEntry?'supplied':'unknown',confirmationId:approval?.id,sourceItemId:primary?.itemId,recordId:primary?.recordId??'',sourceRecordIds:[...new Set([...sources.map(o=>o.recordId),...(suppliedEntry?[suppliedEntry.bomRecordId??suppliedEntry.recordId]:[])])],source:sources.map(o=>o.source).join('\n')+(edited?'\n수량·단위: BOM 편집기 변경':'' )||'BOM 편집기에서 추가',bom:b,level,path:`${path} / ${part.partNumber}`,totalQuantity:qty!==null&&Number.isFinite(qty)?qty:null,calculatedWeight:b.weight,calculatedWeightSource:b.weight!==null?b.weightSource:'Not Available',internalPartNumber:part.partNumber,partId:part.id,match:primary?'EXISTING':'MANUAL',changed:edited,changeLabel:edited?'수량·단위 변경':undefined});
      walk(part.id,id,level+1,qty,`${path} / ${part.partNumber}`,next,primary);
     }
    }

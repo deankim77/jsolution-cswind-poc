@@ -13,6 +13,7 @@ const reviewLabels={NEW:'신규 부품',EXISTING:'기존 부품',NEED_REVIEW:'�
 const columns=[
  {key:'part',label:'품번',locked:true},
  {key:'status',label:'구분 / 변경'},
+ {key:'procurement',label:'조달 구분'},
  {key:'section',label:'SECTION'},
  {key:'level',label:'LEVEL'},
  {key:'description',label:'Item Description'},
@@ -33,7 +34,7 @@ const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
 const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
 const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
-const compactWidths:Record<ColumnKey,number>={part:170,status:120,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
+const compactWidths:Record<ColumnKey,number>={part:170,status:120,procurement:100,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
 
 export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell}:{compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
@@ -44,9 +45,9 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
  const options=columns.map(column=>({...column,label:review&&column.key==='status'?'품목 구분':column.label}));
  const shown=options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
- const filterKeys:ColumnKey[]=['part','status','section','description','item','drawing','revision','unit','availability','source'];
+ const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source'];
  const nodeText=(node:ReactNode):string=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(nodeText).join(' '):isValidElement<{children?:ReactNode}>(node)?nodeText(node.props.children):'';
- const filterValue=(row:BomRow,key:ColumnKey):string=>key==='part'?row.internalPartNumber??'':key==='status'?labels[row.match??'NEED_REVIEW']:key==='section'?bomSectionName(row,rows):key==='description'?row.bom.itemDescription:key==='source'?(renderSource?nodeText(renderSource(row.sourceRecordIds??[row.recordId])):(row.sourceRecordIds??[row.recordId]).join(', ')):key==='item'?row.bom.customerItemNumber:key==='drawing'?row.bom.drawingNumber:key==='revision'?row.bom.componentRevision:key==='unit'?row.bom.unit:key==='availability'?DRAWING_AVAILABILITY_LABELS[row.bom.drawingAvailability]:'';
+ const filterValue=(row:BomRow,key:ColumnKey):string=>key==='procurement'?(row.procurement==='supplied'?'사급':row.procurement==='own'?'자체 조달':'미확인'):key==='part'?row.internalPartNumber??'':key==='status'?labels[row.match??'NEED_REVIEW']:key==='section'?bomSectionName(row,rows):key==='description'?row.bom.itemDescription:key==='source'?(renderSource?nodeText(renderSource(row.sourceRecordIds??[row.recordId])):(row.sourceRecordIds??[row.recordId]).join(', ')):key==='item'?row.bom.customerItemNumber:key==='drawing'?row.bom.drawingNumber:key==='revision'?row.bom.componentRevision:key==='unit'?row.bom.unit:key==='availability'?DRAWING_AVAILABILITY_LABELS[row.bom.drawingAvailability]:'';
  const filtering=shown.some(c=>Boolean(columnFilters[c.key]));
  const matching=rows.filter(row=>shown.every(c=>!columnFilters[c.key]||JSON.stringify(filterValue(row,c.key).trim())===columnFilters[c.key]));
  const included=new Set(matching.map(row=>row.id));
@@ -71,6 +72,7 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
   switch(key){
    case 'part':return <span className="pbom-tree-label pbom-part-tree-label" title={row.path} style={{paddingInlineStart:`${Math.max(0,row.level-(root?0:1))*20}px`}}>{toggleSlot(row,children)}<span className={`pbom-part-dot ${b.partType==='ASSEMBLY'?'is-assembly':''}`} aria-hidden="true"/>{partLink(row)}</span>;
    case 'status':return review?reviewLabels[row.match??'NEED_REVIEW']: <>{labels[row.match??'NEED_REVIEW']}{row.changed?` · ${row.changeLabel||'Revision 변경'}`:''}</>;
+   case 'procurement':return row.procurement==='supplied'?'사급':row.procurement==='own'?'자체 조달':'미확인';
    case 'section':return bomSectionName(row,rows)||'미확인';
    case 'level':return row.level;
    case 'description':return b.itemDescription;

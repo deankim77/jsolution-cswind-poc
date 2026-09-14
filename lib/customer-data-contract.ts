@@ -1,11 +1,11 @@
 export const CUSTOMER_INTAKE_GROUPS={unclassified:'미분류',a_bt:'Category A · BT',a_wt:'Category A · WT',a_im:'Category A · IM',a_common:'Category A · 공통',b_initial:'Category B · 초기 BOM',b_change:'Category B · 변경',b_missing:'Category B · 누락 도면',b_parts:'Category B · 부품 목록',common:'A/B 공통'} as const;
 export type CustomerIntakeGroup=keyof typeof CUSTOMER_INTAKE_GROUPS;
 // Preserve legacy purpose keys; present the two current upload purposes consistently.
-export const CUSTOMER_SOURCE_PURPOSES={bom:'BOM AI 추출',ttr:'TRR 문서 작성',input:'BOM AI 추출',template:'TRR 문서 작성',example:'TRR 문서 작성'} as const;
+export const CUSTOMER_SOURCE_PURPOSES={supplied:'사급품 추출',bom:'BOM AI 추출',ttr:'TRR 문서 작성',input:'BOM AI 추출',template:'TRR 문서 작성',example:'TRR 문서 작성'} as const;
 export type CustomerSourcePurpose=keyof typeof CUSTOMER_SOURCE_PURPOSES;
 export const PRODUCTION_PROJECT_CODE = "PRODUCTION";
 export const CUSTOMER_DOCUMENT_TYPES = {
-  drawing: "도면", specification: "사양서", bom: "Parts List / BOM",
+  supplied:"사급품 목록", drawing: "도면", specification: "사양서", bom: "Parts List / BOM",
   requirement: "요구사항", report: "기술 보고서", other: "기타",
 } as const;
 export const CUSTOMER_IMPACT_TARGETS = {

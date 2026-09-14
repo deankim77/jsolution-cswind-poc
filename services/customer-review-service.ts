@@ -1,3 +1,4 @@
+import {extractCustomerSuppliedXlsx} from './customer-supplied-xlsx';
 import {prepareReviewNumbers} from './customer-review-numbers';
 import {prepareReviewResponse} from './customer-review-response';
 import {createCustomerDataRepository,type CustomerDataScope} from '../db/repositories/customer-data-repository';
@@ -11,7 +12,7 @@ export function customerFileMime(name:string){const ext=name.toLowerCase().split
 export function createCustomerReviewService(raw=createCustomerDataRepository(),reviews=createCustomerReviewRepository(),storage=getStorageAdapter(),provider=requestCustomerReview){
  async function loadFiles(s:CustomerDataScope,ids:string[]){
  const files:ReviewFile[]=[];let total=0;
- for(const id of ids){const record=await raw.get(s,id);if(record.sourcePurpose==='template'||record.sourcePurpose==='example')throw new CustomerDataError('출력 템플릿·예시는 고객 요구사항의 원본 근거로 분석하지 않습니다.',422);const mime=customerFileMime(record.fileName);if(mime==='application/octet-stream')throw new CustomerDataError(`${record.fileName}: 현재 내용 분석은 PDF·PNG·JPEG·WebP·텍스트를 지원합니다. PDF로 변환해 등록하세요.`,422);if(record.fileSize>12*1024*1024||(total+=record.fileSize)>30*1024*1024)throw new CustomerDataError('AI 분석은 파일당 12MB, 선택 합계 30MB까지 가능합니다.',413);const obj=await storage.get(record.fileKey);if(!obj)throw new CustomerDataError('원본 파일을 찾을 수 없습니다.',404);files.push({id,fileName:record.fileName,mime,bytes:Buffer.from(await new Response(obj.body).arrayBuffer())});}
+ for(const id of ids){const record=await raw.get(s,id);if(record.sourcePurpose==='template'||record.sourcePurpose==='example')throw new CustomerDataError('출력 템플릿·예시는 고객 요구사항의 원본 근거로 분석하지 않습니다.',422);const isSuppliedXlsx=record.sourcePurpose==='supplied'&&/\.xlsx$/i.test(record.fileName);const mime=isSuppliedXlsx?'text/plain':customerFileMime(record.fileName);if(mime==='application/octet-stream')throw new CustomerDataError(`${record.fileName}: 현재 내용 분석은 PDF·PNG·JPEG·WebP·텍스트를 지원합니다. PDF로 변환해 등록하세요.`,422);if(record.fileSize>12*1024*1024||(total+=record.fileSize)>30*1024*1024)throw new CustomerDataError('AI 분석은 파일당 12MB, 선택 합계 30MB까지 가능합니다.',413);const obj=await storage.get(record.fileKey);if(!obj)throw new CustomerDataError('원본 파일을 찾을 수 없습니다.',404);const bytes=Buffer.from(await new Response(obj.body).arrayBuffer());let content=bytes;if(isSuppliedXlsx){try{content=Buffer.from(JSON.stringify(extractCustomerSuppliedXlsx(bytes)));}catch(e){throw new CustomerDataError(e instanceof Error?e.message:'사급품 Excel 내용을 읽지 못했습니다.',422);}}files.push({id,fileName:record.fileName,mime,bytes:content});}
  return files;
  }
  return {
@@ -50,6 +51,14 @@ export function createCustomerReviewService(raw=createCustomerDataRepository(),r
  const unique=[recordId],files=await loadFiles(s,unique);
  const reviewState=await reviews.list(s),current=reviewState.reviews.find(r=>r.recordId===recordId);
  const record=await raw.get(s,recordId);
+ if(record.sourcePurpose==='supplied'){
+  if(!/\.xlsx$/i.test(record.fileName))throw new CustomerDataError('사급품 분석은 고객 Excel 원본(.xlsx)을 등록해 주세요.',422);
+  let suppliedItems;try{suppliedItems=JSON.parse(files[0].bytes.toString('utf8'));}catch{throw new CustomerDataError('사급품 Excel 내용을 읽지 못했습니다.',422);}
+  const draft=validateReviewDraft({analysisMode:'text',documentType:'supplied',documentTypeConfirmed:true,drawingNumber:'',revisionLabel:'',summary:`사급품 ${suppliedItems.length}건을 원본 셀에서 추출했습니다. 변경 ITEM을 고객에게 확인한 뒤 확정하세요.`,uncertainties:[],items:[],suppliedItems},[recordId]);
+  const answer=draft.summary;
+  const review=await reviews.save(s,recordId,current?.version??0,draft,[...(current?.messages??[]),{role:'user',content:message},{role:'assistant',content:answer}],'analysis');
+  return {answer,review};
+ }
  const prompt=buildCustomerAnalysisPrompt(recordId,record.sourcePurpose);
  const result=await provider(prompt,files,true);
  let draft;
