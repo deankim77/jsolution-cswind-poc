@@ -1,5 +1,7 @@
 "use client";
 
+import {BOM_COMPARISON_QUESTION} from "../../lib/bom-comparison-question";
+
 import {useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {ChevronDown,GitCompareArrows,Sparkles,X} from "lucide-react";
 import {ConnectedAiPanel,type ContextItem} from "./connected-ai-workspaces";
@@ -68,6 +70,6 @@ export function BomCompareWorkspace({initialLeftRootId,initialRightRootId,onClos
         {!result?<div className="bcw-empty"><GitCompareArrows size={30}/><b>{loading?"BOM 데이터를 불러오는 중…":sameBom&&leftSeq===rightSeq?"서로 다른 Revision을 선택해 주세요.":"비교할 Revision을 선택해 주세요."}</b></div>:<><div className="bcw-summary"><article className="added"><span>추가</span><b>{result.diff.summary.added}</b></article><article className="removed"><span>삭제</span><b>{result.diff.summary.removed}</b></article><article className="changed"><span>수량 변경</span><b>{result.diff.summary.quantityChanged}</b></article><article className="moved"><span>위치 변경</span><b>{result.diff.summary.moved}</b></article></div><div className="bcw-toolbar"><label><input type="checkbox" checked={changesOnly} onChange={event=>setChangesOnly(event.target.checked)}/>변경 항목만 보기</label><span>{comparing?"비교 중…":`${leftDisplay} ↔ ${rightDisplay}`}</span></div><div className="bcw-trees"><section><header><b>{leftDisplay}</b><span>기준</span></header>{renderTree(result.fromSnapshot,"from")}</section><section><header><b>{rightDisplay}</b><span>비교</span></header>{renderTree(result.toSnapshot,"to")}</section></div></>}
       </main>
     </section>
-    {aiOpen&&<aside className="wv2-panel wide"><div className="wv2-resize"/><header><div><small>BOM COMPARE</small><h2>AI 대화</h2><span>{leftDisplay} ↔ {rightDisplay}</span></div><div><button onClick={()=>setAiOpen(false)} aria-label="AI 대화 닫기"><X size={19}/></button></div></header><section className="wv2-panel-body bcw-ai-panel-body"><div className="bcw-ai-context"><b>선택 정보</b><article><span>{leftDisplay}</span></article><article><span>{rightDisplay}</span></article></div><ConnectedAiPanel project={null} draftRequest={{key:aiKey,source:"BOM 비교",prompt:"선택한 BOM Revision의 변경사항만 간략하게 비교해줘",contextItems:resultContext}}/></section></aside>}
+    {aiOpen&&<aside className="wv2-panel wide"><div className="wv2-resize"/><header><div><small>BOM COMPARE</small><h2>AI 대화</h2><span>{leftDisplay} ↔ {rightDisplay}</span></div><div><button onClick={()=>setAiOpen(false)} aria-label="AI 대화 닫기"><X size={19}/></button></div></header><section className="wv2-panel-body bcw-ai-panel-body"><div className="bcw-ai-context"><b>선택 정보</b><article><span>{leftDisplay}</span></article><article><span>{rightDisplay}</span></article></div><ConnectedAiPanel project={null} draftRequest={{key:aiKey,source:"BOM 비교",prompt:BOM_COMPARISON_QUESTION,contextItems:resultContext}}/></section></aside>}
   </>;
 }
