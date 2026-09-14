@@ -7,7 +7,7 @@ const require=createRequire(import.meta.url),ts=require('typescript');
 const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
 require.extensions['.ts']=(m,f)=>m._compile(compile(fs.readFileSync(f,'utf8')),f);
 const contract=require('../lib/customer-supplied-contract.ts');
-const {extractCustomerSuppliedXlsx}=require('../services/customer-supplied-xlsx.ts');
+const {readCustomerSuppliedWorkbook}=require('../services/customer-supplied-xlsx.ts');
 const {zipStore}=require('../lib/trr-zip.ts');
 const xml=s=>new TextEncoder().encode(s);
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -16,15 +16,14 @@ function workbook(rows){return zipStore([
  {name:'xl/_rels/workbook.xml.rels',data:xml('<Relationships><Relationship Id="r1" Target="worksheets/sheet1.xml"/></Relationships>')},
  {name:'xl/worksheets/sheet1.xml',data:xml('<worksheet><sheetData>'+[['1234 Vestas provided components'],['Component number','Object Description','Comp. Qty (CUn)'],...rows].map((r,i)=>`<row r="${i+1}">${r.map((v,j)=>`<c r="${String.fromCharCode(65+j)}${i+1}" t="inlineStr"><is><t>${esc(v)}</t></is></c>`).join('')}</row>`).join('')+'</sheetData></worksheet>')}
 ]);}
-test('source extraction preserves IDs, quantities, source cells and multi-step CN replacements',()=>{
- const rows=extractCustomerSuppliedXlsx(workbook([['001','Bolt','4','CN1 - Item Added'],['2','Plate','1','CN2 - Item Removed'],['3','Old kit','2','CN1 - Item 3 is replaced by 4\nCN2 - Item 4 is replaced by 5']]));
- assert.equal(rows[0].itemNumber,'001');assert.equal(rows[0].section,'1234');assert.equal(rows[0].quantity,4);assert.equal(rows[1].change,'removed');assert.deepEqual(rows[2].replacementChain,['3','4','5']);assert.match(rows[2].source,/1234!A5:D5/);assert.ok(!('requiredDate' in rows[0]));
+test('workbook reading preserves cells without requiring headers or SECTION',()=>{
+ const sheets=readCustomerSuppliedWorkbook(workbook([['001','Bolt','4','CN1 - Item Added']]));
+ assert.equal(sheets[0].cells.find(c=>c.ref==='A3').value,'001');assert.equal(sheets[0].cells.find(c=>c.ref==='D3').value,'CN1 - Item Added');
+ assert.equal(contract.validateSuppliedFacts([{id:'1',section:'',itemNumber:'001',description:'Bolt',quantity:null,change:'listed',changeText:'',replacementChain:[],source:'A3'}]).length,1);
 });
-test('duplicate keys, unsupported files and ambiguous change instructions are not silently accepted',()=>{
- assert.throws(()=>extractCustomerSuppliedXlsx(Buffer.from('not xlsx')));
- assert.throws(()=>extractCustomerSuppliedXlsx(workbook([['1','one','1'],['1','one','2']])),/중복/);
+test('invalid workbook and conflicting raw change comments are identified',()=>{
+ assert.throws(()=>readCustomerSuppliedWorkbook(Buffer.from('not xlsx')),/파일 구조/);
  assert.equal(contract.classifySuppliedChange('Item Added; Item Removed','1').change,'review');
- assert.equal(contract.classifySuppliedChange('Item 1 is replaced by 2; Item 2 is replaced by 1','1').change,'review');
 });
 function harness(){
  const names=['customerSuppliedItems','customerReviews','customerRawData','productionBomRoots','customerPartIdentities','customerBomOccurrences','productParts','productBomItems','bomEditLocks','bomRevisions','auditLogs'];
@@ -105,14 +104,14 @@ test('a missing source row does not remove an existing confirmed item',async()=>
  Object.assign(h.state.customerReviews[0].draft.suppliedItems[0],{itemNumber:'C2'});
  await h.apply('supplied',{version:2});assert.equal(h.state.customerSuppliedItems.length,2);assert.ok(h.state.customerSuppliedItems.every(e=>e.status==='active'));
 });
-test('Excel analysis saves exact source facts as a draft without invoking confirmation or generative extraction',async()=>{
+test('Excel analysis invokes AI with raw cells and saves partial facts without confirmation',async()=>{
  const {createCustomerReviewService}=require('../services/customer-review-service.ts');
  const bytes=workbook([['001','Bolt','4','CN1 - Item Added']]);let saved;
  const raw={access:async()=>({canReview:true}),get:async()=>({fileName:'components.xlsx',fileSize:bytes.length,fileKey:'x',sourcePurpose:'supplied'})};
  const reviews={list:async()=>({reviews:[]}),save:async(s,id,v,d)=>{saved=d;return {recordId:id,version:1,draft:d}},confirm:()=>assert.fail('no confirmation during analysis')};
- const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob([bytes]).stream()})},()=>assert.fail('use exact Excel cells'));
+ const service=createCustomerReviewService(raw,reviews,{get:async()=>({body:new Blob([bytes]).stream()})},async(prompt,files,structured)=>{assert.equal(structured,true);assert.match(files[0].bytes.toString(),/CN1 - Item Added/);return {draft:{summary:'추출 완료',uncertainties:[],suppliedItems:[{itemNumber:'001',description:'Bolt',quantity:4,changeText:'CN1 - Item Added',source:'1234!A3:D3'},{itemNumber:'002',description:'',quantity:null,changeText:'',source:'1234!A4'}]}};});
  await service.analyze({companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']},'doc',['doc'],'분석');
- assert.equal(saved.suppliedItems[0].itemNumber,'001');assert.equal(saved.suppliedItems[0].quantity,4);assert.equal(saved.documentType,'supplied');assert.deepEqual(saved.items,[]);
+ assert.equal(saved.suppliedItems[0].itemNumber,'001');assert.equal(saved.suppliedItems[0].quantity,4);assert.equal(saved.documentType,'supplied');assert.deepEqual(saved.items,[]);assert.equal(saved.suppliedItems[0].section,'');assert.equal(saved.suppliedItems[1].quantity,null);
 });
 test('upload database constraints admit every registered purpose and document type',()=>{
  const {CUSTOMER_SOURCE_PURPOSES,CUSTOMER_DOCUMENT_TYPES}=require('../lib/customer-data-contract.ts');
@@ -124,4 +123,17 @@ test('upload database constraints admit every registered purpose and document ty
    for(const key of Object.keys(values))assert.ok(line.includes(`'${key}'`),`${constraint} must accept ${key}`);
   }
  }
+});
+test('customer item number resolves existing BOM and supplies internal part information',async()=>{
+ const h=harness();h.state.productParts.push({id:'existing',companyId:'c',partNumber:'P-100',name:'Existing cable',partType:'PART',unit:'PCS'});
+ h.state.productBomItems.push({id:'existing-edge',companyId:'c',parentPartId:'assy',childPartId:'existing',quantity:1,unit:'PCS'});
+ h.state.customerBomOccurrences.push({companyId:'c',projectId:'p',bomItemId:'existing-edge',fact:{customerItemNumber:'C1'}});
+ await h.apply();const list=await h.repo.list(h.scope);assert.equal(list.entries[0].internalPartNumber,'P-100');assert.equal(list.entries[0].internalPartName,'Existing cable');
+ await h.apply('bom');assert.equal(h.state.productParts.length,3);assert.equal(h.state.productBomItems.length,2);assert.equal(h.state.productBomItems[1].quantity,2);
+});
+test('one supplied part used by multiple assemblies needs no assembly choice or duplicated quantity',async()=>{
+ const h=harness();h.state.productParts.push({id:'part',companyId:'c',partNumber:'P-200',name:'Common bolt',partType:'PART',unit:'PCS'},{id:'assy2',companyId:'c',partNumber:'A2',name:'Assembly2',partType:'ASSEMBLY',unit:'PCS'});
+ h.state.productBomItems.push({id:'root2',companyId:'c',parentPartId:'root',childPartId:'assy2',quantity:1,unit:'PCS'},{id:'one',companyId:'c',parentPartId:'assy',childPartId:'part',quantity:4,unit:'PCS'},{id:'two',companyId:'c',parentPartId:'assy2',childPartId:'part',quantity:8,unit:'PCS'});
+ h.state.customerPartIdentities.push({companyId:'c',projectId:'p',customerKey:'ITEM:C1',partId:'part'});
+ await h.apply();await h.apply('bom',{choices:[{itemId:'row1',partId:'part'}]});assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.customerSuppliedItems[0].partId,'part');assert.equal(h.state.customerSuppliedItems[0].parentPartId,null);assert.deepEqual(h.state.productBomItems.filter(e=>e.childPartId==='part').map(e=>e.quantity),[4,8]);
 });

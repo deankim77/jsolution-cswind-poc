@@ -1,7 +1,6 @@
 import {inflateRawSync} from 'node:zlib';
 import {posix} from 'node:path';
-import {classifySuppliedChange,validateSuppliedFacts,type SuppliedFact} from '../lib/customer-supplied-contract';
-function fail():never{throw Error('사급품 Excel 원본을 확인하세요. 지원 형식은 .xlsx입니다.');}
+function fail():never{throw Error('Excel 파일 구조를 읽지 못했습니다. 파일 손상·암호 설정 여부를 확인하세요.');}
 /** Bounded ZIP reader: never extracts paths and never follows external relationships. */
 function archive(input:Uint8Array){
  const b=Buffer.from(input);if(b.length<22||b.length>12*1024*1024)fail();let end=-1;
@@ -25,32 +24,25 @@ function archive(input:Uint8Array){
 const decode=(s:string)=>s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi,(_,v:string)=>v[0]==='#'?String.fromCodePoint(v[1].toLowerCase()==='x'?parseInt(v.slice(2),16):parseInt(v.slice(1),10)):({amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"}[v.toLowerCase()]??''));
 const attr=(s:string,k:string)=>decode(new RegExp(`(?:^|\\s)${k}=["']([^"']*)["']`).exec(s)?.[1]??'');
 const textNodes=(s:string)=>[...s.matchAll(/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>/g)].map(m=>decode(m[1])).join('');
-export function extractCustomerSuppliedXlsx(input:Uint8Array):SuppliedFact[]{
- const files=archive(input),workbook=files.get('xl/workbook.xml')??fail(),rels=files.get('xl/_rels/workbook.xml.rels')??fail();
+export function readCustomerSuppliedWorkbook(input:Uint8Array){
+ const files=archive(input),workbook=files.get('xl/workbook.xml'),rels=files.get('xl/_rels/workbook.xml.rels');
+ if(!workbook||!rels)throw Error('Excel 통합 문서 내용을 읽지 못했습니다. 파일 손상 또는 암호 설정을 확인하세요.');
  const strings=[...(files.get('xl/sharedStrings.xml')??'').matchAll(/<(?:\w+:)?si(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?si>/g)].map(m=>textNodes(m[1]));
  const targets=new Map([...rels.matchAll(/<(?:\w+:)?Relationship\s+([^>]+)\/?\s*>/g)].filter(m=>attr(m[1],'TargetMode')!=='External').map(m=>[attr(m[1],'Id'),attr(m[1],'Target')]));
- const result:SuppliedFact[]=[];
+ const sheets:{name:string;cells:{ref:string;value:string;formula?:string}[]}[]=[];let count=0;
  for(const sheet of workbook.matchAll(/<(?:\w+:)?sheet\s+([^>]+)\/?\s*>/g)){
-  const name=attr(sheet[1],'name'),target=targets.get(attr(sheet[1],'r:id'));if(!target)fail();const path=posix.normalize(target.startsWith('/')?target.slice(1):`xl/${target}`);if(!path.startsWith('xl/worksheets/'))fail();const xml=files.get(path)??fail();
-  const rows=[...xml.matchAll(/<(?:\w+:)?row\s+([^>]+)>([\s\S]*?)<\/(?:\w+:)?row>/g)].map(m=>{
-   const cells=new Map<string,string>();for(const c of m[2].matchAll(/<(?:\w+:)?c\s+([^>]+)>([\s\S]*?)<\/(?:\w+:)?c>/g)){
-    const ref=attr(c[1],'r'),v=/<(?:\w+:)?v(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?v>/.exec(c[2])?.[1]??'';if(/<(?:\w+:)?f[\s>]/.test(c[2]))throw Error(`${name}!${ref}: 수식 대신 확정된 원본 값을 사용하세요.`);
-    cells.set(ref.replace(/\d+$/,''),attr(c[1],'t')==='s'?(strings[Number(v)]??fail()):attr(c[1],'t')==='inlineStr'?textNodes(c[2]):decode(v));
-   }return {row:attr(m[1],'r'),cells};
-  });
-  const header=rows.findIndex(r=>[...r.cells.values()].some(v=>/^Component\s+(number|no\.?)$/i.test(v.trim())));if(header<0)continue;
-  const headings=rows[header].cells,find=(re:RegExp)=>[...headings].find(([,v])=>re.test(v.trim()))?.[0];
-  const itemCol=find(/^Component\s+(number|no\.?)$/i),descCol=find(/^Object Description$/i),qtyCol=find(/^Comp\.\s*Qty/i);if(!itemCol||!descCol||!qtyCol)fail();
-  const titles=rows.slice(0,header).flatMap(r=>[...r.cells.values()]);const declared=titles.map(t=>/^\s*(\S+)\s+Vestas provided components\s*$/i.exec(t)?.[1]).filter(Boolean) as string[];
-  if(new Set(declared).size>1)throw Error(`${name}: SECTION 표기가 서로 다릅니다.`);const section=declared[0]||(/^\d+$/.test(name)?name:'');
-  if(!section.trim())fail();
-  for(const row of rows.slice(header+1)){
-   const itemNumber=row.cells.get(itemCol)?.trim()??'',description=row.cells.get(descCol)?.trim()??'',qty=row.cells.get(qtyCol)?.trim()??'';
-   if(!itemNumber&&!description&&!qty)continue;
-   if(!itemNumber||!description||!qty||!/^\d+(?:\.\d+)?$/.test(qty))throw Error(`${name}!${row.row}: 품목번호·품명·수량을 확인하세요.`);
-   const changeText=[...row.cells].filter(([col,v])=>![itemCol,descCol,qtyCol].includes(col)&&v.trim()).map(([,v])=>v.trim()).join('\n');
-   result.push({id:`${name}:${row.row}`,section,itemNumber,description,quantity:Number(qty),changeText,...classifySuppliedChange(changeText,itemNumber),source:`${name}!${itemCol}${row.row}:${[...row.cells.keys()].at(-1)}${row.row}`});
+  const name=attr(sheet[1],'name'),target=targets.get(attr(sheet[1],'r:id'));if(!target)continue;
+  const path=posix.normalize(target.startsWith('/')?target.slice(1):`xl/${target}`);if(!path.startsWith('xl/worksheets/'))continue;
+  const xml=files.get(path);if(!xml)throw Error(`${name}: 시트 내용을 읽지 못했습니다.`);
+  const cells:{ref:string;value:string;formula?:string}[]=[];
+  for(const c of xml.matchAll(/<(?:\w+:)?c\s+([^>]*?)(?<!\/)>([\s\S]*?)<\/(?:\w+:)?c>/g)){
+   const ref=attr(c[1],'r'),v=/<(?:\w+:)?v(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?v>/.exec(c[2])?.[1]??'';
+   const value=attr(c[1],'t')==='s'?(strings[Number(v)]??''):attr(c[1],'t')==='inlineStr'?textNodes(c[2]):decode(v);
+   const formula=/<(?:\w+:)?f(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?f>/.exec(c[2])?.[1];
+   if(value||formula){cells.push({ref,value,...(formula?{formula:decode(formula)}:{})});if(++count>30000)throw Error('분석할 셀이 너무 많습니다. 시트별로 나누어 등록하세요.');}
   }
+  if(cells.length)sheets.push({name,cells});
  }
- return validateSuppliedFacts(result);
+ if(!sheets.length)throw Error('Excel에서 읽을 수 있는 셀 내용이 없습니다.');
+ return sheets;
 }

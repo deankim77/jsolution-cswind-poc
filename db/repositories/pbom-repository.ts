@@ -64,7 +64,7 @@ export function createPbomRepository(db=getDb()){return {
     const edited=applicable.length>0&&(!sameBomQuantity(sourceQuantity,edge.quantity)||applicable.some(o=>o.fact.unit!==edge.unit));
     const variants:(typeof occurrences[number]|undefined)[]=[applicable[0]];
     for(const primary of variants){const b:BomFact=primary?{...primary.fact,parentId:parentRow,itemDescription:part.spec?.trim()||part.name,quantity:edge.quantity,unit:edge.unit}:{...emptyFact(part.spec?.trim()||part.name),parentId:parentRow,quantity:edge.quantity,unit:edge.unit,partType:['TOP_ITEM','PRODUCT','ASSEMBLY','SUB_ASSEMBLY'].includes(part.partType)?'ASSEMBLY':'PART'};
-     const suppliedEntry=supplied.find(e=>e.parentPartId===edge.parentPartId&&e.partId===edge.childPartId);
+     const suppliedEntry=supplied.find(e=>e.partId===edge.childPartId&&!(e.status==='removed'&&e.bomApplied));
      if(suppliedEntry&&!b.customerItemNumber)b.customerItemNumber=suppliedEntry.itemNumber;
      const id=[parentRow,edge.id,primary?.id??'manual'].filter(Boolean).join('/'),qty=total===null||b.quantity===null?null:total*b.quantity;
      const approval=confirmed.find(c=>c.recordId===primary?.recordId&&c.itemId===primary?.itemId&&c.version===primary?.version);

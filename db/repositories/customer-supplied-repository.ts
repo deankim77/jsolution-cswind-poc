@@ -24,12 +24,13 @@ async function state(db:Db|Tx,s:CustomerDataScope){
  const identities=await db.select().from(customerPartIdentities).where(and(eq(customerPartIdentities.companyId,s.companyId),eq(customerPartIdentities.projectId,s.projectId)));
  const reachable=new Set<string>();const walk=(id:string)=>{if(reachable.has(id))return;reachable.add(id);allEdges.filter(e=>e.parentPartId===id).forEach(e=>walk(e.childPartId));};if(root)walk(root.rootPartId);
  const edges=allEdges.filter(e=>reachable.has(e.parentPartId));
- const options=parts.filter(p=>reachable.has(p.id)||identities.some(i=>i.partId===p.id)).map(p=>({id:p.id,partNumber:p.partNumber,name:p.name,unit:p.unit,customerNumbers:identities.filter(i=>i.partId===p.id&&i.customerKey.startsWith('ITEM:')).map(i=>i.customerKey.slice(5))}));
+ const evidence=await db.select().from(customerBomOccurrences).where(and(eq(customerBomOccurrences.companyId,s.companyId),eq(customerBomOccurrences.projectId,s.projectId)));
+ const options=parts.filter(p=>reachable.has(p.id)||identities.some(i=>i.partId===p.id)).map(p=>({id:p.id,partNumber:p.partNumber,name:p.name,unit:p.unit,customerNumbers:identities.filter(i=>i.partId===p.id&&i.customerKey.startsWith('ITEM:')).map(i=>i.customerKey.slice(5)).concat(evidence.filter(e=>allEdges.some(edge=>edge.id===e.bomItemId&&edge.childPartId===p.id)).map(e=>e.fact.customerItemNumber).filter(Boolean))}));
  const assemblies=options.filter(p=>reachable.has(p.id)&&parts.some(v=>v.id===p.id&&['ASSEMBLY','SUB_ASSEMBLY','TOP_ITEM','PRODUCT'].includes(v.partType)));
  return {entries,roots,root,parts,allEdges,identities,reachable,edges,options,assemblies,fingerprint:hash({entries,edges})};
 }
 export function createCustomerSuppliedRepository(db=getDb()){return {
- async list(s:CustomerDataScope){const access=await customerDataAccess(db,s),data=await state(db,s);return {entries:data.entries,canReview:access.canReview,assemblies:data.assemblies,parts:data.options,edges:data.edges,fingerprint:data.fingerprint};},
+ async list(s:CustomerDataScope){const access=await customerDataAccess(db,s),data=await state(db,s);return {entries:data.entries.map(e=>{const matches=data.options.filter(p=>data.reachable.has(p.id)&&p.customerNumbers.includes(e.itemNumber)),part=data.options.find(p=>p.id===e.partId)||(matches.length===1?matches[0]:undefined);return {...e,internalPartNumber:part?.partNumber??'',internalPartName:part?.name??''};}),canReview:access.canReview,assemblies:data.assemblies,parts:data.options,edges:data.edges,fingerprint:data.fingerprint};},
  async apply(s:CustomerDataScope,input:{recordId:string;version:number;area:'supplied'|'bom';choices:SuppliedChoice[];customerConfirmed:boolean;fingerprint:string}){return db.transaction(async tx=>{
   await lockPbomCompany(tx,s.companyId);await assertNoProductionBulkLock(tx,s);
   const access=await customerDataAccess(tx,s,true);if(!access.canReview)throw new CustomerDataError('PM 또는 PL만 확정할 수 있습니다.',403);
@@ -41,6 +42,8 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
   if(data.fingerprint!==input.fingerprint)throw new CustomerDataError('사급품 또는 BOM이 변경되었습니다. 다시 조회 후 확인하세요.',409);
   const selected=input.choices.map(choice=>({choice,fact:facts.find(f=>f.id===choice.itemId)}));
   if(!selected.length||selected.length>1000||new Set(input.choices.map(c=>c.itemId)).size!==selected.length||selected.some(r=>!r.fact))throw new CustomerDataError('반영할 항목을 선택하세요.');
+  if(selected.some(r=>!r.fact!.itemNumber.trim()||!r.fact!.description.trim()||r.fact!.quantity===null))throw new CustomerDataError('선택 항목의 고객품번·품명·사급 수량을 확인한 뒤 확정하세요.',422);
+  const selectedKeys=selected.map(r=>suppliedKey(r.fact!.section,r.fact!.itemNumber));if(new Set(selectedKeys).size!==selectedKeys.length)throw new CustomerDataError('선택한 고객품번이 중복됩니다. 사용할 항목을 선택하세요.',422);
   if(selected.some(r=>r.fact!.change==='review'))throw new CustomerDataError('변경 문구가 불명확한 항목은 원본을 확인해 주세요.',422);
   const sourceOrder=record.receiptNumber??record.createdAt,at=now();let changed=0;
   const before={entries:data.entries,edges:data.edges,customerEvidence:await tx.select().from(customerBomOccurrences).where(and(eq(customerBomOccurrences.companyId,s.companyId),eq(customerBomOccurrences.projectId,s.projectId)))};
@@ -54,7 +57,7 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
      const removed=fact.change==='removed'||(fact.change==='replaced'&&index<numbers.length-1);
      const described=facts.find(r=>r.section===fact.section&&r.itemNumber===itemNumber);
      const description=described?.description??old?.description??'';
-     const value={id:old?.id??randomUUID(),companyId:s.companyId,projectId:s.projectId,section:fact.section,itemNumber,description,quantity:described?.quantity??fact.quantity,status:removed?'removed':'active',change:fact.change,changeText:fact.changeText,recordId:record.id,version:input.version,itemId:fact.id,sourceOrder,bomRecordId:old?.bomRecordId??null,partId:old?.partId??null,parentPartId:old?.parentPartId??null,bomApplied:Boolean(old?.bomApplied&&old.status===(removed?'removed':'active')&&old.quantity===(described?.quantity??fact.quantity)&&old.description===description),confirmedBy:s.userId,confirmedAt:at};
+     const value={id:old?.id??randomUUID(),companyId:s.companyId,projectId:s.projectId,section:fact.section,itemNumber,description,quantity:described?.quantity??fact.quantity!,status:removed?'removed':'active',change:fact.change,changeText:fact.changeText,recordId:record.id,version:input.version,itemId:fact.id,sourceOrder,bomRecordId:old?.bomRecordId??null,partId:old?.partId??null,parentPartId:old?.parentPartId??null,bomApplied:Boolean(old?.bomApplied&&old.status===(removed?'removed':'active')&&old.quantity===(described?.quantity??fact.quantity)&&old.description===description),confirmedBy:s.userId,confirmedAt:at};
      if(updates.has(key))throw new CustomerDataError('대체 대상과 별도 행이 겹칩니다. 관련 항목을 나누어 검토하세요.',422);
      // Reconfirming the same snapshot preserves BOM application and produces no duplicate row.
      if(old&&old.recordId===record.id&&old.version===input.version&&old.itemId===fact.id)continue;
@@ -74,6 +77,16 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
     const entries=numbers.map(itemNumber=>data.entries.find(e=>e.section===fact.section&&e.itemNumber===itemNumber));
     if(entries.some(e=>!e||e.recordId!==record.id||e.version!==input.version||e.itemId!==fact.id))throw new CustomerDataError('현재 분석 항목을 사급품 탭에서 먼저 확정하세요.',422);
     if(entries.every(e=>e!.bomApplied))continue;
+    // A shared internal part is one supply item; mark every BOM occurrence without multiplying its supply quantity.
+    if(entries.length===1){
+     const row=entries[0]!,matches=data.options.filter(p=>data.reachable.has(p.id)&&p.customerNumbers.includes(row.itemNumber));
+     const matchedId=row.partId||(matches.length===1?matches[0].id:undefined);
+     const occurrences=matchedId?data.edges.filter(e=>e.childPartId===matchedId):[];
+     if(matchedId&&(occurrences.length>1||row.parentPartId===null&&row.partId)){
+      if(choice.partId&&choice.partId!==matchedId)throw new CustomerDataError('고객품번의 기존 부품과 다릅니다.',409);
+      await tx.update(customerSuppliedItems).set({partId:matchedId,parentPartId:null,bomRecordId:record.id,bomApplied:true}).where(and(scoped(s),eq(customerSuppliedItems.id,row.id)));changed++;continue;
+     }
+    }
     const parentId=choice.parentPartId;
     if(!parentId||!data.assemblies.some(a=>a.id===parentId))throw new CustomerDataError(`${fact.section}: 연결할 SECTION ASSY를 선택하세요.`,422);
     if(affectedParents.has(`${parentId}:${fact.itemNumber}`))throw new CustomerDataError('같은 BOM 연결이 중복 선택되었습니다.');affectedParents.add(`${parentId}:${fact.itemNumber}`);
@@ -86,7 +99,8 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
     if(paths!==1||multipliers[0]!==1)throw new CustomerDataError('SECTION 수량과 BOM 단위 수량을 확인해야 합니다. TOP에서 1개로 연결된 단일 SECTION ASSY를 선택하세요.',422);
     for(const [index,entry] of entries.entries()){
      const row=entry!,removed=row.status==='removed',last=index===entries.length-1;
-     const matches=data.identities.filter(i=>i.customerKey===`ITEM:${row.itemNumber}`);
+     const matches=data.options.filter(p=>p.customerNumbers.includes(row.itemNumber)).map(p=>({partId:p.id}));
+     if(matches.length>1&&!choice.partId&&!row.partId)throw new CustomerDataError('고객품번에 해당하는 BOM 부품이 여러 개입니다. 연결 PART를 선택하세요.',422);
      const selectedPart=last&&!removed?choice.partId:row.partId;
      if(selectedPart&&!data.options.some(p=>p.id===selectedPart))throw new CustomerDataError('프로젝트에서 연결 가능한 PART를 선택하세요.',422);
      if(selectedPart&&matches.length&&matches.every(m=>m.partId!==selectedPart))throw new CustomerDataError('고객 Item No.의 기존 PART 연결과 다릅니다.',409);
