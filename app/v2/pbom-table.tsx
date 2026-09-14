@@ -36,14 +36,15 @@ const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
 const compactWidths:Record<ColumnKey,number>={part:170,status:120,procurement:100,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
 
-export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell,extraColumn}:{extraColumn?:{label:string;render:(row:BomRow)=>ReactNode};compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
+export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell,extraColumn}:{extraColumn?:{label:string;render:(row:BomRow)=>ReactNode};compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review"|"supplied";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
  const [columnMenuOpen,setColumnMenuOpen]=useState(false);
- const review=variant==='review';
+ const review=variant==='review',supplied=variant==='supplied';
+ const suppliedKeys:ColumnKey[]=['part','item','description','quantity','unit'];
  const initialColumns=review?reviewDefaultColumnKeys:defaultColumnKeys;
  const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,initialColumns,lockedColumnKeys,defaultColumnKeys);
  const options=columns.map(column=>({...column,label:review&&column.key==='status'?'품목 구분':column.label}));
- const shown=options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
+ const shown=supplied?suppliedKeys.map(key=>({...options.find(c=>c.key===key)!,label:key==='quantity'?'BOM 수량':key==='description'?'품명':key==='unit'?'단위':options.find(c=>c.key===key)!.label})):options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
  const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source'];
  const nodeText=(node:ReactNode):string=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(nodeText).join(' '):isValidElement<{children?:ReactNode}>(node)?nodeText(node.props.children):'';
@@ -94,11 +95,12 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
    <HierarchyActions disabled={!rows.length} onCollapseAll={()=>{setRootCollapsed(Boolean(root&&!review));setCollapsed(collapsedBomIdsAtDepth(rows,1));}} onExpandAll={()=>{setRootCollapsed(false);setCollapsed([]);}}/>
   </div>;
  return <>
-  {toolbarContainer?createPortal(controls,toolbarContainer):toolbarContainer===undefined?controls:null}
-  {columnsError&&<p role="status" className="production-help">{columnsError} <button type="button" onClick={retryColumns}>다시 시도</button></p>}
-  <div className="pbom-table-scroll cswind-data-table"><table className="production-table pbom-tree-table" style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
+  {!supplied&&(toolbarContainer?createPortal(controls,toolbarContainer):toolbarContainer===undefined?controls:null)}
+  {!supplied&&columnsError&&<p role="status" className="production-help">{columnsError} <button type="button" onClick={retryColumns}>다시 시도</button></p>}
+  <div className="pbom-table-scroll cswind-data-table"><table className={`production-table pbom-tree-table${supplied?" pbom-supplied-review":""}`} style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
+   {supplied&&<colgroup>{[16,22,30,12,8,12].map((width,index)=><col key={index} style={{width:`${width}%`}}/>)}</colgroup>}
    {compact&&<colgroup>{shown.map(c=><col key={c.key} style={{width:compactWidths[c.key]}}/>)}</colgroup>}
-   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}{extraColumn&&<th>{extraColumn.label}</th>}</tr></thead>
+   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{!supplied&&filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}{extraColumn&&<th>{extraColumn.label}</th>}</tr></thead>
    <tbody>
     {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}{extraColumn&&<td>—</td>}</tr>}
     {displayed.map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>

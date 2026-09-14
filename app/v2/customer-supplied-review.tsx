@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {readApiJson} from '../../lib/read-api-json';
 import {suppliedDecision,type SuppliedData,type SuppliedFact,type SuppliedChoice} from '../../lib/customer-supplied-contract';
+import {suppliedBomRows} from '../../lib/supplied-bom-rows';
 import type {ProjectPbom,BomRow} from '../../lib/pbom-contract';
 import CustomerSuppliedTable from './customer-supplied-table';
 import PbomTable from './pbom-table';
@@ -17,10 +18,11 @@ export default function CustomerSuppliedReview({projectId,recordId,version,facts
  const confirmedCount=new Set(data?.entries.filter(e=>e.recordId===recordId&&(area!=='bom'||e.bomApplied)).map(e=>e.itemId)).size;
  const submit=async(action:'confirm'|'cancel')=>{if(!data||area==='summary'||busy)return;setBusy(true);setError('');try{const choices:SuppliedChoice[]=selected.map(itemId=>({itemId,partId:matchingPart(facts.find(f=>f.id===itemId)!)?.id}));const r=await fetch(`/api/projects/${projectId}/customer-supplied`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,recordId,version,area,customerConfirmed:true,fingerprint:data.fingerprint,choices})}),d=await readApiJson(r);if(!r.ok)throw Error(d.error);setSelected([]);onApplied();setReload(n=>n+1);setNotice(action==='cancel'?'확정을 취소했습니다.':`${d.changed}건 확정했습니다.`)}catch(e){setError((e as Error).message)}finally{setBusy(false)}};
  const actions=area==='summary'?null:<ReviewDecisionActions documentName={documentName} areaLabel={area==='bom'?'BOM 사급수량':'사급품'} selectedCount={selected.length} totalCount={eligible.length} confirmedCount={confirmedCount} selectionDisabled={locked||!eligible.length} confirmDisabled={locked||!selected.length} cancelDisabled={locked||!confirmedCount} onSelectAll={checked=>setSelected(checked?eligible.map(f=>f.id):[])} onConfirm={()=>void submit('confirm')} onCancel={()=>void submit('cancel')}/>;
- const quantity=(row:BomRow)=>{const matches=facts.filter(f=>{const part=matchingPart(f);return part&&part.id===row.partId});if(!matches.length)return '—';if(matches.length>1)return '고객품번 중복 확인';const f=matches[0];return <label><input type="checkbox" aria-label={`${f.itemNumber} 사급수량 검토`} disabled={locked} checked={selected.includes(f.id)} onChange={e=>setSelected(ids=>e.target.checked?[...ids.filter(id=>id!==f.id),f.id]:ids.filter(id=>id!==f.id))}/>{f.change==='removed'?'삭제':f.quantity??'확인 필요'}</label>};
+ const reviewRows=suppliedBomRows(facts,pbom?.rows??[],data?.parts??[]);
+ const quantity=(row:BomRow)=>{const f=facts.find(f=>f.id===row.id)!;return <label><input type="checkbox" aria-label={`${f.itemNumber} 사급수량 검토`} disabled={locked||!eligible.some(e=>e.id===f.id)} checked={selected.includes(f.id)} onChange={e=>setSelected(ids=>e.target.checked?[...ids.filter(id=>id!==f.id),f.id]:ids.filter(id=>id!==f.id))}/>{f.change==='removed'?'삭제':f.quantity??'—'}</label>};
  return <section className="supplied-review">
  {actions&&(actionContainer?createPortal(actions,actionContainer):actions)}
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
- {area==='bom'?<>{data&&facts.length>eligible.length&&<p role="status">기존 BOM 연결 확인 필요: {facts.filter(f=>!matchingPart(f)).map(f=>f.itemNumber||'고객품번 미확인').join(', ')}</p>}{pbom&&<PbomTable rows={pbom.rows} root={pbom.root} renderSource={renderSource} extraColumn={{label:'사급수량',render:quantity}}/>}</>:<CustomerSuppliedTable rows={facts.map(f=>({...f,changeLabel:data?suppliedDecision(f,data.entries):'조회 중'}))} selected={selected} onSelect={area==='summary'?undefined:setSelected} disabled={locked}/>}
+ {area==='bom'?<>{pbom&&<PbomTable variant="supplied" rows={reviewRows} renderSource={renderSource} renderCell={(key,row,fallback)=>row.partId?fallback:key==='item'?row.bom.customerItemNumber:key==='description'?row.bom.itemDescription:key==='status'?'미연결':'—'} extraColumn={{label:'사급수량',render:quantity}}/>}</>:<CustomerSuppliedTable rows={facts.map(f=>({...f,changeLabel:data?suppliedDecision(f,data.entries):'조회 중'}))} selected={selected} onSelect={area==='summary'?undefined:setSelected} disabled={locked}/>}
  </section>;
 }

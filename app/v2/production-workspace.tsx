@@ -116,7 +116,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  {conditionalIssues.length>0&&<p role="status">조건부 승인 · BOM 반영 대기: {conditionalIssues.join(' / ')}</p>}
  {analyzing&&<p role="status">{analysis.pollError?'분석 상태를 확인할 수 없습니다. 연결이 복구되면 자동으로 다시 조회합니다.':'AI 분석 중입니다. 다른 탭이나 문서로 이동해도 분석은 계속됩니다.'}</p>}
  {selectedJob?.status==='failed'&&<p role="alert" className="wv2-form-error">{selectedJob.error}</p>}
- {selectedJob?.status==='completed'&&<p role="status">AI 분석이 완료되었습니다.</p>}
+ {record.sourcePurpose!=='supplied'&&selectedJob?.status==='completed'&&<p role="status">AI 분석이 완료되었습니다.</p>}
  {analysis.pollError&&analysis.pollError!==error&&analysis.pollError!==selectedJob?.error&&<p role="alert" className="wv2-form-error">{analysis.pollError}</p>}
  {reviewTab==='ai'?<CommonAiChatPanel key={`${project.id}:${selected}`} projectName={project.name} source="고객 Data Review" contextType="customer-review" contextTitle={record.fileName} items={chatIds.map(id=>({id,kind:'고객 원본',title:data?.records.find(r=>r.id===id)?.fileName||id}))} requestContext={{projectId:project.id,recordId:selected}} initialMessages={current?.messages} onResponse={accept} onSendingChange={setBusy}/>:draft?<>
 

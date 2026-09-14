@@ -147,3 +147,11 @@ test('common confirmation cancellation preserves BOM and restores supply records
  await cancel('supplied');assert.equal(h.state.customerSuppliedItems.length,0);assert.deepEqual(h.state.productBomItems,edges);
  await h.apply();await h.apply('bom');await cancel('bom');await cancel('supplied');assert.equal(h.state.customerSuppliedItems.length,0);
 });
+
+test('supplied BOM review shows exactly the source items, retaining unmatched items and deduplicating ASSY usage',()=>{
+ const {suppliedBomRows}=require('../lib/supplied-bom-rows.ts');
+ const facts=['C1','C2','C3','C4'].map((itemNumber,i)=>({id:`f${i}`,itemNumber,description:itemNumber,quantity:1,replacementChain:[]}));
+ const row={id:'bom1',partId:'p1',internalPartNumber:'P1',level:2,bom:{parentId:null,section:'A',customerItemNumber:'C1',itemDescription:'Existing name',quantity:7},totalQuantity:7};
+ const rows=suppliedBomRows(facts,[row,{...row,id:'bom2'},{...row,id:'unrelated',partId:'other',bom:{...row.bom,customerItemNumber:'OTHER'}}],[]);
+ assert.equal(rows.length,4);assert.equal(rows[0].bom.quantity,7);assert.equal(rows[0].bom.itemDescription,'Existing name');assert.equal(rows[1].partId,undefined);assert.equal(rows[1].bom.customerItemNumber,'C2');assert.equal(rows[1].bom.quantity,null);
+});
