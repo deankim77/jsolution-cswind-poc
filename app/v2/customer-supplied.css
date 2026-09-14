@@ -21,3 +21,5 @@
 .supplied-table :is(th,td){padding:0 12px;vertical-align:middle}
 .supplied-table :is(th,td):is(.supplied-select,.supplied-sequence,.supplied-quantity){text-align:center;font-variant-numeric:tabular-nums}
 .supplied-table input[type=checkbox]{display:block;margin:0 auto}
+
+.supplied-review .supplied-table td select{padding:0;vertical-align:middle;min-width:calc(4em + 24px);width:auto;box-sizing:border-box;white-space:nowrap}
