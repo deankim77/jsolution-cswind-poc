@@ -25,7 +25,7 @@ export function normalizeReviewItem(value:StoredReviewItem):ReviewItem {
  // Older 'trr' rows were use-target notes, without a Word destination.
  const area:ReviewArea=value.area==='pbom'?'pbom':value.area==='trr'&&value.trrSection!==undefined?'trr':'extract';
  const targets=Array.isArray(value.useTargets)?value.useTargets.filter((target):target is ReviewUseTarget=>typeof target==='string'&&(REVIEW_USE_TARGETS as readonly string[]).includes(target)):[];
- return {...value,area,useTargets:area==='pbom'?undefined:(targets.length?[...new Set(targets)]:[legacyTarget(value.area)]),assy:typeof value.assy==='string'?value.assy.trim():'',part:typeof value.part==='string'?value.part.trim():'',itemNumber:typeof value.itemNumber==='string'?value.itemNumber.trim():'',itemName:typeof value.itemName==='string'?value.itemName.trim():''};
+ return {...defaultDocumentRootQuantity(value),area,useTargets:area==='pbom'?undefined:(targets.length?[...new Set(targets)]:[legacyTarget(value.area)]),assy:typeof value.assy==='string'?value.assy.trim():'',part:typeof value.part==='string'?value.part.trim():'',itemNumber:typeof value.itemNumber==='string'?value.itemNumber.trim():'',itemName:typeof value.itemName==='string'?value.itemName.trim():''};
 }
 export function normalizeStoredReviewDraft(value:ReviewDraft):ReviewDraft {
  return {...value,items:(value.items as unknown as StoredReviewItem[]).map(normalizeReviewItem)};

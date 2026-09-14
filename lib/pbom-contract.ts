@@ -14,10 +14,10 @@ export type BomRow=BomInput & {confirmationId?:string;sourceItemId?:string;sourc
 export type BomIdentity={key:string;partId:string;partNumber:string;revision:string};
 export type ProjectPbom={root:{id:string;partNumber:string;name:string}|null;pendingDocuments?:number;rows:BomRow[];identities:BomIdentity[]};
 export function bomIdentity(b:BomFact){return b.customerItemNumber.trim()?`ITEM:${b.customerItemNumber.trim()}`:b.drawingNumber.trim()?`DRAWING:${b.drawingNumber.trim()}`:'';}
-/** Default only an unspecified document-root assembly quantity; preserve all explicit quantities. */
+/** CSWIND assembly units are PCS; only unspecified document-root quantity defaults to one. */
 export function defaultDocumentRootQuantity<T extends BomInput>(item:T):T {
  const b=item.bom;
- return b?.parentId===null&&b.partType==='ASSEMBLY'&&b.quantity===null?{...item,bom:{...b,quantity:1}}:item;
+ return b?.partType==='ASSEMBLY'?{...item,bom:{...b,unit:'PCS',quantity:b.parentId===null&&b.quantity===null?1:b.quantity}}:item;
 }
 export function validateBomFacts(items:BomInput[]){
  const entries=items.filter((i):i is BomInput&{bom:BomFact}=>Boolean(i.bom)),byId=new Map(entries.map(i=>[i.id,i]));

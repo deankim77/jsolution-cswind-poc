@@ -31,7 +31,7 @@ const item=(id,parentId,recordId='doc',extra={})=>({id,recordId,area:'pbom',sour
 test('conditional approval persists TOP to assembly to part, preserving unknown quantity and unit',async()=>{
  const h=setup(),items=[item('assy',null),item('part','assy')];const result=await h.apply('doc',items);
  assert.equal(result.conditional,true);assert.equal(h.state.productBomItems.length,2);
- assert.deepEqual(h.state.productBomItems.map(e=>[e.parentPartId,e.childPartId,e.quantity,e.unit]),[['TOP','part-assy',1,''],['part-assy','part-part',null,'']]);
+ assert.deepEqual(h.state.productBomItems.map(e=>[e.parentPartId,e.childPartId,e.quantity,e.unit]),[['TOP','part-assy',1,'PCS'],['part-assy','part-part',null,'']]);
  assert.equal(h.state.customerBomOccurrences.length,2);assert.equal(h.state.bomEditLocks.length,0);
  await h.apply('doc',items);assert.equal(h.state.productBomItems.length,2);
 });
@@ -79,4 +79,12 @@ test('two assembly drawings preserve separate edges for a shared customer item',
  const edges=h.state.productBomItems;
  assert.equal(edges.filter(e=>e.parentPartId==='TOP').length,2);
  assert.deepEqual(edges.filter(e=>e.childPartId==='part-boltA').map(e=>[e.parentPartId,e.quantity]),[['part-assyA',8],['part-assyB',8]]);
+});
+
+test('assembly unit is fixed to PCS while child quantities and units remain original',()=>{
+ for(const unit of ['', 'EA', 'SET']){
+  const rows=contract.buildBomRows([item('assy',null,'doc',{quantity:2,unit}),item('child','assy','doc',{quantity:3,unit:'M'})]);
+  assert.equal(rows[0].bom.unit,'PCS');assert.equal(rows[0].bom.quantity,2);
+  assert.equal(rows[1].bom.unit,'M');assert.equal(rows[1].totalQuantity,6);
+ }
 });

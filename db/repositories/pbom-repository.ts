@@ -1,4 +1,4 @@
-import {validateDocumentBomRoot} from '../../lib/pbom-contract';
+import {defaultDocumentRootQuantity,validateDocumentBomRoot} from '../../lib/pbom-contract';
 import {sumBomQuantities,sameBomQuantity} from '../../lib/bom-quantities';
 import {activeBulkRows} from '../../lib/production-bulk-edit';
 import {customerConfirmedData} from '../customer-review-schema';
@@ -22,6 +22,7 @@ const scoped=(t:{companyId:AnyPgColumn;projectId:AnyPgColumn},s:CustomerDataScop
 export async function lockPbomCompany(tx:Tx,companyId:string){await tx.select({id:companies.id}).from(companies).where(eq(companies.id,companyId)).for('update');}
 /** Uses the existing company setting and history; same namespace as manual PART creation. */
 export async function createNumberedPart(tx:Tx,s:{companyId:string;userId:string},name:string,partType:string,unit='EA',spec=''){
+ if(['TOP_ITEM','ASSEMBLY','SUB_ASSEMBLY'].includes(partType))unit='PCS';
  await tx.insert(partNumberSettings).values({companyId:s.companyId,updatedAt:now()}).onConflictDoNothing();
  for(let attempt=0;attempt<10000;attempt++){
   const [setting]=await tx.update(partNumberSettings).set({nextSequence:sql`${partNumberSettings.nextSequence}+1`,updatedAt:now()}).where(eq(partNumberSettings.companyId,s.companyId)).returning();
@@ -35,7 +36,7 @@ export async function createNumberedPart(tx:Tx,s:{companyId:string;userId:string
 }
 /** Caller holds company lock. Safe to call again for an existing production project. */
 export async function ensureProductionBomRoot(tx:Tx,s:CustomerDataScope,name:string){
- const [old]=await tx.select().from(productionBomRoots).where(scoped(productionBomRoots,s));if(old)return old;
+ const [old]=await tx.select().from(productionBomRoots).where(scoped(productionBomRoots,s));if(old){await tx.update(productParts).set({unit:'PCS'}).where(and(eq(productParts.companyId,s.companyId),eq(productParts.id,old.rootPartId)));return old;}
  const part=await createNumberedPart(tx,s,name,'TOP_ITEM');
  const [root]=await tx.insert(productionBomRoots).values({companyId:s.companyId,projectId:s.projectId,rootPartId:part.id,createdAt:now()}).returning();return root;
 }
@@ -111,6 +112,7 @@ export async function numberApprovedPbom(tx:Tx,s:CustomerDataScope,items:ReviewI
 export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[],force=false){
  await assertNoProductionBulkLock(tx,s,'pbom');
  if(items.some(i=>!i.bom||i.recordId!==recordId))throw new CustomerDataError('이 문서의 구조화된 BOM을 먼저 재분석하세요.',422);
+ items=items.map(defaultDocumentRootQuantity);
  validateDocumentBomRoot(items);
  let rows=buildBomRows(items,await identityRows(tx,s));
  const issues=pbomApprovalIssues(rows);
@@ -136,6 +138,7 @@ export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:stri
   if(!match){const part=await createNumberedPart(tx,s,b.itemDescription,b.partType,b.unit,b.itemDescription.trim());await tx.insert(customerPartIdentities).values({id:randomUUID(),companyId:s.companyId,projectId:s.projectId,customerKey:key,partId:part.id,revision:b.componentRevision});match={key,partId:part.id,partNumber:part.partNumber,revision:b.componentRevision};byKey.set(key,match);}
   else {
    const [part]=await tx.select().from(productParts).where(and(eq(productParts.id,match.partId),eq(productParts.companyId,s.companyId)));
+   if(b.partType==='ASSEMBLY')await tx.update(productParts).set({unit:'PCS'}).where(and(eq(productParts.id,match.partId),eq(productParts.companyId,s.companyId)));
    const role=['ASSEMBLY','SUB_ASSEMBLY'].includes(part.partType)?'ASSEMBLY':'PART';
    if(role!==b.partType)throw new CustomerDataError('기존 품목의 ASSY/부품 역할이 다릅니다. BOM 편집기에서 역할을 확인하세요.',409);
    await tx.update(customerPartIdentities).set({revision:b.componentRevision}).where(and(scoped(customerPartIdentities,s),eq(customerPartIdentities.customerKey,key)));
