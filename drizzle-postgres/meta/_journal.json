@@ -127,6 +127,13 @@
       "when": 1789130000005,
       "tag": "0017_customer_supplied_items",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789130000006,
+      "tag": "0018_customer_supplied_upload_purpose",
+      "breakpoints": true
     }
   ]
 }

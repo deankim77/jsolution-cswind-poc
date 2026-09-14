@@ -114,3 +114,14 @@ test('Excel analysis saves exact source facts as a draft without invoking confir
  await service.analyze({companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']},'doc',['doc'],'분석');
  assert.equal(saved.suppliedItems[0].itemNumber,'001');assert.equal(saved.suppliedItems[0].quantity,4);assert.equal(saved.documentType,'supplied');assert.deepEqual(saved.items,[]);
 });
+test('upload database constraints admit every registered purpose and document type',()=>{
+ const {CUSTOMER_SOURCE_PURPOSES,CUSTOMER_DOCUMENT_TYPES}=require('../lib/customer-data-contract.ts');
+ const schema=fs.readFileSync('db/customer-data-schema.ts','utf8');
+ const migration=fs.readFileSync('drizzle-postgres/0018_customer_supplied_upload_purpose.sql','utf8');
+ for(const [constraint,values] of [['customer_raw_data_purpose_ck',CUSTOMER_SOURCE_PURPOSES],['customer_raw_data_type_ck',CUSTOMER_DOCUMENT_TYPES]]){
+  for(const source of [schema,migration]){
+   const line=source.split('\n').find(s=>s.includes(constraint)&&s.includes(' IN '));assert.ok(line,constraint);
+   for(const key of Object.keys(values))assert.ok(line.includes(`'${key}'`),`${constraint} must accept ${key}`);
+  }
+ }
+});
