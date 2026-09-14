@@ -4,13 +4,21 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {isAnalysisPending,type CustomerAnalysisJob} from '../../lib/customer-analysis-job';
 
 export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
- const [jobs,setJobs]=useState<CustomerAnalysisJob[]>([]),[pollError,setPollError]=useState('');
+ const [jobs,setJobsState]=useState<CustomerAnalysisJob[]>([]),[pollError,setPollError]=useState('');
  const submitting=useRef(new Set<string>()),seen=useRef(new Set<string>()),activeUrl=useRef(url);
+ const jobsRef=useRef<CustomerAnalysisJob[]>([]),wake=useRef<()=>void>(()=>{}),completedCallback=useRef(onCompleted);
+ completedCallback.current=onCompleted;
+ const setJobs=useCallback((value:CustomerAnalysisJob[]|((previous:CustomerAnalysisJob[])=>CustomerAnalysisJob[]))=>{
+  const next=typeof value==='function'?value(jobsRef.current):value;
+  jobsRef.current=next;setJobsState(next);
+ },[]);
  activeUrl.current=url;
  useEffect(()=>{
-  let disposed=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
+  let disposed=false,inFlight=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
   seen.current.clear();submitting.current.clear();setJobs([]);setPollError('');
   const poll=async()=>{
+   if(disposed||inFlight)return;
+   clearTimeout(timer);inFlight=true;
    const polledAt=Date.now();
    try{
     const response=await fetch(`${url}/analysis-jobs`,{signal:controller.signal,cache:'no-store'}),data=await readApiJson(response);
@@ -26,13 +34,16 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
     });
     let completed=false;
     for(const job of data.jobs as CustomerAnalysisJob[])if(job.status==='completed'&&!seen.current.has(job.id)){seen.current.add(job.id);completed=true;}
-    if(completed)onCompleted();
+    if(completed)completedCallback.current();
    }catch(reason){if(!disposed)setPollError(reason instanceof Error?reason.message:'분석 상태 조회 실패');}
-   finally{if(!disposed)timer=setTimeout(poll,3000);}
+   finally{inFlight=false;if(!disposed&&jobsRef.current.some(isAnalysisPending))timer=setTimeout(poll,3000);}
   };
+  wake.current=()=>{if(!disposed&&!inFlight){clearTimeout(timer);timer=setTimeout(poll,3000);}};
   void poll();
-  return()=>{disposed=true;controller.abort();clearTimeout(timer);};
- },[url,onCompleted]);
+  return()=>{disposed=true;controller.abort();clearTimeout(timer);wake.current=()=>{};};
+ },[url,setJobs]);
+ const hasPending=jobs.some(isAnalysisPending);
+ useEffect(()=>{if(hasPending)wake.current();},[hasPending]);
  const start=useCallback(async(recordId:string,message:string)=>{
   if(submitting.current.has(recordId))return;
   submitting.current.add(recordId);
@@ -41,10 +52,10 @@ export function useCustomerAnalysisJobs(url:string,onCompleted:()=>void){
   try{
    const response=await fetch(`${url}/analysis-jobs`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({recordId,message})}),data=await readApiJson(response);
    if(!response.ok)throw Error(data.error||'분석을 시작하지 못했습니다.');
-   if(activeUrl.current===url)setJobs(values=>[...values.filter(j=>j.recordId!==recordId),data.job]);
+   if(activeUrl.current===url){setJobs(values=>[...values.filter(j=>j.recordId!==recordId),data.job]);if(isAnalysisPending(data.job))wake.current();}
   }catch(reason){
    if(activeUrl.current===url)setJobs(values=>[...values.filter(j=>j.recordId!==recordId),{...pending,status:'failed',error:reason instanceof Error?reason.message:'분석 요청 실패'}]);
   }finally{if(activeUrl.current===url)submitting.current.delete(recordId);}
- },[url]);
+ },[url,setJobs]);
  return {jobs,start,pollError,isPending:(id:string)=>submitting.current.has(id)||isAnalysisPending(jobs.find(j=>j.recordId===id))};
 }
