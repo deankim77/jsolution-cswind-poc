@@ -1,8 +1,7 @@
 .supplied-table-scroll{overflow:auto;max-width:100%}
 .supplied-table{min-width:850px;width:100%;border-collapse:collapse;background:var(--v2-surface-content)}
 .supplied-table th{height:var(--v2-wbs-header-height);background:var(--v2-surface-table-header);font-size:var(--v2-font-size-table-header);text-align:left}
-.supplied-table td{min-height:var(--v2-wbs-row-height);padding:8px;font-size:var(--v2-font-size-body);border-bottom:1px solid var(--line);vertical-align:top}
-.supplied-table td:nth-child(5){min-width:200px}
+.supplied-table td{min-height:var(--v2-wbs-row-height);padding:0 12px;font-size:var(--v2-font-size-body);border-bottom:1px solid var(--line);vertical-align:middle}
 .supplied-table td{white-space:pre-wrap}
 .supplied-table select,.supplied-table input:not([type=checkbox]){font-size:var(--v2-font-size-control);height:34px;border:1px solid var(--line);border-radius:6px;background:var(--v2-surface-content);color:var(--ink);max-width:230px}
 .supplied-review p{font-size:var(--v2-font-size-body)}
@@ -14,7 +13,11 @@
 .wv2-toolbar label.supplied-include-removed>span{flex:none;white-space:nowrap}
 
 .supplied-review .pbom-supplied-review{table-layout:fixed;width:100%;min-width:0}
-.supplied-review .pbom-supplied-review :is(th,td){min-width:0;max-width:none;white-space:normal;overflow-wrap:anywhere;vertical-align:top}
+.supplied-review .pbom-supplied-review :is(th,td){min-width:0;max-width:none;white-space:normal;overflow-wrap:anywhere;vertical-align:middle}
 .supplied-review .pbom-supplied-review .pbom-part-tree-label{display:block;min-width:0}
 .supplied-review .pbom-supplied-review :is(.pbom-toggle-slot,.pbom-part-dot){display:none}
 .supplied-review .pbom-supplied-review label{max-width:100%;white-space:normal}
+
+.supplied-table :is(th,td){padding:0 12px;vertical-align:middle}
+.supplied-table :is(th,td):is(.supplied-select,.supplied-sequence,.supplied-quantity){text-align:center;font-variant-numeric:tabular-nums}
+.supplied-table input[type=checkbox]{display:block;margin:0 auto}
