@@ -91,5 +91,16 @@ test('source evidence and known sections are required; preview escapes content a
  assert.throws(()=>validateTrrExtraction({...fact,facts:[{...fact.facts[0],reference:''}]}),/reference/);
  assert.equal(validateTrrExtraction({...fact,facts:[{...fact.facts[0],section:'제작 / 용접 / NDT'}]}).facts[0].section,'제작·용접·NDT');
  const doc={projectName:'T800',version:1,sources:[{id:'one',fileName:'sample.pdf',revision:1,kind:'current',facts:[{...fact.facts[0],kind:'historical',detail:'<script>alert(1)</script> 280 Nm'}]}]};
- const preview=previewTrr(doc,'V001');assert.ok(!preview.includes('<script>'));assert.match(preview,/과거 사례 참고/);assert.match(preview,/5. 조립/);assert.equal(Buffer.from(createTrrDocx(doc)).subarray(0,2).toString(),'PK');
+ const preview=previewTrr(doc,'V001');assert.ok(!preview.includes('<script>alert(1)</script>'));assert.match(preview,/&lt;script&gt;alert\(1\)&lt;\/script&gt;/);assert.equal((preview.match(/<script>/g)||[]).length,1);assert.match(preview,/과거 사례 참고/);assert.match(preview,/5. 조립/);assert.equal(Buffer.from(createTrrDocx(doc)).subarray(0,2).toString(),'PK');
+});
+test('preview uses Word page dimensions, explicit page breaks and a fixed CSP script',()=>{
+ const {trrPreviewCsp,trrPaginationScript}=require('../services/trr-preview.ts');
+ const {createHash}=require('node:crypto');
+ const html=previewTrr({projectName:'T800',version:8,sources:[]},'V008');
+ assert.equal((html.match(/ data-page/g)||[]).length,3);
+ assert.match(html,/width:210mm;height:297mm;padding:20mm/);
+ assert.match(html,/font-size:11pt;line-height:1.25/);
+ assert.ok(trrPreviewCsp.includes(`'sha256-${createHash('sha256').update(trrPaginationScript).digest('base64')}'`));
+ assert.match(trrPreviewCsp,/sandbox allow-scripts/);
+ assert.ok(!trrPreviewCsp.includes('allow-same-origin'));
 });

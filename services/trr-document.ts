@@ -1,3 +1,4 @@
+import {trrPaginationScript} from './trr-preview';
 import {TRR_SECTIONS,trrVersionLabel,type TrrDocument} from '../lib/trr-contract';
 import {zipStore} from '../lib/trr-zip';
 export const escapeXml=(s:string)=>s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
@@ -17,4 +18,21 @@ export function createTrrDocx(doc:TrrDocument){
  const entries={'[Content_Types].xml':'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>','_rels/.rels':'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>','word/_rels/document.xml.rels':'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>','word/styles.xml':styles,'word/document.xml':`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>`};
  return zipStore(Object.entries(entries).map(([name,data])=>({name,data:new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>${data}`)})));
 }
-export function previewTrr(doc:TrrDocument,label:string){return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeXml(doc.projectName)} TRR ${label}</title><style>body{font:16px/1.7 Arial,sans-serif;background:#f3f5f5;color:#202b30;margin:0}main{max-width:900px;margin:24px auto;background:white;padding:48px;box-sizing:border-box}p{white-space:pre-wrap;overflow-wrap:anywhere}h1,h2,h3{break-after:avoid}h1{font-size:28px}h2{font-size:22px;margin-top:36px}h3{font-size:18px}@media print{main{margin:0;padding:0;max-width:none}.page{break-before:page}}</style><main><p>${escapeXml(label)} · 검토용 보고서</p>${trrBlocks(doc).map(b=>{const tag=b.style==='Title'?'h1':b.style==='Heading1'?'h2':b.style==='Heading2'?'h3':'p';return `<${tag}${b.page?' class="page"':''}>${escapeXml(b.text)}</${tag}>`}).join('')}</main></html>`;}
+export function previewTrr(doc:TrrDocument,label:string){
+ const blocks=trrBlocks(doc);
+ const paragraphs=blocks.map((b,index)=>{
+  const tag=b.style==='Title'?'h1':b.style==='Heading1'?'h2':b.style==='Heading2'?'h3':'p';
+  const keep=Boolean(b.style)||blocks[index+1]?.text.startsWith('근거:');
+  return `<${tag} class="${b.style??'Normal'}"${b.page?' data-page':''}${keep?' data-keep':''}>${escapeXml(b.text)}</${tag}>`;
+ }).join('');
+ return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeXml(doc.projectName)} TRR ${escapeXml(label)}</title><style>
+ *{box-sizing:border-box}body{margin:0;background:#f3f5f5;color:#000;font-family:Arial,"Malgun Gothic",sans-serif;font-size:11pt;line-height:1.25}
+ #pages{padding:24px 0}.sheet{width:210mm;height:297mm;padding:20mm;margin:0 auto 24px;background:#fff;box-shadow:0 2px 8px #0002}
+ .page-content{height:257mm;display:flow-root;overflow:hidden}
+ p,h1,h2,h3{margin:0 0 6pt;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11pt;font-weight:normal}
+ .Title,.Subtitle,.Heading1,.Heading2{margin-top:12pt;margin-bottom:8pt;font-weight:bold}
+ .Title{font-size:20pt}.Subtitle{font-size:13pt}.Heading1{font-size:15pt}.Heading2{font-size:12pt}
+ .continuation{margin-top:0}#source{width:210mm;margin:24px auto;padding:20mm;background:white}#source [data-page]{margin-top:40mm}
+ @media print{@page{size:A4;margin:0}body{background:white}#pages{padding:0}.sheet{margin:0;box-shadow:none;break-after:page}.sheet:last-child{break-after:auto}}
+ </style></head><body><main id="pages"></main><main id="source" hidden>${paragraphs}</main><noscript>미리보기를 표시하려면 JavaScript를 활성화해 주세요.</noscript><script>${trrPaginationScript}</script></body></html>`;
+}
