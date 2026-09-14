@@ -44,7 +44,7 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
  const initialColumns=review?reviewDefaultColumnKeys:defaultColumnKeys;
  const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,initialColumns,lockedColumnKeys,defaultColumnKeys);
  const options=columns.map(column=>({...column,label:review&&column.key==='status'?'품목 구분':column.label}));
- const shown=supplied?suppliedKeys.map(key=>({...options.find(c=>c.key===key)!,label:key==='quantity'?'BOM 수량':key==='description'?'품명':key==='unit'?'단위':options.find(c=>c.key===key)!.label})):options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
+ const shown=supplied?suppliedKeys.map(key=>({...options.find(c=>c.key===key)!,label:key==='part'?'내부품번':key==='quantity'?'BOM 수량':key==='description'?'품명':key==='unit'?'단위':options.find(c=>c.key===key)!.label})):options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
  const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source'];
  const nodeText=(node:ReactNode):string=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(nodeText).join(' '):isValidElement<{children?:ReactNode}>(node)?nodeText(node.props.children):'';
