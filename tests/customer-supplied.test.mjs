@@ -162,3 +162,26 @@ test('supplied missing data excludes optional fields and normal extraction comme
  assert.deepEqual(contract.suppliedMissingData([{...complete,itemNumber:'',description:'',quantity:null}]).map(x=>x.field),['고객품번','품명','사급수량']);
  assert.equal(contract.suppliedAnalysisSummary([complete]),'사급품 1건을 추출했습니다.');
 });
+
+test('selected processing overrides comments and can be changed after confirmation',async()=>{
+ const h=existing(harness());
+ const choose=processing=>h.apply('supplied',{choices:[{itemId:'row1',processing}]});
+ await choose('added');
+ const id=h.state.customerSuppliedItems[0].id;
+ h.state.customerReviews[0].draft.suppliedItems[0].quantity=9;
+ await choose('same');assert.equal(h.state.customerSuppliedItems[0].quantity,2);
+ await choose('updated');assert.equal(h.state.customerSuppliedItems[0].quantity,9);
+ await choose('removed');assert.equal(h.state.customerSuppliedItems[0].status,'removed');
+ await h.apply('bom');assert.equal(h.state.productBomItems.length,2);
+ await choose('added');assert.equal(h.state.customerSuppliedItems[0].status,'active');
+ assert.equal(h.state.customerSuppliedItems.length,1);assert.equal(h.state.customerSuppliedItems[0].id,id);
+ assert.equal((await choose('added')).changed,0);
+});
+test('processing proposals compare current supply values and explicit removal',()=>{
+ const f={section:'',itemNumber:'C1',description:'Cable',quantity:2,change:'review'};
+ const old={...f,status:'active'};
+ assert.equal(contract.suggestedSuppliedProcess(f,[]),'added');
+ assert.equal(contract.suggestedSuppliedProcess(f,[old]),'same');
+ assert.equal(contract.suggestedSuppliedProcess({...f,quantity:3},[old]),'updated');
+ assert.equal(contract.suggestedSuppliedProcess({...f,change:'removed'},[old]),'removed');
+});

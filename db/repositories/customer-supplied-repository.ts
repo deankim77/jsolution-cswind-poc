@@ -81,18 +81,21 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
   const before={entries:data.entries,edges:data.edges,customerEvidence:await tx.select().from(customerBomOccurrences).where(and(eq(customerBomOccurrences.companyId,s.companyId),eq(customerBomOccurrences.projectId,s.projectId)))};
   if(input.area==='supplied'){
    const updates=new Map<string,typeof customerSuppliedItems.$inferInsert>();
-   for(const {fact:f} of selected){const fact=f!;
-    const numbers=fact.change==='replaced'?fact.replacementChain:[fact.itemNumber];
+   for(const {fact:f,choice} of selected){const fact=f!;
+    const numbers=!choice.processing&&fact.change==='replaced'?fact.replacementChain:[fact.itemNumber];
     for(const [index,itemNumber] of numbers.entries()){
      const key=suppliedKey(fact.section,itemNumber),old=data.entries.find(e=>suppliedKey(e.section,e.itemNumber)===key);
      if(old&&(old.sourceOrder>sourceOrder||(old.recordId===record.id&&old.version>input.version)))throw new CustomerDataError('더 최근 원본이 반영된 항목입니다. 이전 문서로 덮어쓸 수 없습니다.',409);
-     const removed=fact.change==='removed'||(fact.change==='replaced'&&index<numbers.length-1);
+     const removed=choice.processing?choice.processing==='removed':fact.change==='removed'||(fact.change==='replaced'&&index<numbers.length-1);
+     const preserve=choice.processing==='same'&&old;
+     if(choice.processing==='same'&&!old)continue;
      const described=facts.find(r=>r.section===fact.section&&r.itemNumber===itemNumber);
-     const description=described?.description??old?.description??'';
-     const value={id:old?.id??randomUUID(),companyId:s.companyId,projectId:s.projectId,section:fact.section,itemNumber,description,quantity:described?.quantity??fact.quantity!,status:removed?'removed':'active',change:fact.change,changeText:fact.changeText,recordId:record.id,version:input.version,itemId:fact.id,sourceOrder,bomRecordId:old?.bomRecordId??null,partId:old?.partId??null,parentPartId:old?.parentPartId??null,bomApplied:Boolean(old?.bomApplied&&old.status===(removed?'removed':'active')&&old.quantity===(described?.quantity??fact.quantity)&&old.description===description),confirmedBy:s.userId,confirmedAt:at};
+     const description=preserve?old.description:described?.description??old?.description??'';
+     const quantity=preserve?old.quantity:described?.quantity??fact.quantity!;
+     const value={id:old?.id??randomUUID(),companyId:s.companyId,projectId:s.projectId,section:fact.section,itemNumber,description,quantity,status:preserve?old.status:removed?'removed':'active',change:choice.processing==='same'?'listed':choice.processing??fact.change,changeText:fact.changeText,recordId:record.id,version:input.version,itemId:fact.id,sourceOrder,bomRecordId:old?.bomRecordId??null,partId:old?.partId??null,parentPartId:old?.parentPartId??null,bomApplied:Boolean(old?.bomApplied&&old.status===(removed?'removed':'active')&&old.quantity===quantity&&old.description===description),confirmedBy:s.userId,confirmedAt:at};
      if(updates.has(key))throw new CustomerDataError('대체 대상과 별도 행이 겹칩니다. 관련 항목을 나누어 검토하세요.',422);
      // Reconfirming the same snapshot preserves BOM application and produces no duplicate row.
-     if(old&&old.recordId===record.id&&old.version===input.version&&old.itemId===fact.id)continue;
+     if(old&&old.recordId===record.id&&old.version===input.version&&old.itemId===fact.id&&old.quantity===value.quantity&&old.description===value.description&&old.status===value.status&&old.change===value.change)continue;
      updates.set(key,value);
     }
    }
@@ -104,7 +107,8 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
    const locks=await tx.insert(bomEditLocks).values([...lockParts].map(rootPartId=>({id:randomUUID(),companyId:s.companyId,rootPartId,lockedBy:s.userId,lockedAt:at,updatedAt:at}))).onConflictDoNothing().returning();
    if(locks.length!==lockParts.size)throw new CustomerDataError('BOM 편집을 마친 뒤 반영하세요.',409);
    for(const {fact:f,choice} of selected){const fact=f!;
-    const numbers=fact.change==='replaced'?fact.replacementChain:[fact.itemNumber];
+    const confirmed=data.entries.filter(e=>e.recordId===record.id&&e.version===input.version&&e.itemId===fact.id);
+    const numbers=confirmed.length?confirmed.map(e=>e.itemNumber):[fact.itemNumber];
     const entries=numbers.map(itemNumber=>data.entries.find(e=>e.section===fact.section&&e.itemNumber===itemNumber));
     if(entries.some(e=>!e||e.recordId!==record.id||e.version!==input.version||e.itemId!==fact.id))throw new CustomerDataError('현재 분석 항목을 사급품 탭에서 먼저 확정하세요.',422);
     for(const row of entries){

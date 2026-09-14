@@ -2,7 +2,15 @@ export type SuppliedChange='listed'|'added'|'removed'|'replaced'|'review';
 export const SUPPLIED_CHANGE_LABELS={listed:'기재',added:'추가',removed:'삭제',replaced:'대체',review:'확인 필요'} as const;
 export type SuppliedFact={id:string;section:string;itemNumber:string;description:string;quantity:number|null;change:SuppliedChange;changeText:string;replacementChain:string[];source:string};
 export type SuppliedEntry={internalPartNumber?:string;internalPartName?:string;id:string;section:string;itemNumber:string;description:string;quantity:number;status:string;change:string;changeText:string;recordId:string;version:number;itemId:string;parentPartId:string|null;partId:string|null;bomApplied:boolean};
-export type SuppliedChoice={itemId:string;parentPartId?:string;partId?:string;unit?:string};
+export const SUPPLIED_PROCESS_LABELS={same:'기존동일',added:'신규추가',updated:'수정',removed:'삭제'} as const;
+export type SuppliedProcess=keyof typeof SUPPLIED_PROCESS_LABELS;
+export function suggestedSuppliedProcess(fact:SuppliedFact,entries:SuppliedEntry[]):SuppliedProcess {
+ if(fact.change==='removed')return 'removed';
+ const old=entries.find(e=>suppliedKey(e.section,e.itemNumber)===suppliedKey(fact.section,fact.itemNumber));
+ if(!old||old.status==='removed')return 'added';
+ return old.quantity===fact.quantity&&old.description===fact.description?'same':'updated';
+}
+export type SuppliedChoice={itemId:string;processing?:SuppliedProcess;parentPartId?:string;partId?:string;unit?:string};
 export type SuppliedData={fingerprint:string;entries:SuppliedEntry[];canReview:boolean;assemblies:{id:string;partNumber:string;name:string;customerNumbers:string[]}[];parts:{id:string;partNumber:string;name:string;customerNumbers:string[];unit:string}[];edges:{id:string;parentPartId:string;childPartId:string;quantity:number|null;unit:string}[]};
 export function suppliedKey(section:string,itemNumber:string){return JSON.stringify([section.trim(),itemNumber.trim()]);}
 export function classifySuppliedChange(text:string,itemNumber:string):Pick<SuppliedFact,'change'|'replacementChain'>{
