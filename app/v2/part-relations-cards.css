@@ -4,3 +4,10 @@
 .part-relation-details a:hover{text-decoration:underline}
 .part-relation-details strong{font-size:var(--v2-font-size-body);color:var(--teal-dark)}
 .part-relation-details small{font-size:var(--v2-font-size-caption);color:var(--muted)}
+
+.part-relation-details a.part-drawing-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--v2-font-size-body)}
+.part-relation-details .part-project-link{display:flex;flex-direction:column;align-items:flex-start;width:100%;gap:4px;margin-top:10px;padding:10px 0 0;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}
+.part-relation-details .part-project-link:hover strong{text-decoration:underline}
+.wv2-content>.part-project-bom-view{grid-row:1/-1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0}
+.part-project-bom-view>.wv2-toolbar{flex:none}
+.part-project-bom-view>.wv2-canvas{flex:1;min-height:0;overflow:auto}
