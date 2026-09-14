@@ -77,7 +77,6 @@ export function createCustomerSuppliedRepository(db=getDb()){return {
   if(!selected.length||selected.length>1000||new Set(input.choices.map(c=>c.itemId)).size!==selected.length||selected.some(r=>!r.fact))throw new CustomerDataError('반영할 항목을 선택하세요.');
   if(selected.some(r=>!r.fact!.itemNumber.trim()||!r.fact!.description.trim()||r.fact!.quantity===null))throw new CustomerDataError('선택 항목의 고객품번·품명·사급 수량을 확인한 뒤 확정하세요.',422);
   const selectedKeys=selected.map(r=>suppliedKey(r.fact!.section,r.fact!.itemNumber));if(new Set(selectedKeys).size!==selectedKeys.length)throw new CustomerDataError('선택한 고객품번이 중복됩니다. 사용할 항목을 선택하세요.',422);
-  if(selected.some(r=>r.fact!.change==='review'))throw new CustomerDataError('변경 문구가 불명확한 항목은 원본을 확인해 주세요.',422);
   const sourceOrder=record.receiptNumber??record.createdAt,at=now();let changed=0;
   const before={entries:data.entries,edges:data.edges,customerEvidence:await tx.select().from(customerBomOccurrences).where(and(eq(customerBomOccurrences.companyId,s.companyId),eq(customerBomOccurrences.projectId,s.projectId)))};
   if(input.area==='supplied'){
