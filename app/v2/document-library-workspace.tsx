@@ -254,7 +254,7 @@ export default function DocumentLibraryWorkspace({project,projects,tasks,initial
 
   return <section className="wv2-module wv2-document-workspace">
     <header className="wv2-module-head">
-      <div><small>DOCUMENT · DELIVERABLE · PREVIEW</small><h1>문서 · 산출물</h1><p>시스템에 실제 등록된 문서를 빠르게 찾고 확인합니다.</p></div>
+      <div><small>DOCUMENT · DELIVERABLE · PREVIEW</small><h1>문서 · 산출물</h1></div>
       <div className="wv2-module-head-actions"><button disabled={!registrationProject} onClick={()=>void openRegistration("drawing")}><FileText size={18}/>도면 등록</button><button className="primary" disabled={!registrationProject} onClick={()=>void openRegistration("deliverable")}><Upload size={18}/>추가 산출물 등록</button></div>
     </header>
 

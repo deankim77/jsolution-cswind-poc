@@ -68,3 +68,6 @@
 .wv2-project-dashboard .dashboard-action-grid>section>header>b{font-size:var(--v2-font-size-panel-title);font-weight:var(--v2-font-weight-bold);color:var(--v2-color-ink)}
 .wv2-project-dashboard .wv2-project-shortcuts>button b{white-space:normal;line-height:var(--v2-line-height-body)}
 .wv2-project-dashboard .dashboard-action-grid>section>header{min-height:48px}
+
+.wv2-project-dashboard .wv2-dashboard-title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 20px}
+.wv2-project-dashboard .wv2-dashboard-title-row p{margin:0}

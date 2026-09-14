@@ -52,7 +52,7 @@ export function PartLibraryWorkspace({onOpenBomCompare}:{onOpenBomCompare?:(left
 
   return <>
     <section className="pbw-shell pbw-library-only">
-      <header className="pbw-head"><div><small>PLM CORE · PART / BOM</small><h1>PART · BOM</h1><p>PART Master를 기준으로 품목을 관리하며, BOM은 별도의 중앙 편집 탭에서 작업합니다.</p></div><div className="pbw-head-actions"><button onClick={()=>void load()}><RefreshCw size={18}/>새로고침</button><button className="primary" onClick={()=>{setPartForm(emptyPartForm());setPartCreateOpen(true)}}><Plus size={18}/>PART 생성</button></div></header>
+      <header className="pbw-head"><div><small>PLM CORE · PART / BOM</small><h1>PART · BOM</h1></div><div className="pbw-head-actions"><button onClick={()=>void load()}><RefreshCw size={18}/>새로고침</button><button className="primary" onClick={()=>{setPartForm(emptyPartForm());setPartCreateOpen(true)}}><Plus size={18}/>PART 생성</button></div></header>
       {notice&&<p className="pbw-notice">{notice}</p>}
       <div className="pbw-library">
         <div className="pbw-toolbar"><label><Search size={18}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="PART Code · 품명 · 사양 검색"/></label><select className="pbw-role-filter" aria-label="Item Role 필터" value={roleFilter} onChange={event=>setRoleFilter(event.target.value as ItemRole|"")}><option value="">전체</option>{ITEM_ROLES.map(role=><option key={role.value} value={role.value}>{role.label}</option>)}</select><div className="pbw-toolbar-right"><button disabled={selectedBomIds.length!==2} onClick={()=>selectedBomIds.length===2&&onOpenBomCompare?.(selectedBomIds[0],selectedBomIds[1])}><GitCompareArrows size={18}/>BOM 비교{selectedBomIds.length===2?" (2)":""}</button><span>{visibleParts.length}개 PART · 최신 생성순</span></div></div>

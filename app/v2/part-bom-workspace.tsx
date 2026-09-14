@@ -169,7 +169,7 @@ export function PartBomWorkspace({onOpenBomCompare,initialRootId,onBomCopied}:{o
 
   return <>
   <section className="pbw-shell">
-    <header className="pbw-head"><div><small>PLM CORE · PART / BOM</small><h1>PART · BOM</h1><p>PART Master를 기준으로 제품 구조를 구성하고 기존 PART와 BOM 구조를 재사용합니다.</p></div><div className="pbw-head-actions"><button onClick={()=>void load()}><RefreshCw size={18}/>새로고침</button><button className="primary" onClick={()=>{setPartForm(emptyPartForm());setPartCreateOpen(true)}}><Plus size={18}/>PART 생성</button></div></header>
+    <header className="pbw-head"><div><small>PLM CORE · PART / BOM</small><h1>PART · BOM</h1></div><div className="pbw-head-actions"><button onClick={()=>void load()}><RefreshCw size={18}/>새로고침</button><button className="primary" onClick={()=>{setPartForm(emptyPartForm());setPartCreateOpen(true)}}><Plus size={18}/>PART 생성</button></div></header>
     <nav className="pbw-tabs"><button className={view==="part"?"active":""} onClick={()=>setView("part")}><TableProperties size={18}/>PART 라이브러리</button><button className={view==="bom"?"active":""} disabled={!activeId} onClick={()=>activeId&&setView("bom")}><Layers3 size={18}/>BOM 편집기</button></nav>
     {notice&&<p className="pbw-notice">{notice}</p>}
 
