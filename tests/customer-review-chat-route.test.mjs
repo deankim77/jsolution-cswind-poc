@@ -63,7 +63,7 @@ test('BOM revision chat sends saved rows and computed changes to the provider',a
  assert.equal(data.comparisons[0].diff.summary.added,1);
  assert.equal(data.comparisons[0].diff.added[0].child.partNumber,'B-1');
  assert.equal(data.comparisons[0].diff.added[0].quantity,8);
- assert.match(request.input[0].content,/저장된 스냅샷/);
+ assert.equal(request.input[0].content,'existing common instructions');
 });
 test('missing or inaccessible BOM revision blocks metadata-only AI analysis',async()=>{
  const r=route({bom:true,missingBom:true});assert.equal((await r.send()).status,400);assert.equal(r.calls.length,0);
