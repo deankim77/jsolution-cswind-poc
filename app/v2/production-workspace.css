@@ -164,11 +164,4 @@
 .review-panel-body .cswind-data-table:has(.ai-extract-table){max-width:100%;overflow:auto}
 .cswind-data-table .ai-extract-table{min-width:1292px}
 
-/* Keep applied counts distinct from the independently versioned latest extraction. */
-.customer-document-list .review-count-column button { padding-block: 2px; gap: 1px; }
-.customer-document-list .review-result-badge { display: inline-flex; align-items: baseline; gap: 3px; padding: 1px 8px; border-radius: var(--v2-radius-sm); font-size: var(--v2-font-size-caption); line-height: 1.25; font-weight: var(--v2-font-weight-medium); }
-.customer-document-list .review-result-badge strong { font-size: var(--v2-font-size-body); font-weight: var(--v2-font-weight-bold); }
-.customer-document-list .review-result-badge.has-result { background: var(--v2-color-primary); color: var(--v2-surface-content); }
-.customer-document-list .review-result-badge.is-empty { background: var(--v2-surface-subtle); color: var(--v2-color-muted); }
-.customer-document-list .review-result-badge.is-conditional { background: var(--v2-surface-warning); color: var(--v2-color-warning); }
-.customer-document-list .review-result-extracted { color: var(--v2-color-muted); font-size: var(--v2-font-size-caption); line-height: 1.25; }
+.customer-document-list .review-applied-count { font-weight: var(--v2-font-weight-bold); }
