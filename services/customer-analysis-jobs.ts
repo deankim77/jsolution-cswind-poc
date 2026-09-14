@@ -44,3 +44,5 @@ export function createCustomerAnalysisJobs(raw=createCustomerDataRepository(),re
   }
  };
 }
+
+export function assertCustomerAnalysisNotRunning(scope:CustomerDataScope,ids:string[]){if(ids.some(id=>isAnalysisPending(jobs.get(key(scope,id))?.job)))throw new CustomerDataError("AI 분석이 진행 중입니다. 완료 후 삭제하세요.",409);}

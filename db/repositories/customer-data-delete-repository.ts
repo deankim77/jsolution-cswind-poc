@@ -1,0 +1,39 @@
+import {and,eq,inArray,or,desc} from 'drizzle-orm';
+import {randomUUID} from 'node:crypto';
+import {getDb} from '../index';
+import {customerRawData,customerRawDataRelations} from '../customer-data-schema';
+import {customerReviews,customerConfirmedData} from '../customer-review-schema';
+import {customerBomOccurrences} from '../pbom-schema';
+import {customerSuppliedItems} from '../customer-supplied-schema';
+import {productionAssignments} from '../production-schema';
+import {trrVersions,trrJobs} from '../trr-schema';
+import {auditLogs} from '../schema';
+import {customerDataAccess,type CustomerDataScope} from './customer-data-repository';
+import {lockPbomCompany} from './pbom-repository';
+import {assertNoProductionBulkLock} from './production-bulk-lock';
+import {CustomerDataError} from '../../lib/customer-data-contract';
+export function createCustomerDataDeleteRepository(db=getDb()){
+ return {async remove(s:CustomerDataScope,ids:string[],preview=false){return db.transaction(async tx=>{
+  await lockPbomCompany(tx,s.companyId);await assertNoProductionBulkLock(tx,s);
+  const access=await customerDataAccess(tx,s,true);
+  const scope=(t:{companyId:any;projectId:any})=>and(eq(t.companyId,s.companyId),eq(t.projectId,s.projectId));
+  const records=await tx.select().from(customerRawData).where(and(scope(customerRawData),inArray(customerRawData.id,ids)));
+  if(records.length!==ids.length)throw new CustomerDataError('삭제할 원본이 변경되었습니다. 목록을 새로고침하세요.',409);
+  if(!access.canReview&&records.some(r=>r.createdBy!==s.userId))throw new CustomerDataError('본인이 등록한 문서만 삭제할 수 있습니다.',403);
+  const confirmed=await tx.select().from(customerConfirmedData).where(and(scope(customerConfirmedData),inArray(customerConfirmedData.recordId,ids)));
+  const bom=await tx.select().from(customerBomOccurrences).where(and(scope(customerBomOccurrences),inArray(customerBomOccurrences.recordId,ids)));
+  const supplied=await tx.select().from(customerSuppliedItems).where(and(scope(customerSuppliedItems),or(inArray(customerSuppliedItems.recordId,ids),inArray(customerSuppliedItems.bomRecordId,ids))));
+  const [latest]=await tx.select().from(trrVersions).where(scope(trrVersions)).orderBy(desc(trrVersions.version)).limit(1);
+  if(confirmed.length||bom.length||supplied.length||latest?.document.sources.some(src=>ids.includes(src.id)))throw new CustomerDataError('반영을 취소한 후 삭제해 주세요.',409);
+  const [job]=await tx.select().from(trrJobs).where(scope(trrJobs));
+  if(job?.status==='running'&&job.updatedAt>Math.floor(Date.now()/1000)-600)throw new CustomerDataError('TRR 반영이 진행 중입니다. 완료 후 삭제하세요.',409);
+  if(preview)return {files:[]};
+  await tx.delete(productionAssignments).where(and(scope(productionAssignments),inArray(productionAssignments.recordId,ids)));
+  await tx.delete(customerRawDataRelations).where(and(scope(customerRawDataRelations),or(inArray(customerRawDataRelations.sourceId,ids),inArray(customerRawDataRelations.targetId,ids))));
+  await tx.delete(customerReviews).where(and(scope(customerReviews),inArray(customerReviews.recordId,ids)));
+  await tx.delete(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityType,'CUSTOMER_RAW_DATA'),inArray(auditLogs.entityId,ids),eq(auditLogs.action,'CUSTOMER_REVIEW_DRAFT_SAVED')));
+  await tx.delete(customerRawData).where(and(scope(customerRawData),inArray(customerRawData.id,ids)));
+  await tx.insert(auditLogs).values(records.map(r=>({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_DELETED',entityType:'CUSTOMER_RAW_DATA',entityId:r.id,detail:JSON.stringify({projectId:s.projectId,fileName:r.fileName}),createdAt:Math.floor(Date.now()/1000)})));
+  return {files:records.map(r=>r.fileKey)};
+ })}};
+}

@@ -1,3 +1,4 @@
+import {createCustomerDataDeleteService} from '../../../../../services/customer-data-delete-service';
 import { createCustomerDataService } from "../../../../../services/customer-data-service";
 import { MAX_CUSTOMER_FILE_BYTES, CustomerDataError } from "../../../../../lib/customer-data-contract";
 import { customerDataError, customerDataScope } from "./context";
@@ -15,6 +16,7 @@ export async function POST(request: Request, { params }: Params) {
     const service = createCustomerDataService();
     if (request.headers.get("content-type")?.includes("application/json")) {
       const input = await request.json();
+      if(input?.action==="check-delete")return Response.json(await createCustomerDataDeleteService().remove(scope,input.ids,true));
       if (!input || input.action !== "link") throw new CustomerDataError("지원하지 않는 요청입니다.");
       return Response.json({ relation: await service.link(scope, input.sourceId, input.targetId) });
     }
@@ -23,3 +25,5 @@ export async function POST(request: Request, { params }: Params) {
     return Response.json({record}, { status: 201 });
   } catch (reason) { return customerDataError(reason); }
 }
+
+export async function DELETE(request:Request,{params}:Params){try{const scope=await customerDataScope(request,(await params).projectId);const input=await request.json();return Response.json(await createCustomerDataDeleteService().remove(scope,input.ids));}catch(reason){return customerDataError(reason);}}

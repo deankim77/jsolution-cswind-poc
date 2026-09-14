@@ -1,0 +1,19 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),ts=require('typescript');const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
+require.extensions['.ts']=(m,f)=>m._compile(compile(fs.readFileSync(f,'utf8')),f);
+function setup(block=''){
+ const names=['customerRawData','customerRawDataRelations','customerReviews','customerConfirmedData','customerBomOccurrences','customerSuppliedItems','productionAssignments','trrVersions','trrJobs','auditLogs'];
+ const tables=Object.fromEntries(names.map(name=>[name,new Proxy({name},{get:(t,k)=>k==='name'?name:{key:k}})]));
+ const state=Object.fromEntries(names.map(n=>[n,[]]));state.customerRawData=[{id:'doc',companyId:'c',projectId:'p',createdBy:'u',fileKey:'file',fileName:'source.xlsx'}];state.customerReviews=[{recordId:'doc',companyId:'c',projectId:'p',draft:{items:[]}}];
+ if(block==='trrVersions')state.trrVersions=[{companyId:'c',projectId:'p',document:{sources:[{id:'doc'}]}}];else if(block)state[block]=[{companyId:'c',projectId:'p',recordId:'doc'}];
+ const eq=(c,v)=>r=>r[c.key]===v,and=(...f)=>r=>f.every(fn=>fn(r)),or=(...f)=>r=>f.some(fn=>fn(r)),inArray=(c,v)=>r=>v.includes(r[c.key]);let writes=0;
+ const db={select(){let table,p=()=>true;const q={from:t=>(table=t.name,q),where:f=>(p=f,q),orderBy:()=>q,limit:()=>q,then:(resolve,reject)=>Promise.resolve(state[table].filter(p)).then(resolve,reject)};return q;},delete(t){return {where(p){writes++;state[t.name]=state[t.name].filter(r=>!p(r));return Promise.resolve();}};},insert(t){return {values(v){writes++;state[t.name].push(...(Array.isArray(v)?v:[v]));return Promise.resolve();}};},transaction:fn=>fn(db)};
+ const imports={'drizzle-orm':{eq,and,or,inArray,desc:v=>v},'node:crypto':require('node:crypto'),'../index':{getDb:()=>db},'./customer-data-repository':{customerDataAccess:async()=>({canReview:true})},'./pbom-repository':{lockPbomCompany:async()=>{}},'./production-bulk-lock':{assertNoProductionBulkLock:async()=>{}},'../../lib/customer-data-contract':require('../lib/customer-data-contract.ts')};for(const path of ['customer-data','customer-review','pbom','customer-supplied','production','trr'])imports[`../${path}-schema`]=tables;imports['../schema']=tables;
+ const exports={};vm.runInNewContext(compile(fs.readFileSync('db/repositories/customer-data-delete-repository.ts','utf8')),{exports,require:id=>{assert.ok(imports[id],id);return imports[id]}});
+ return {repo:exports.createCustomerDataDeleteRepository(db),state,get writes(){return writes;}};
+}
+const scope={companyId:'c',projectId:'p',userId:'u',systemRoles:['ADMIN']};
+for(const kind of ['customerConfirmedData','customerBomOccurrences','customerSuppliedItems','trrVersions'])test(`actual reflection blocks deletion: ${kind}`,async()=>{const h=setup(kind);await assert.rejects(h.repo.remove(scope,['doc']),/반영을 취소/);assert.equal(h.writes,0);});
+test('extracted but unapplied source may be checked then deleted with its review',async()=>{const h=setup();await h.repo.remove(scope,['doc'],true);assert.equal(h.writes,0);const result=await h.repo.remove(scope,['doc']);assert.equal(result.files[0],'file');assert.equal(h.state.customerRawData.length,0);assert.equal(h.state.customerReviews.length,0);});
+test('reflection after preflight is rechecked at deletion',async()=>{const h=setup();await h.repo.remove(scope,['doc'],true);h.state.customerConfirmedData.push({companyId:'c',projectId:'p',recordId:'doc'});await assert.rejects(h.repo.remove(scope,['doc']),/反映|반영/);assert.equal(h.writes,0);});
+test('foreign project cannot delete source',async()=>{const h=setup();await assert.rejects(h.repo.remove({...scope,projectId:'other'},['doc']),/변경/);assert.equal(h.writes,0);});
