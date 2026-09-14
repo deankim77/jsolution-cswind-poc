@@ -2,7 +2,7 @@ import {validateSuppliedFacts,type SuppliedFact} from './customer-supplied-contr
 import {defaultDocumentRootQuantity,validateDocumentBomRoot,validateBomFacts,type BomFact} from './pbom-contract';
 import {TRR_SECTIONS} from './trr-contract';
 export const REVIEW_TYPES = {supplied:'사급품 목록',unclassified:'분류 확인 필요',drawing:'도면',bom:'부품 목록',specification:'사양서',requirement:'요구사항',report:'기술 보고서',work_instruction:'작업기준서',inspection:'검사기준서',other:'기타'} as const;
-export const REVIEW_AREAS = {pbom:'3. BOM',extract:'4. AI 추출사항',trr:'5. TRR'} as const;
+export const REVIEW_AREAS = {pbom:'3. BOM',extract:'4. 기술 요구사항 추출',trr:'5. TRR 자동생성'} as const;
 export const REVIEW_USE_TARGETS=['TTR','조립기준','검사기준','작업방법','기타'] as const;
 export type ReviewArea=keyof typeof REVIEW_AREAS;
 export type BulkReviewArea=Exclude<ReviewArea,'trr'>;
