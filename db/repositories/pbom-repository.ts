@@ -1,3 +1,4 @@
+import {validateDocumentBomRoot} from '../../lib/pbom-contract';
 import {sumBomQuantities,sameBomQuantity} from '../../lib/bom-quantities';
 import {activeBulkRows} from '../../lib/production-bulk-edit';
 import {customerConfirmedData} from '../customer-review-schema';
@@ -110,6 +111,7 @@ export async function numberApprovedPbom(tx:Tx,s:CustomerDataScope,items:ReviewI
 export async function applyConfirmedPbom(tx:Tx,s:CustomerDataScope,recordId:string,version:number,items:ReviewItem[],force=false){
  await assertNoProductionBulkLock(tx,s,'pbom');
  if(items.some(i=>!i.bom||i.recordId!==recordId))throw new CustomerDataError('이 문서의 구조화된 BOM을 먼저 재분석하세요.',422);
+ validateDocumentBomRoot(items);
  let rows=buildBomRows(items,await identityRows(tx,s));
  const issues=pbomApprovalIssues(rows);
  await numberApprovedPbom(tx,s,items);

@@ -23,8 +23,9 @@ missingData는 확인이 필요한 {"field":"항목명","reason":"미확인 이�
 - 나머지 주기·요구사항은 원본에 명확한 내용만 extract로 추출한다. 활용 대상은 TTR/조립기준/검사기준/작업방법 중 명확할 때만 지정하고 애매하면 기타로 둔다. 해석이 불확실한 내용은 summary에 그대로 설명한다.
 - 없는 숫자는 null, 없는 문자열은 빈 문자열이다. 내부 품번·Level·총수량·합산중량은 만들지 않는다.
 
+조립도는 draft.drawingRoot에 표제란의 대표 ASSY를 별도 항목 객체(id, area:"pbom", title, detail, source, recordId, bom 포함)로 제공한다. drawingRoot.bom.customerItemNumber는 표제란 Item No, itemDescription은 Drawing Title, drawingNumber는 표제란 Drawing No, partType은 ASSEMBLY, parentId는 null이다. source에 표제란 근거를 기록한다. 부품표의 첫 행을 대표 ASSY로 사용하지 않는다. 단품 도면이면 drawingRoot는 null이다. items에는 부품표의 모든 행을 누락 없이 포함한다. 표제란을 읽을 수 없으면 대표 품목 정보를 추정하지 않는다.
 기존 화면에 연결할 JSON 형식:
-{"answer":"간단한 안내","draft":{"documentType":"drawing","drawingNumber":"","revisionLabel":"","summary":"원본 내용과 확인이 어려운 부분 설명","uncertainties":[],"items":[]}}
+{"answer":"간단한 안내","draft":{"documentType":"drawing","drawingTitle":"","drawingRoot":null,"drawingNumber":"","revisionLabel":"","summary":"원본 내용과 확인이 어려운 부분 설명","uncertainties":[],"items":[]}}
 문서 종류가 drawing이 아니면 bom/specification/requirement/report/work_instruction/inspection/other/unclassified 중 해당 값을 사용한다.
 각 항목: {"id":"고유ID","area":"pbom","title":"품명","detail":"원본에서 읽은 내용","source":"표제란 또는 부품표 행/주기 위치","recordId":"${recordId}"}
 PBOM 항목에는 bom 객체를 넣는다:

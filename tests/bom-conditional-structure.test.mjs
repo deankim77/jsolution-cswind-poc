@@ -67,3 +67,16 @@ test('cost rollup does not turn unknown quantities into zero or one',()=>{
  assert.equal(context.rollup(parts,[{parentPartId:'root',childPartId:'part',quantity:null}]).root,null);
  assert.equal(context.rollup(parts,[{parentPartId:'root',childPartId:'part',quantity:2}]).root,20);
 });
+test('flat assembly input is rejected before creating any part or edge',async()=>{
+ const h=setup();await assert.rejects(h.apply('doc',[item('a',null,'doc',{partType:'PART'}),item('b',null,'doc',{partType:'PART'})]),/대표 ASSY/);
+ assert.equal(h.state.productParts.length,0);assert.equal(h.state.productBomItems.length,0);
+});
+test('two assembly drawings preserve separate edges for a shared customer item',async()=>{
+ const h=setup();
+ await h.apply('A',[item('assyA',null,'A'),item('plateA','assyA','A'),item('boltA','assyA','A',{customerItemNumber:'STD-M20-BOLT',quantity:8,unit:'PCS'})]);
+ await h.apply('B',[item('assyB',null,'B'),item('plateB','assyB','B'),item('boltB','assyB','B',{customerItemNumber:'STD-M20-BOLT',quantity:8,unit:'PCS'})]);
+ assert.equal(h.state.productParts.length,5);
+ const edges=h.state.productBomItems;
+ assert.equal(edges.filter(e=>e.parentPartId==='TOP').length,2);
+ assert.deepEqual(edges.filter(e=>e.childPartId==='part-boltA').map(e=>[e.parentPartId,e.quantity]),[['part-assyA',8],['part-assyB',8]]);
+});

@@ -1,4 +1,4 @@
-import {defaultDocumentRootQuantity,validateBomFacts,type BomFact} from './pbom-contract';
+import {defaultDocumentRootQuantity,validateDocumentBomRoot,validateBomFacts,type BomFact} from './pbom-contract';
 import {TRR_SECTIONS} from './trr-contract';
 export const REVIEW_TYPES = {unclassified:'분류 확인 필요',drawing:'도면',bom:'부품 목록',specification:'사양서',requirement:'요구사항',report:'기술 보고서',work_instruction:'작업기준서',inspection:'검사기준서',other:'기타'} as const;
 export const REVIEW_AREAS = {pbom:'3. BOM',extract:'4. AI 추출사항',trr:'5. TRR'} as const;
@@ -62,6 +62,10 @@ export function validateReviewDraft(value:unknown,allowedIds:string[]):ReviewDra
   if(items.some(i=>i.bom&&i.area!=='pbom'))throw new Error('BOM 구조는 PBOM 항목에만 저장할 수 있습니다.');
   for(const i of items.filter(i=>i.area==='trr'))if(!TRR_SECTIONS.includes(i.trrSection!)||!['current','historical'].includes(i.trrKind??'')||[i.title,i.detail,i.source].some(v=>v.length>6000))throw new Error('TRR 반영 목차·자료 구분·본문 길이를 확인하세요.');
   validateBomFacts(items);
+  if(d.documentType==='drawing'){
+   validateDocumentBomRoot(items);
+   if(/\b(ASSY|ASSEMBLY)\b|조립/i.test(d.drawingTitle??'')&&items.some(i=>i.area==='pbom')&&!items.some(i=>i.bom?.parentId===null&&i.bom.partType==='ASSEMBLY'))throw Error('조립도 표제란의 대표 ASSY가 누락되었습니다.');
+  }
   const result={...d,missingData:d.missingData?.map(x=>({field:x.field.trim(),reason:x.reason.trim()})),items:items.map(defaultDocumentRootQuantity)};
   if(JSON.stringify(result).length>200000)throw new Error('분석 결과가 너무 큽니다.');
   return result;

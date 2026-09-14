@@ -79,3 +79,13 @@ export function pbomApprovalIssues(rows:BomRow[]){
   return missing.length?[`${row.bom.customerItemNumber||row.bom.itemDescription||row.id}: ${missing.join('·')} 확인 필요`]:[];
  });
 }
+
+/** One drawing describes one document root; shared masters still have separate occurrences. */
+export function validateDocumentBomRoot(items:BomInput[]){
+ validateBomFacts(items);
+ const records=new Set(items.filter(i=>i.bom).map(i=>i.recordId));
+ for(const recordId of records){
+  const rows=items.filter(i=>i.recordId===recordId&&i.bom),roots=rows.filter(i=>i.bom!.parentId===null);
+  if(roots.length!==1||(rows.length>1&&roots[0].bom!.partType!=='ASSEMBLY'))throw Error('조립도 대표 ASSY가 누락되었거나 최상위 행이 여러 개입니다. 표제란 ASSY와 하위 부품표를 확인한 뒤 다시 분석하세요.');
+ }
+}
