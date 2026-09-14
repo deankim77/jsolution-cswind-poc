@@ -6,3 +6,7 @@
 .wv2-production-flow .wv2-production-delay{color:var(--v2-color-warning);font-weight:700}
 .wv2-production-flow .wv2-gate-node-wrap>button>svg{color:var(--v2-color-muted)}
 .wv2-production-flow .wv2-gate-node-wrap>button.passed>svg,.wv2-production-flow .wv2-gate-node-wrap>button.review>svg{color:var(--v2-color-primary)}
+
+.wv2-project-dashboard .summary .wv2-production-overall{justify-content:center;gap:8px}
+.wv2-project-dashboard .summary .wv2-production-overall>span{font-size:var(--v2-font-size-caption);line-height:var(--v2-line-height-body);color:var(--v2-color-ink)}
+.wv2-production-overall strong{font-size:var(--v2-font-size-body);font-variant-numeric:tabular-nums}

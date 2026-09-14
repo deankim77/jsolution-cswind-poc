@@ -7,7 +7,6 @@ function dateDay(value?:string){
   return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value?time/86400000:null;
 }
 export function productionStages(tasks:Task[],today=new Date().toLocaleDateString("sv-SE")){
-  const day=dateDay(today);
   const byId=new Map(tasks.map(task=>[task.id,task]));
   const byCode=new Map(tasks.map(task=>[task.wbsCode,task]));
   const parentOf=(task:Task)=>task.parentId?byId.get(task.parentId):task.parentCode?byCode.get(task.parentCode):undefined;
@@ -23,6 +22,15 @@ export function productionStages(tasks:Task[],today=new Date().toLocaleDateStrin
       return false;
     }):[];
     const completed=children.filter(task=>task.status==="completed").length;
+    const {progress,plannedProgress,delay}=productionProgress(children,today);
+    const status=!group?"missing":children.length>0&&completed===children.length?"completed":children.some(task=>task.status==="active"||task.status==="review"||task.progress>0)?"active":"planned";
+    return {code,taskId:group?.id,name:group?.name.replace(new RegExp("^"+code+"\\s*"),"")||"",progress,plannedProgress,delay,status,completed,total:children.length};
+  });
+}
+
+export function productionProgress(tasks:Task[],today=new Date().toLocaleDateString("sv-SE")){
+  const day=dateDay(today);
+  const children=tasks.filter(task=>task.kind==="task");
     const weight=children.reduce((sum,task)=>sum+Math.max(1,Number(task.durationDays)||1),0);
     const progress=weight?Math.round(children.reduce((sum,task)=>sum+Math.max(1,Number(task.durationDays)||1)*Math.max(0,Math.min(100,Number(task.progress)||0)),0)/weight):0;
     // Calendar-day linear baseline, inclusive of today; same duration weights as actuals.
@@ -32,7 +40,5 @@ export function productionStages(tasks:Task[],today=new Date().toLocaleDateStrin
     });
     const plannedProgress=weight&&plans.every(value=>value!==null)?Math.round(plans.reduce<number>((sum,value,index)=>sum+(value??0)*Math.max(1,Number(children[index].durationDays)||1),0)/weight):null;
     const delay=plannedProgress===null?null:Math.max(0,plannedProgress-progress);
-    const status=!group?"missing":children.length>0&&completed===children.length?"completed":children.some(task=>task.status==="active"||task.status==="review"||task.progress>0)?"active":"planned";
-    return {code,taskId:group?.id,name:group?.name.replace(new RegExp("^"+code+"\\s*"),"")||"",progress,plannedProgress,delay,status,completed,total:children.length};
-  });
+  return {progress,plannedProgress,delay};
 }
