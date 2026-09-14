@@ -12,7 +12,6 @@ import {
   RefreshCw,ShieldCheck,Sparkles,Table2,Target,Trash2,Users,Workflow,X,
 } from "lucide-react";
 import "./work-view-v2.css";
-import "./part-relations-cards.css";
 import {ColumnVisibilityMenu} from "./table-view-controls";
 import "./v2-date-input.css";
 import {FilteredMyWorkWorkspace,type MyWorkScope} from "./my-workspace";
@@ -44,8 +43,8 @@ type BaselineData={baseline:null|{id:string;version:number;name:string;capturedA
 type WorkView="list"|"timeline"|"gantt"|"kanban"|"calendar"|"edit";
 type PanelTab="detail"|"actual"|"deliverable"|"issue"|"gate"|"history"|"ai"|"filter";
 type DeliverableRegistrationRequest={key:number;mode:"deliverable"|"drawing";deliverableId?:string;projectId?:string;taskId?:string;standalone?:boolean};
-type WorkspaceView="portfolio"|"projects"|"dashboard"|"edit-project"|"create-project"|"templates"|"template-editor"|"workflow-templates"|"wbs"|"documents"|"product-data"|"bom-compare"|"project-bom"|"cost"|"workflows"|"create-workflow"|"ecr"|"create-ecr"|"quality"|"create-quality"|"issues"|"reports"|"my-work"|"my-ai"|"settings"|"artifact-preview";
-const workspaceLabels:Record<WorkspaceView,string>={portfolio:"전사 대시보드",projects:"프로젝트 목록",dashboard:"프로젝트 대시보드","edit-project":"프로젝트 정보 수정","create-project":"새 프로젝트",templates:"프로젝트 템플릿","template-editor":"템플릿 편집","workflow-templates":"워크플로우 템플릿",wbs:"일정 · WBS",documents:"문서 · 산출물","product-data":"PART · BOM","bom-compare":"BOM 비교","project-bom":"프로젝트 BOM",cost:"원가 관리",workflows:"워크플로우","create-workflow":"새 워크플로우",ecr:"설계변경","create-ecr":"새 설계변경",quality:"품질관리","create-quality":"새 품질문제",issues:"이슈 · 리스크",reports:"보고 · 회의","my-work":"MY WORK","my-ai":"MY AI HOME",settings:"시스템 설정","artifact-preview":"AI 결과 미리보기"};
+type WorkspaceView="portfolio"|"projects"|"dashboard"|"edit-project"|"create-project"|"templates"|"template-editor"|"workflow-templates"|"wbs"|"documents"|"product-data"|"bom-compare"|"cost"|"workflows"|"create-workflow"|"ecr"|"create-ecr"|"quality"|"create-quality"|"issues"|"reports"|"my-work"|"my-ai"|"settings"|"artifact-preview";
+const workspaceLabels:Record<WorkspaceView,string>={portfolio:"전사 대시보드",projects:"프로젝트 목록",dashboard:"프로젝트 대시보드","edit-project":"프로젝트 정보 수정","create-project":"새 프로젝트",templates:"프로젝트 템플릿","template-editor":"템플릿 편집","workflow-templates":"워크플로우 템플릿",wbs:"일정 · WBS",documents:"문서 · 산출물","product-data":"PART · BOM","bom-compare":"BOM 비교",cost:"원가 관리",workflows:"워크플로우","create-workflow":"새 워크플로우",ecr:"설계변경","create-ecr":"새 설계변경",quality:"품질관리","create-quality":"새 품질문제",issues:"이슈 · 리스크",reports:"보고 · 회의","my-work":"MY WORK","my-ai":"MY AI HOME",settings:"시스템 설정","artifact-preview":"AI 결과 미리보기"};
 type WorkspaceTab={key:string;view:WorkspaceView;entityId?:string;editId?:string;title:string};
 const genericWorkspaceTab=(view:WorkspaceView):WorkspaceTab=>({key:view,view,title:workspaceLabels[view]});
 type SearchResult={id:string;kind:"project"|"task"|"document"|"issue";projectId:string;taskId?:string;eyebrow:string;title:string;meta:string};
@@ -94,6 +93,7 @@ export default function NewWorkViewApp(){
   const [view,setView]=useState<WorkView>("list");
   const [productionOpen,setProductionOpen]=useState(false);
   const [productionRefresh,setProductionRefresh]=useState(0);
+  const [pendingProjectBom,setPendingProjectBom]=useState<string|null>(null);
   const [productionTab,setProductionTab]=useState<ProductionTab|"drawings">("customer");
   const closeCustomerAi=useCallback(()=>{setPanelOpen(false)},[]);
   const [contextOpen,setContextOpen]=useState(true);
@@ -139,10 +139,11 @@ export default function NewWorkViewApp(){
   const askConfirm=(title:string,message:string,danger=false)=>new Promise<boolean>(resolve=>{confirmResolver.current=resolve;setConfirmDialog({title,message,danger})});
   const closeConfirm=(value:boolean)=>{confirmResolver.current?.(value);confirmResolver.current=null;setConfirmDialog(null)};
   const openWorkspaceTab=(tab:WorkspaceTab)=>{setWorkspaceTabs(current=>current.some(item=>item.key===tab.key)?current:[...current,tab]);setActiveWorkspaceTab(tab.key);setWorkspaceViewState(tab.view)};
-  useEffect(()=>{const open=(event:Event)=>{const d=(event as CustomEvent<{projectId:string;projectName:string}>).detail;if(!d?.projectId)return;openWorkspaceTab({key:`project-bom:${d.projectId}`,view:"project-bom",entityId:d.projectId,title:`BOM · ${d.projectName}`});};window.addEventListener("v2-open-project-bom",open);return()=>window.removeEventListener("v2-open-project-bom",open)},[]);
+  useEffect(()=>{const open=(event:Event)=>{const d=(event as CustomEvent<{projectId:string;projectName:string}>).detail;const next=projects.find(item=>item.id===d?.projectId);if(!next)return;setPendingProjectBom(next.id);setProject(next);setSelectedId("");setPanelOpen(false);openWorkspaceTab({key:`wbs:${next.id}`,view:"wbs",entityId:next.id,title:`WBS · ${next.name}`});};window.addEventListener("v2-open-project-bom",open);return()=>window.removeEventListener("v2-open-project-bom",open)},[projects]);
   const openBomEditor=(rootId:string)=>openWorkspaceTab({key:`product-data:${rootId}`,view:"product-data",entityId:rootId,title:"BOM 편집"});
   const openBomCompare=(leftRootId:string,rightRootId?:string)=>{if(!leftRootId)return;const key=`bom-compare:${leftRootId}${rightRootId?`:${rightRootId}`:""}`;openWorkspaceTab({key,view:"bom-compare",entityId:leftRootId,editId:rightRootId,title:"BOM 비교"})};
   useEffect(()=>{setProductionOpen(project?.projectTypeCode===PRODUCTION_PROJECT_CODE);setProductionTab("customer");setPanelOpen(false)},[project?.id,project?.projectTypeCode]);
+  useEffect(()=>{if(!pendingProjectBom||project?.id!==pendingProjectBom||activeWorkspaceTab!==`wbs:${pendingProjectBom}`)return;setProductionTab("pbom");setProductionOpen(true);setPanelOpen(false);setPendingProjectBom(null)},[pendingProjectBom,project?.id,activeWorkspaceTab]);
   const setWorkspaceView=(next:WorkspaceView)=>{if(next==="issues")setIssueProjectPreset("");if(next==="wbs"&&project){openWorkspaceTab({key:`wbs:${project.id}`,view:"wbs",entityId:project.id,title:`WBS · ${project.name}`});return}openWorkspaceTab(genericWorkspaceTab(next))};
   const openTemplateEditor=(templateId?:string,templateName="새 템플릿")=>{const key=templateId?`template-editor:${templateId}`:`template-editor:new-${Date.now()}`;setTemplateEditorId(templateId);openWorkspaceTab({key,view:"template-editor",entityId:templateId,title:`템플릿 · ${templateName}`})};
   const openCreateWorkspace=(view:"create-workflow"|"create-ecr"|"create-quality",initialProjectId="")=>openWorkspaceTab({key:view,view,entityId:initialProjectId||undefined,title:workspaceLabels[view]});
@@ -314,7 +315,6 @@ export default function NewWorkViewApp(){
         {workspaceView==="my-work"&&(myWorkScope==="workflow"?<MyWorkWorkflowWorkspace onBack={()=>setMyWorkScope("all")} onOpenFilter={openWorkspaceFilter}/>:<FilteredMyWorkWorkspace scope={myWorkScope} onScopeChange={setMyWorkScope} onOpenTask={(projectId,taskId,panel="actual")=>openWorkspaceTask(projectId,taskId,panel)} onOpenFilter={openWorkspaceFilter}/>)} 
         {workspaceView==="documents"&&<PreviewDocumentsWorkspace project={project} projects={projects} tasks={tasks} initialDeliverableId={approvedDeliverableId} onInitialOpened={()=>setApprovedDeliverableId("")} onOpenTask={(projectId,taskId)=>openWorkspaceTask(projectId,taskId,"deliverable")} onAddDeliverable={(projectId,taskId,mode,deliverableId)=>openDeliverableRegistration(projectId,taskId,mode,deliverableId,true)} onOpenFilter={openWorkspaceFilter}/>} 
         {workspaceView==="product-data"&&<PartBomWorkspace key={activeWorkspace?.entityId} initialRootId={activeWorkspace?.entityId} onOpenBomCompare={openBomCompare}/>}
-        {workspaceView==="project-bom"&&<section className="wv2-module part-project-bom-view">{(()=>{const target=projects.find(p=>p.id===activeWorkspace?.entityId);return target?<ProductionWorkspace key={target.id} project={target} tab="pbom" onCloseAi={closeCustomerAi} onOpenFilter={openWorkspaceFilter} onOpenBomEditor={openBomEditor}/>:<p>프로젝트 정보를 확인할 수 없습니다.</p>})()}</section>}
         {workspaceView==="bom-compare"&&activeWorkspace&&<BomCompareWorkspace initialLeftRootId={activeWorkspace.entityId||""} initialRightRootId={activeWorkspace.editId} onClose={()=>closeWorkspaceTab(activeWorkspace.key)}/>} 
         {workspaceView==="cost"&&<CostManagementWorkspace/>}
         {workspaceView==="workflows"&&<ProjectWorkflowWorkspace projects={projects} onCreate={projectId=>openCreateWorkspace("create-workflow",projectId)} onEdit={id=>openEditWorkspace("create-workflow",id)} initialDetailId={pendingWorkflowDetail?.view==="workflows"?pendingWorkflowDetail.id:""} onInitialDetailOpened={()=>setPendingWorkflowDetail(null)} onOpenDocuments={deliverableId=>{setApprovedDeliverableId(deliverableId);setWorkspaceView("documents")}} onOpenFilter={openWorkspaceFilter}/>} 
