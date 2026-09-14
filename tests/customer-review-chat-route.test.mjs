@@ -1,16 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
+import {createRequire,stripTypeScriptTypes} from 'node:module';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const require=createRequire(import.meta.url),ts=require('typescript');
+const require=createRequire(import.meta.url);
+// This test loads only named-import TypeScript modules; Node strips their types.
+const compile=source=>stripTypeScriptTypes(source)
+ .replace(/import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"];?/g,(_,names,id)=>`const {${names}}=require(${JSON.stringify(id)});`)
+ .replace(/export (async )?function (\w+)/g,(_,async,name)=>`exports.${name}=${async||''}function ${name}`)
+ .replace(/export const (\w+)\s*=/g,(_,name)=>`const ${name}=exports.${name}=`);
+require.extensions['.ts']=(m,f)=>m._compile(compile(fs.readFileSync(f,'utf8')),f);
+const bomService=require('../services/bom-revision-context-service.ts');
 const source=fs.readFileSync(new URL('../app/api/ai/chat/route.ts',import.meta.url),'utf8');
-function route({customer=false,failFile=false,trr=false,resumeTrr=false}={}){
+function route({customer=false,failFile=false,trr=false,resumeTrr=false,bom=false,missingBom=false}={}){
  const calls=[],writes=[];
  const statement=sql=>({bind(...args){writes.push({sql,args});return this},async first(){return {id:'conversation',context_items:resumeTrr?JSON.stringify(['v1','v2'].map(id=>({id,kind:'TRR 버전',projectId:'p'}))):'[]'}},async all(){return {results:[{role:'user',content:'앞선 질문'}]}}});
  const db={prepare:statement,batch:async()=>[]};
  const scope={companyId:'c',userId:'u',projectId:'p'};
  const imports={
+  '../../../../services/bom-revision-context-service':bomService,
+  '../../../../db/repositories/bom-revision-context-repository':{findBomRevision:async(company,root,seq)=>{assert.equal(company,'c');if(missingBom)return null;return {rootPartId:root,revisionSeq:seq,revision:`PBOM-${seq}`,changeNote:'확정',snapshotJson:JSON.stringify({rootPartId:root,parts:[{id:root,name:'TOP'},{id:'bolt',partNumber:'B-1',name:'Bolt'}],bom:seq===19?[{parentPartId:root,childPartId:'bolt',quantity:8,unit:'PCS'}]:[]})}}},
   '../../../../services/trr-service':{createTrrService:()=>({comparison:async(s,ids)=>{assert.equal(s.projectId,'p');assert.deepEqual(Array.from(ids),['v1','v2']);return {text:'V001: 280 Nm / V002: 320 Nm, spec.pdf p.1',items:ids.map(id=>({id,kind:'TRR 버전',projectId:'p',title:id}))}}})},
   '../../../../services/customer-review-prompts':{CUSTOMER_CHAT_PROMPT:'질문에 답한다. 전체 PBOM을 다시 생성하지 않는다.'},
   '../../../../services/customer-review-service':{createCustomerReviewService:()=>({analyze:()=>assert.fail('must not analyze'),prepareChat:async()=>({files:[{id:'raw',fileName:'drawing.png',mime:'image/png',bytes:Buffer.from('png')}],drafts:[]})})},
@@ -22,8 +31,8 @@ function route({customer=false,failFile=false,trr=false,resumeTrr=false}={}){
   '../../../../db/postgres-d1-compat':{getLegacyDbCompat:()=>db},
  };
  const exports={};
- vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:id=>{assert.ok(imports[id],id);return imports[id]},process:{env:{OPENAI_API_KEY:'test'}},Buffer,Response,console,crypto,fetch:async(url,init)=>{calls.push(JSON.parse(init.body));if(failFile)throw Error('file request failed');return Response.json({output_text:'답변',id:'response'})}});
- return {calls,writes,send:()=>exports.POST(new Request('http://localhost/api/ai/chat',{method:'POST',body:JSON.stringify({message:'도면 설명',conversationId:'conversation',contextItems:customer?[{id:'raw',kind:'고객 원본',title:'drawing.png'}]:[],...(customer?{customerReview:{projectId:'p',recordId:'raw'}}:{}),...(trr?{trrReview:{projectId:'p',versionIds:['v1','v2']}}:{})})}))};
+ vm.runInNewContext(compile(source),{exports,require:id=>{assert.ok(imports[id],id);return imports[id]},process:{env:{OPENAI_API_KEY:'test'}},Buffer,Response,console,crypto,fetch:async(url,init)=>{calls.push(JSON.parse(init.body));if(failFile)throw Error('file request failed');return Response.json({output_text:'답변',id:'response'})}});
+ return {calls,writes,send:()=>exports.POST(new Request('http://localhost/api/ai/chat',{method:'POST',body:JSON.stringify({message:'도면 설명',conversationId:'conversation',contextItems:bom?[19,18].map(seq=>({id:`root:${seq}`,kind:'BOM Revision'})):customer?[{id:'raw',kind:'고객 원본',title:'drawing.png'}]:[],...(customer?{customerReview:{projectId:'p',recordId:'raw'}}:{}),...(trr?{trrReview:{projectId:'p',versionIds:['v1','v2']}}:{})})}))};
 }
 test('review chat uses common conversation history and persistence with original image, not draft analysis',async()=>{
  const r=route({customer:true}),res=await r.send(),body=await res.json();
@@ -43,4 +52,28 @@ test('review chat does not silently retry a failed original as filename-only ana
 });
 test('TRR comparison uses authorized snapshots and restores them when resuming the conversation',async()=>{
  for(const options of [{trr:true},{resumeTrr:true}]){const r=route(options);assert.equal((await r.send()).status,200);assert.match(r.calls[0].input[0].content,/TRR 보고서 버전/);assert.match(JSON.stringify(r.calls[0].input.at(-1)),/280 Nm.*320 Nm/);assert.equal(r.calls[0].max_output_tokens,4000);assert.ok(r.writes.some(w=>w.sql.includes('UPDATE ai_conversations')&&w.args.some(a=>typeof a==='string'&&a.includes('"projectId":"p"'))));}
+});
+
+test('BOM revision chat sends saved rows and computed changes to the provider',async()=>{
+ const r=route({bom:true});assert.equal((await r.send()).status,200);
+ const request=r.calls[0],text=request.input.at(-1).content.find(x=>x.text?.startsWith('BOM 비교 데이터: ')).text;
+ const data=JSON.parse(text.slice('BOM 비교 데이터: '.length));
+ assert.equal(data.comparisons[0].from.revisionSeq,18);
+ assert.equal(data.comparisons[0].to.revisionSeq,19);
+ assert.equal(data.comparisons[0].diff.summary.added,1);
+ assert.equal(data.comparisons[0].diff.added[0].child.partNumber,'B-1');
+ assert.equal(data.comparisons[0].diff.added[0].quantity,8);
+ assert.match(request.input[0].content,/저장된 스냅샷/);
+});
+test('missing or inaccessible BOM revision blocks metadata-only AI analysis',async()=>{
+ const r=route({bom:true,missingBom:true});assert.equal((await r.send()).status,400);assert.equal(r.calls.length,0);
+});
+test('compare screen direction is preserved and shared parts retain parent connections',async()=>{
+ const read=async(c,root,seq)=>({rootPartId:root,revisionSeq:seq,revision:String(seq),changeNote:null,snapshotJson:JSON.stringify({rootPartId:root,parts:[],bom:[{parentPartId:'A',childPartId:'bolt',quantity:seq},{parentPartId:'B',childPartId:'bolt',quantity:8}]})});
+ const data=JSON.parse(await bomService.prepareBomRevisionContext('c',[{id:'root:19',kind:'BOM'},{id:'root:18',kind:'BOM'}],read));
+ assert.equal(data.comparisons[0].from.revisionSeq,19);
+ assert.equal(data.comparisons[0].diff.quantityChanged.length,1);
+ assert.equal(data.comparisons[0].diff.quantityChanged[0].after.parentPartId,'A');
+ assert.equal(await bomService.prepareBomRevisionContext('c',[{id:'doc',kind:'문서'}],read),undefined);
+ await assert.rejects(bomService.prepareBomRevisionContext('c',[{id:'bad',kind:'BOM Revision'}],read),/올바르지/);
 });
