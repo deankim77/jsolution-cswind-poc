@@ -16,6 +16,7 @@ export const MAX_CUSTOMER_FILE_BYTES = 50 * 1024 * 1024;
 export type CustomerDocumentType = keyof typeof CUSTOMER_DOCUMENT_TYPES;
 export type CustomerImpactTarget = keyof typeof CUSTOMER_IMPACT_TARGETS;
 export type CustomerDataRecord = {
+  deliverableId?: string; deliverableVersionId?: string;
   id: string; projectId: string; receiptNumber?: number; rawDataId: string; revision: number;
   intakeGroup?:CustomerIntakeGroup;sourcePurpose?:CustomerSourcePurpose;
   title: string; documentType: CustomerDocumentType; impactTarget: CustomerImpactTarget;

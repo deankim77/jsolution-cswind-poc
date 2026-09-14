@@ -31,6 +31,10 @@ export const wbsTasks = pgTable("wbs_tasks", { id:text("id").primaryKey(), proje
 export const projectBaselines = pgTable("project_baselines", { id:text("id").primaryKey(), projectId:text("project_id").notNull().references(()=>projectsDb.id,{onDelete:"cascade"}), version:integer("version").notNull(), name:text("name").notNull(), capturedAt:integer("captured_at").notNull(), capturedBy:text("captured_by"), isActive:integer("is_active").notNull().default(1) }, table=>[uniqueIndex("project_baselines_project_version_uq").on(table.projectId,table.version)]);
 export const projectBaselineTasks = pgTable("project_baseline_tasks", { baselineId:text("baseline_id").notNull().references(()=>projectBaselines.id,{onDelete:"cascade"}), taskId:text("task_id").notNull(), wbsCode:text("wbs_code").notNull(), name:text("name").notNull(), plannedStart:text("planned_start"), plannedEnd:text("planned_end"), durationDays:integer("duration_days").notNull(), sortOrder:integer("sort_order").notNull() }, table=>[primaryKey({columns:[table.baselineId,table.taskId]})]);
 export const deliverables = pgTable("deliverables", {
+  origin:text("origin").$type<"customer" | "internal">().notNull().default("internal"),
+  source:text("source").notNull().default("planned"),
+  documentKind:text("document_kind").notNull().default("document"),
+  createdBy:text("created_by"),
   drawingCode:text("drawing_code"),
   drawingCompanyId:text("drawing_company_id"),
   drawingType:text("drawing_type"),
@@ -146,6 +150,7 @@ export const deliverableReviews = pgTable("deliverable_reviews", {
 });
 
 export const deliverableVersions = pgTable("deliverable_versions", {
+  sourceDocumentNumber:text("source_document_number"), sourceDrawingNumber:text("source_drawing_number"), sourceRevision:text("source_revision"), documentType:text("document_type"),
   id:text("id").primaryKey(), projectId:text("project_id").notNull(), deliverableId:text("deliverable_id").notNull(), taskId:text("task_id"), revision:integer("revision").notNull(), fileKey:text("file_key").notNull(), fileName:text("file_name").notNull(), fileSize:integer("file_size").notNull().default(0), contentType:text("content_type"), note:text("note"), createdBy:text("created_by"), createdAt:integer("created_at").notNull(), deletedAt:integer("deleted_at"), deletedBy:text("deleted_by"), previewFileKey:text("preview_file_key"), conversionStatus:text("conversion_status"), conversionError:text("conversion_error"), convertedAt:integer("converted_at"),
 });
 

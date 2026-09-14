@@ -1,7 +1,8 @@
+import {registerCustomerDocument} from './customer-document-link';
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, getTableColumns } from "drizzle-orm";
 import { getDb } from "../index";
-import { auditLogs, projectMembers, projectsDb, projectTypes, users } from "../schema";
+import { deliverables, auditLogs, projectMembers, projectsDb, projectTypes, users } from "../schema";
 import { customerRawData, customerRawDataRelations } from "../customer-data-schema";
 import { CustomerDataError, PRODUCTION_PROJECT_CODE } from "../../lib/customer-data-contract";
 
@@ -46,7 +47,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
     access: (scope: CustomerDataScope) => customerDataAccess(db, scope),
     async list(scope: CustomerDataScope) {
       const permissions = await customerDataAccess(db, scope);
-      const records = await db.select({...getTableColumns(customerRawData),createdByName:users.name}).from(customerRawData).leftJoin(users,and(eq(users.id,customerRawData.createdBy),eq(users.companyId,scope.companyId))).where(scopeWhere(scope)).orderBy(desc(customerRawData.createdAt), desc(customerRawData.revision), desc(customerRawData.id));
+      const records = await db.select({...getTableColumns(customerRawData),createdByName:users.name,title:deliverables.name}).from(customerRawData).innerJoin(deliverables,eq(deliverables.id,customerRawData.deliverableId)).leftJoin(users,and(eq(users.id,customerRawData.createdBy),eq(users.companyId,scope.companyId))).where(scopeWhere(scope)).orderBy(desc(customerRawData.createdAt), desc(customerRawData.revision), desc(customerRawData.id));
       const relations = await db.select().from(customerRawDataRelations).where(and(eq(customerRawDataRelations.companyId, scope.companyId), eq(customerRawDataRelations.projectId, scope.projectId)));
       return { ...permissions, records, relations };
     },
@@ -54,7 +55,7 @@ export function createCustomerDataRepository(db: Database = getDb()) {
     async create(scope: CustomerDataScope, data: NewRawData, previousId?: string, relatedId?: string, importOnce = false) {
       return db.transaction(async tx => {
         await customerDataAccess(tx, scope, true);
-        if (importOnce) {
+        if (importOnce && !previousId) {
           const [existing] = await tx.select().from(customerRawData).where(and(scopeWhere(scope),eq(customerRawData.checksum,data.checksum)));
           if (existing) {
             // Identical bytes keep one Raw Data identity. Cross-purpose uploads must not silently turn an output example into input evidence.
@@ -76,7 +77,8 @@ export function createCustomerDataRepository(db: Database = getDb()) {
           if (latest.id !== previous.id) throw new CustomerDataError("최신 버전에 새 Revision을 등록해 주세요. 목록을 새로고침하세요.", 409);
         }
         const now = Math.floor(Date.now() / 1000);
-        const [record] = await tx.insert(customerRawData).values({ ...data, companyId: scope.companyId, projectId: scope.projectId,
+        const documentLink=await registerCustomerDocument(tx,scope,data,previous,now);
+        const [record] = await tx.insert(customerRawData).values({ ...data,...documentLink, companyId: scope.companyId, projectId: scope.projectId,
           rawDataId: previous?.rawDataId ?? `RAW-${randomUUID()}`, revision: previous ? previous.revision + 1 : 1,
           createdBy: scope.userId, createdAt: now }).returning();
         for (const [targetId, relationType] of [[previousId, "supersedes"], [relatedId, "references"]] as const) {

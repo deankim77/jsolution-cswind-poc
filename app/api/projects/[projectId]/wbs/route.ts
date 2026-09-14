@@ -1,3 +1,4 @@
+import {customerDocumentLinks} from '../../../../../services/customer-document-service';
 import { getLegacyDbCompat } from "../../../../../db/postgres-d1-compat";
 import { ensureProjectDataFoundation, type RuntimeD1 } from "../../../../../db/project-data-foundation";
 import {canManageProject,contextErrorResponse,requireProjectAccess,resolveRequestContext} from "../../../../../db/request-context";
@@ -164,6 +165,9 @@ export async function PUT(request:Request,{params}:{params:Promise<{projectId:st
     if(Number(linked?.count))return Response.json({error:"실적·이슈·문서가 연결된 WBS는 삭제할 수 없습니다."},{status:409});
   }
 
+  const customerDocuments=await customerDocumentLinks(context.companyId,projectId);
+  if(customerDocuments.some(doc=>doc.taskId&&removedTaskIds.includes(doc.taskId)))return Response.json({error:"고객 산출물이 연결된 WBS입니다. 문서의 연결 Task를 변경한 후 삭제하세요."},{status:409});
+  const customerDocumentIds=new Set(customerDocuments.map(doc=>doc.id));
   const existingDeliverables=await db.prepare("SELECT id,task_id AS taskId FROM deliverables WHERE project_id=?").bind(projectId).all();
   const existingDeliverableIds=new Set((existingDeliverables.results as any[]).map(item=>item.id as string));
   const incomingDeliverableIds=new Set(tasks.flatMap(task=>(hasChild[tasks.indexOf(task)]?[]:task.deliverables??[]).map(item=>item.id).filter(Boolean) as string[]));
@@ -172,7 +176,7 @@ export async function PUT(request:Request,{params}:{params:Promise<{projectId:st
   const now=Math.floor(Date.now()/1000);
   const statements:any[]=[];
   for(const task of tasks.filter(task=>task.id))statements.push(db.prepare("UPDATE wbs_tasks SET wbs_code=? WHERE id=? AND project_id=?").bind(`__editing__${task.id}`,task.id,projectId));
-  for(const id of existingDeliverableIds)if(!incomingDeliverableIds.has(id))statements.push(db.prepare("DELETE FROM deliverables WHERE id=? AND project_id=?").bind(id,projectId));
+  for(const id of existingDeliverableIds)if(!incomingDeliverableIds.has(id)&&!customerDocumentIds.has(id))statements.push(db.prepare("DELETE FROM deliverables WHERE id=? AND project_id=?").bind(id,projectId));
   for(const id of removedTaskIds)statements.push(db.prepare("DELETE FROM wbs_tasks WHERE id=? AND project_id=?").bind(id,projectId));
 
   tasks.forEach((task,index)=>{

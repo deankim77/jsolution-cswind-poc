@@ -1,3 +1,4 @@
+import {assertCustomerDocumentDeletable,removeCustomerDocumentVersions} from './customer-document-link';
 import {and,eq,inArray,or,desc} from 'drizzle-orm';
 import {randomUUID} from 'node:crypto';
 import {getDb} from '../index';
@@ -27,12 +28,14 @@ export function createCustomerDataDeleteRepository(db=getDb()){
   if(confirmed.length||bom.length||supplied.length||latest?.document.sources.some(src=>ids.includes(src.id)))throw new CustomerDataError('반영을 취소한 후 삭제해 주세요.',409);
   const [job]=await tx.select().from(trrJobs).where(scope(trrJobs));
   if(job?.status==='running'&&job.updatedAt>Math.floor(Date.now()/1000)-600)throw new CustomerDataError('TRR 반영이 진행 중입니다. 완료 후 삭제하세요.',409);
+  await assertCustomerDocumentDeletable(tx,s,records);
   if(preview)return {files:[]};
   await tx.delete(productionAssignments).where(and(scope(productionAssignments),inArray(productionAssignments.recordId,ids)));
   await tx.delete(customerRawDataRelations).where(and(scope(customerRawDataRelations),or(inArray(customerRawDataRelations.sourceId,ids),inArray(customerRawDataRelations.targetId,ids))));
   await tx.delete(customerReviews).where(and(scope(customerReviews),inArray(customerReviews.recordId,ids)));
   await tx.delete(auditLogs).where(and(eq(auditLogs.companyId,s.companyId),eq(auditLogs.entityType,'CUSTOMER_RAW_DATA'),inArray(auditLogs.entityId,ids),eq(auditLogs.action,'CUSTOMER_REVIEW_DRAFT_SAVED')));
   await tx.delete(customerRawData).where(and(scope(customerRawData),inArray(customerRawData.id,ids)));
+  await removeCustomerDocumentVersions(tx,s,records);
   await tx.insert(auditLogs).values(records.map(r=>({id:randomUUID(),companyId:s.companyId,actorUserId:s.userId,action:'CUSTOMER_DATA_DELETED',entityType:'CUSTOMER_RAW_DATA',entityId:r.id,detail:JSON.stringify({projectId:s.projectId,fileName:r.fileName}),createdAt:Math.floor(Date.now()/1000)})));
   return {files:records.map(r=>r.fileKey)};
  })}};

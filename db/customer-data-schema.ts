@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
-import { projectsDb, users } from "./schema";
+import { deliverables, deliverableVersions, projectsDb, users } from "./schema";
 import type { CustomerDocumentType, CustomerImpactTarget, CustomerIntakeGroup, CustomerSourcePurpose } from "../lib/customer-data-contract";
 
 export const customerRawData = pgTable("customer_raw_data", {
@@ -8,6 +8,8 @@ export const customerRawData = pgTable("customer_raw_data", {
   companyId: text("company_id").notNull(),
   projectId: text("project_id").notNull().references(() => projectsDb.id, { onDelete: "restrict" }),
   receiptNumber: integer("receipt_number").notNull().default(sql`nextval('customer_raw_data_receipt_seq')`),
+  deliverableId: text("deliverable_id").notNull().references(() => deliverables.id, { onDelete: "restrict" }),
+  deliverableVersionId: text("deliverable_version_id").notNull().references(() => deliverableVersions.id, { onDelete: "restrict" }),
   rawDataId: text("raw_data_id").notNull(),
   revision: integer("revision").notNull(),
   intakeGroup:text("intake_group").$type<CustomerIntakeGroup>().notNull().default("unclassified"),
@@ -30,6 +32,7 @@ export const customerRawData = pgTable("customer_raw_data", {
 }, table => [
   check("customer_raw_data_intake_ck",sql`${table.intakeGroup} IN ('unclassified','a_bt','a_wt','a_im','a_common','b_initial','b_change','b_missing','b_parts','common')`),
   check("customer_raw_data_purpose_ck",sql`${table.sourcePurpose} IN ('bom','ttr','input','template','example','supplied')`),
+  uniqueIndex("customer_raw_data_document_version_uq").on(table.deliverableVersionId),
   uniqueIndex("customer_raw_data_receipt_uq").on(table.receiptNumber),
   uniqueIndex("customer_raw_data_revision_uq").on(table.projectId, table.rawDataId, table.revision),
   uniqueIndex("customer_raw_data_scope_uq").on(table.companyId, table.projectId, table.id),

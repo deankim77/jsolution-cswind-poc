@@ -13,7 +13,7 @@ const DocumentPreviewRenderer=lazy(()=>import("./document-preview-renderer"));
 
 type ModuleTask={id:string;wbsCode:string;kind:string;name:string};
 type LibraryMode="document"|"drawing";
-type DocumentFilters={review:string;required:string;source:string;category:string};
+type DocumentFilters={origin:string;review:string;required:string;source:string;category:string};
 type Deliverable=DocumentPreviewDeliverable&{
   projectCode?:string;
   projectName?:string;
@@ -50,7 +50,7 @@ type Props={
   refreshVersion?:number;
 };
 
-const emptyDocumentFilters:DocumentFilters={review:"",required:"",source:"",category:""};
+const emptyDocumentFilters:DocumentFilters={origin:"",review:"",required:"",source:"",category:""};
 const bytes=(value:number)=>value>=1024*1024?`${(value/1024/1024).toFixed(1)} MB`:value>=1024?`${Math.round(value/1024)} KB`:`${value||0} B`;
 const iconFor=(name:string)=>/\.(png|jpe?g|gif|webp|svg)$/i.test(name)?FileImage:/\.xlsx?$/i.test(name)?FileSpreadsheet:/\.(docx?|pdf|pptx?)$/i.test(name)?FileType2:FileText;
 const isDrawing=(item:Deliverable)=>item.documentKind==="drawing";
@@ -95,6 +95,7 @@ export default function DocumentLibraryWorkspace({project,projects,tasks,initial
     if(filters.review)params.set("review",filters.review);
     if(filters.required)params.set("required",filters.required);
     if(filters.source)params.set("source",filters.source);
+    if(filters.origin)params.set("origin",filters.origin);
     if(filters.category)params.set("category",filters.category);
     setLoading(true);
     setNotice("");
@@ -138,6 +139,7 @@ export default function DocumentLibraryWorkspace({project,projects,tasks,initial
       if(draftFilters.review)params.set("review",draftFilters.review);
       if(draftFilters.required)params.set("required",draftFilters.required);
       if(draftFilters.source)params.set("source",draftFilters.source);
+      if(draftFilters.origin)params.set("origin",draftFilters.origin);
       if(draftFilters.category)params.set("category",draftFilters.category);
       void fetch(`/api/deliverables?${params.toString()}`,{cache:"no-store",signal:controller.signal})
         .then(async response=>{const data=await response.json() as ListResponse;if(!response.ok)throw new Error(data.error||"필터 결과를 불러오지 못했습니다.");return data})
@@ -156,6 +158,7 @@ export default function DocumentLibraryWorkspace({project,projects,tasks,initial
             onReset:()=>setDraftFilters({...emptyDocumentFilters}),
             content:<>
               <FilterSection title="상태"><FilterChipGroup options={[{value:"all",label:"전체"},{value:"pending",label:"미승인"},{value:"approved",label:"승인"},{value:"rejected",label:"반려"}]} selected={[draftFilters.review||"all"]} onToggle={value=>setDraftFilters(current=>({...current,review:value==="all"?"":value}))}/></FilterSection>
+              <FilterSection title="산출물 구분"><FilterChipGroup options={[{value:"all",label:"전체"},{value:"customer",label:"고객 산출물"},{value:"internal",label:"내부 산출물"}]} selected={[draftFilters.origin||"all"]} onToggle={value=>setDraftFilters(current=>({...current,origin:value==="all"?"":value}))}/></FilterSection>
               <FilterSection title="생성 구분"><FilterChipGroup options={[{value:"all",label:"전체"},{value:"planned",label:"계획 산출물"},{value:"ad_hoc",label:"추가 산출물"},{value:"ai",label:"AI 문서"}]} selected={[draftFilters.source||"all"]} onToggle={value=>setDraftFilters(current=>({...current,source:value==="all"?"":value}))}/></FilterSection>
               <FilterSection title="필수 여부"><FilterChipGroup options={[{value:"all",label:"전체"},{value:"required",label:"필수"},{value:"optional",label:"선택"}]} selected={[draftFilters.required||"all"]} onToggle={value=>setDraftFilters(current=>({...current,required:value==="all"?"":value}))}/></FilterSection>
               <FilterSelect label="문서 카테고리" value={draftFilters.category} allLabel="전체 카테고리" options={categories.map(value=>({value,label:value}))} onChange={value=>setDraftFilters(current=>({...current,category:value}))}/>

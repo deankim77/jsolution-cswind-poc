@@ -8,7 +8,7 @@ import "./project-plm-tabs-bridge.css";
 
 type Project={id:string;code:string;name:string};
 type Task={id:string;wbsCode:string;name:string;kind:string;roleCode?:string;deliverables?:Array<{name:string}>};
-type Deliverable={id:string;taskId?:string;name:string;type?:string;required?:number|boolean;status:string;source?:string;revisionCount?:number;documentKind?:string;drawingCode?:string;drawingType?:string;internalDrawingNumber?:string;version?:string};
+type Deliverable={origin?:"customer"|"internal";id:string;taskId?:string;name:string;type?:string;required?:number|boolean;status:string;source?:string;revisionCount?:number;documentKind?:string;drawingCode?:string;drawingType?:string;internalDrawingNumber?:string;version?:string};
 type Version={deliverableId:string;fileName:string;revision:number};
 type BomRow={parentPartId:string;parentNumber:string;parentName:string;childPartId:string;childNumber:string;childName:string;quantity:number;unit:string;note?:string};
 type Part={id:string;partNumber:string;name:string;partType:string;revision:string;status:string;rollupCost?:number};
@@ -70,7 +70,7 @@ export default function ProjectPlmTabsBridge({productionProject=false}:{producti
   },[project?.id,active]);
 
   const taskMap=useMemo(()=>new Map(tasks.map(task=>[task.id,task])),[tasks]);
-  const documentRows=useMemo(()=>deliverables.filter(item=>item.documentKind!=="drawing"),[deliverables]);
+  const documentRows=useMemo(()=>deliverables.filter(item=>item.documentKind!=="drawing"&&(!productionProject||item.origin!=="customer")),[deliverables,productionProject]);
   const drawingRows=useMemo(()=>deliverables.filter(item=>item.documentKind==="drawing"),[deliverables]);
   const projectBom=useMemo(()=>bom.filter(row=>String(row.note||"").includes(project?.name||"__no_project__")),[bom,project?.name]);
   const bomGroups=useMemo(()=>{
