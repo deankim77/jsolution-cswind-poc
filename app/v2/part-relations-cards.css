@@ -1,0 +1,6 @@
+.wv2-part-relation-tab>section.part-relation-details{align-items:flex-start}
+.part-relation-details>div{flex:1;min-width:0}
+.part-relation-details a,.part-relation-details article{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.part-relation-details a:hover{text-decoration:underline}
+.part-relation-details strong{font-size:var(--v2-font-size-body);color:var(--teal-dark)}
+.part-relation-details small{font-size:var(--v2-font-size-caption);color:var(--muted)}
