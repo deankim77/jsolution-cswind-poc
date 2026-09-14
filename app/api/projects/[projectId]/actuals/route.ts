@@ -118,7 +118,7 @@ export async function POST(request:Request,{params}:{params:Promise<{projectId:s
     await recalculateGroupProgress(db,projectId);
     return Response.json({ok:true,status:nextStatus,progress:nextProgress,warnings,message:approved?"Task 완료를 승인했습니다.":"보완 요청으로 Task를 진행 중 상태로 전환했습니다."});
   }
-  if(task.assigneeUserId!==context.userId)return Response.json({error:"담당자 본인만 Task 실적을 등록할 수 있습니다."},{status:403});
+  if(task.assigneeUserId!==context.userId&&access.projectRole!=="PM")return Response.json({error:"담당자 본인 또는 프로젝트 PM만 Task 실적을 등록할 수 있습니다."},{status:403});
   const rawProgress=Math.max(0,Math.min(100,Number(input.progress)||0));const gateTask=task.taskType==="gate";const completed=Boolean(input.completed)||rawProgress>=100;const nextProgress=completed?100:rawProgress;const nextStatus=completed?"completed":nextProgress>0?"active":task.status==="planned"?"active":task.status;
   if(completed){
     if(!input.completionConfirmed)return Response.json({error:"완료 조건을 확인한 뒤 Task 완료를 저장해 주세요."},{status:400});
