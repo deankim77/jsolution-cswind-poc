@@ -155,3 +155,10 @@ test('supplied BOM review shows exactly the source items, retaining unmatched it
  const rows=suppliedBomRows(facts,[row,{...row,id:'bom2'},{...row,id:'unrelated',partId:'other',bom:{...row.bom,customerItemNumber:'OTHER'}}],[]);
  assert.equal(rows.length,4);assert.equal(rows[0].bom.quantity,7);assert.equal(rows[0].bom.itemDescription,'Existing name');assert.equal(rows[1].partId,undefined);assert.equal(rows[1].bom.customerItemNumber,'C2');assert.equal(rows[1].bom.quantity,null);
 });
+
+test('supplied missing data excludes optional fields and normal extraction comments',()=>{
+ const complete={id:'1',itemNumber:'C1',description:'Bolt',quantity:0};
+ assert.deepEqual(contract.suppliedMissingData([complete]),[]);
+ assert.deepEqual(contract.suppliedMissingData([{...complete,itemNumber:'',description:'',quantity:null}]).map(x=>x.field),['고객품번','품명','사급수량']);
+ assert.equal(contract.suppliedAnalysisSummary([complete]),'사급품 1건을 추출했습니다.');
+});

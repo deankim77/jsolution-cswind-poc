@@ -32,3 +32,16 @@ export function validateSuppliedFacts(value:unknown):SuppliedFact[]{
  }
  return value;
 }
+
+/** Only missing required source values are missing data, not extraction commentary. */
+export function suppliedMissingData(facts:SuppliedFact[]):{field:string;reason:string}[]{
+ const result:{field:string;reason:string}[]=[];
+ for(const [index,fact] of facts.entries()){
+  const row=fact.itemNumber.trim()||`${index+1}행`;
+  if(!fact.itemNumber.trim())result.push({field:'고객품번',reason:`${index+1}행의 고객품번이 없습니다.`});
+  if(!fact.description.trim())result.push({field:'품명',reason:`${row}의 품명이 없습니다.`});
+  if(fact.quantity===null)result.push({field:'사급수량',reason:`${row}의 사급수량을 확인할 수 없습니다.`});
+ }
+ return result;
+}
+export function suppliedAnalysisSummary(facts:SuppliedFact[]):string{return `사급품 ${facts.length}건을 추출했습니다.`;}
