@@ -30,7 +30,7 @@ type D1 = {
 type R2Object = { body: ReadableStream };
 type R2Bucket = { get: (key: string) => Promise<R2Object | null> };
 
-type ContextItem = { id?: string; kind?: string; title?: string; meta?: string };
+type ContextItem = { projectId?: string; id?: string; kind?: string; title?: string; meta?: string };
 type ChatInput = {
   trrReview?:{projectId:string;versionIds:string[]};
   customerReview?:{projectId:string;recordId:string;historyIds?:string[]};
@@ -260,9 +260,14 @@ export async function POST(request: Request) {
   const conversationId = input.conversationId || crypto.randomUUID();
   const existingConversation = await db.prepare("SELECT id,context_items FROM ai_conversations WHERE id=? AND company_id=? AND user_id=?").bind(conversationId, context.companyId, context.userId).first();
   let trrRequest=input.trrReview;
-  if(!trrRequest&&!input.customerReview&&existingConversation){
-    let saved: any[]=[];try{saved=JSON.parse(String(existingConversation.context_items||'[]'));}catch{}
-    if(Array.isArray(saved)&&saved.length>=2&&saved.every(item=>item.kind==='TRR 버전'&&typeof item.projectId==='string'&&item.projectId===saved[0].projectId))trrRequest={projectId:saved[0].projectId,versionIds:saved.map(item=>item.id)};
+  if(!trrRequest&&!input.customerReview){
+    let candidates:ContextItem[]=input.contextItems??[];
+    if(input.contextItems===undefined&&existingConversation){try{const saved=JSON.parse(String(existingConversation.context_items||'[]'));if(Array.isArray(saved))candidates=saved;}catch{}}
+    if(candidates.some(item=>item.kind==='TRR 버전')){
+      const projectId=candidates[0]?.projectId;
+      if(!projectId||!candidates.every(item=>item.kind==='TRR 버전'&&item.projectId===projectId&&typeof item.id==='string'))return Response.json({error:'TRR 비교는 같은 프로젝트의 TRR 버전만 선택해 주세요.'},{status:400});
+      trrRequest={projectId,versionIds:candidates.map(item=>item.id!)};
+    }
   }
   if(trrRequest){try{trrChat=await createTrrService().comparison(await customerDataScope(request,trrRequest.projectId),trrRequest.versionIds);}catch(e){return customerDataError(e);}}
   const contextItems = trrChat?.items || input.contextItems || [];
