@@ -44,8 +44,7 @@
 /* Portfolio dashboard customer Gate matrix: match the card system used above */
 .wv2-gate-customer-matrix{overflow:hidden;border:1px solid var(--line);border-radius:var(--v2-radius-md);background:#fff}
 .wv2-gate-customer-matrix>header{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}
-.wv2-gate-customer-matrix>header>b{font-size:0}
-.wv2-gate-customer-matrix>header>b::after{content:"거래처 별 프로젝트 Gate 현황";font-size:var(--v2-font-size-section-title);font-weight:900;color:var(--ink)}
+.wv2-gate-customer-matrix>header>b{font-size:var(--v2-font-size-panel-title);font-weight:var(--v2-font-weight-bold);color:var(--v2-color-ink)}
 .wv2-gate-customer-matrix>header>span{color:var(--muted);font-size:var(--v2-font-size-caption)}
 .wv2-gate-customer-matrix>.wv2-gate-matrix-table{margin:10px 12px 12px;width:calc(100% - 24px)}
 
@@ -71,3 +70,12 @@
 
 .wv2-project-dashboard .wv2-dashboard-title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 20px}
 .wv2-project-dashboard .wv2-dashboard-title-row p{margin:0}
+
+/* Global dashboard headings follow the existing project progress card title. */
+.wv2-portfolio-dashboard>.summary>button>span:first-child,
+.wv2-portfolio-dashboard>.wv2-gate-portfolio>section>header>b,
+.wv2-portfolio-dashboard>.charts>section>header>b,
+.wv2-portfolio-dashboard>.wv2-gate-customer-matrix>header>b{
+ font-size:var(--v2-font-size-panel-title);font-weight:var(--v2-font-weight-bold);color:var(--v2-color-ink)
+}
+.wv2-portfolio-dashboard .wv2-ai-metrics-panel .production-table>thead>tr>th{font-size:var(--v2-font-size-body)}
