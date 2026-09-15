@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {ColumnValueFilter} from './table-view-controls';
 import PbomTable,{type ColumnKey} from './pbom-table';
+import {PbomExcelDownload} from './pbom-excel-download';
 import type {ProjectPbom} from '../../lib/pbom-contract';
 import './production-workspace.css';
 import {PencilLine,Save,Undo2,X} from 'lucide-react';
@@ -66,6 +67,7 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  <header className="production-bulk-heading"><h2 id="production-bulk-title">{area==='pbom'?'PBOM':'AI 추출사항'} 전체수정</h2><span>{projectName}</span></header>
  <div className="production-bulk-toolbar">
  <div className="production-bulk-view-controls pbom-toolbar-slot" ref={setToolbar}>{area==='extract'&&<ReviewTargetFilter targets={targets} filter={targetFilter} onChange={setTargetFilter}/>}</div>
+ {area==='pbom'&&<PbomExcelDownload projectId={projectId} disabled={editing||busy||!pbom?.rows.length}/>}
  <span className="production-bulk-status" role="status">{area==='pbom'?pbom?.rows.length??0:rows.length}개 행 · 변경 {changed}개{busy?' · 처리 중…':editing?' · 편집 중':state?.lock?' · 다른 사용자 편집 중':' · 조회'}</span>
  <button type="button" className={!editing?"production-bulk-primary":undefined} title="편집 모드로 전환하고 다른 사용자의 동시 수정을 잠급니다." disabled={busy||!state?.canEdit||Boolean(state?.lock)||!editorRows.length} onClick={()=>void run(async()=>{await request('checkout');await reload();setNotice('');})}><PencilLine size={18}/>편집 모드(체크아웃)</button>
  <button type="button" className={editing?"production-bulk-primary":undefined} title="변경 내용을 저장하고 편집을 완료합니다." disabled={busy||!editing} onClick={()=>void run(async()=>{const edited=rows.map(row=>columns.reduce<BulkRow>((next,[key])=>cells[row.id]?.[key]===baseline.current[row.id]?.[key]?next:updateBulkCell(next,area,key,cells[row.id]?.[key]??''),row));const result=await request('checkin',{rows:edited});setState(s=>s?{...s,lock:null}:s);onSaved();await reload();setNotice(`${result.changed}개 행 저장 완료`);})}><Save size={18}/>편집 완료(체크인)</button>

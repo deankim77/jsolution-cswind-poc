@@ -10,33 +10,8 @@ import {DRAWING_AVAILABILITY_LABELS,bomSectionName,collapsedBomIdsAtDepth,type B
 const show=(n:number|null)=>n===null?'미확인':Number(n.toFixed(6)).toLocaleString();
 const labels={NEW:'NEW · 신규',EXISTING:'기존 부품',NEED_REVIEW:'확인 필요',MANUAL:'내부 추가'};
 const reviewLabels={NEW:'신규 부품',EXISTING:'기존 부품',NEED_REVIEW:'확인 필요',MANUAL:'내부 추가'};
-const columns=[
- {key:'part',label:'품번',locked:true},
- {key:'status',label:'구분 / 변경'},
- {key:'procurement',label:'조달 구분'},
- {key:'section',label:'SECTION'},
- {key:'level',label:'LEVEL'},
- {key:'description',label:'Item Description'},
- {key:'position',label:'POS'},
- {key:'item',label:'Item No.'},
- {key:'drawing',label:'Drawing No.'},
- {key:'revision',label:'CompRev'},
- {key:'quantity',label:'Qty Per Unit'},
- {key:'unit',label:'수량 단위',locked:true},
- {key:'total',label:'Total Qty / Section'},
- {key:'weight',label:'Weight'},
- {key:'weightSource',label:'Weight Source / Calculation Basis'},
- {key:'availability',label:'Drawing Availability'},
- {key:'source',label:'출처 자료'},
- {key:'reviewDescription',label:'Item Description 검토'},
- {key:'reviewTotal',label:'Total Qty / Section 검토'},
- {key:'reviewDrawing',label:'Drawing No. 검토'},
- {key:'reviewPosition',label:'POS 검토'},
- {key:'reviewRevision',label:'CompRev 검토'},
- {key:'remark',label:'Remark'},
- {key:'customerReply',label:'고객 회신'},
-] as const;
-export type ColumnKey=typeof columns[number]['key'];
+import {pbomColumns as columns,type ColumnKey} from '../../lib/pbom-columns';
+export type {ColumnKey} from '../../lib/pbom-columns';
 const reviewStatusKeys:readonly ColumnKey[]=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision'];
 const reviewResultKeys:readonly ColumnKey[]=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision','remark','customerReply'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);

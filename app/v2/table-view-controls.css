@@ -35,3 +35,5 @@
 .table-column-popover-compact>.table-column-group-title{padding:5px 6px;font-size:var(--v2-font-size-caption);color:var(--v2-color-primary-dark)}
 .table-column-popover-compact>label+.table-column-group-title{border-top:1px solid var(--v2-border-color);margin-top:4px}
 .table-column-popover-compact>button{padding:4px 6px}
+
+.pbom-excel-download{text-decoration:none;flex-shrink:0}
