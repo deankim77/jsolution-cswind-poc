@@ -12,5 +12,5 @@
 
 .wv2-portfolio-dashboard .wv2-ai-metrics-panel>.cswind-data-table{margin-top:12px}
 
-.wv2-portfolio-dashboard>.wv2-ai-metrics-panel{background:transparent}
-.wv2-portfolio-dashboard>.wv2-ai-metrics-panel>header{background:var(--v2-surface-content)}
+.wv2-portfolio-dashboard>.wv2-ai-metrics-panel{background:transparent;border:0;border-radius:0;box-shadow:none}
+.wv2-portfolio-dashboard>.wv2-ai-metrics-panel>header{background:var(--v2-surface-content);border:1px solid var(--v2-border-color);border-radius:var(--v2-radius-md)}
