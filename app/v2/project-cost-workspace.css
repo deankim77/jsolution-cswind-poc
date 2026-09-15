@@ -34,3 +34,9 @@
 
 .pcw-cost-category-label{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .pcw-cost-category-label svg{flex-shrink:0}
+
+.pcw-bom-table>.tr[hidden]{display:none}
+.pcw-bom-table>.th,.pcw-bom-table>.tr{grid-template-columns:220px 180px 185px 72px 62px 120px 130px 130px 125px 125px 145px}
+.pcw-bom-table .pcw-part-tree{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;color:var(--teal-dark)}
+.pcw-part-tree>b{overflow:hidden;text-overflow:ellipsis}
+.pcw-part-tree>svg{flex-shrink:0}
