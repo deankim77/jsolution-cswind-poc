@@ -25,3 +25,8 @@
 .pcw-entries>header span{font-size:var(--v2-font-size-card-title);color:var(--ink);font-weight:var(--v2-font-weight-bold)}
 
 .pcw-budget-registration .rows>.th,.pcw-budget-registration .rows>.tr{grid-template-columns:120px minmax(300px,1fr) 180px}
+
+.pcw-entries>header.pcw-entry-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px}
+.pcw-entry-totals{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+.pcw-entry-total{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.pcw-entry-total svg{flex-shrink:0}
