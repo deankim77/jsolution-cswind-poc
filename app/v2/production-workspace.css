@@ -61,6 +61,13 @@
 .customer-document-list tr { cursor: pointer; }
 .customer-document-list tr.selected, .customer-document-list tbody tr:hover { background: var(--v2-surface-subtle); }
 .review-panel-body .review-draft { border: 0; overflow: visible; }
+/* The review chat fills the panel; only its message thread scrolls. */
+.wv2-review-panel > .review-panel-body:has(.common-ai-chat-panel) { display: flex; overflow: hidden; }
+.review-panel-body > .review-draft:has(> .common-ai-chat-panel) { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.review-panel-body .review-draft:has(> .common-ai-chat-panel) > .review-decision { flex-shrink: 0; }
+.review-panel-body .review-draft > .common-ai-chat-panel { flex: 1; min-height: 0; height: auto; overflow: hidden; }
+.review-panel-body .common-ai-chat-panel > * { flex-shrink: 0; }
+.review-panel-body .common-ai-chat-panel > .common-ai-chat-thread { flex: 1; min-height: 0; max-height: none; }
 .review-panel-body .review-confirm-actions { position: sticky; top: 0; background: var(--v2-surface-content); z-index: 1; }
 
 .pbom-table-scroll { max-width: 100%; overflow: auto; }
