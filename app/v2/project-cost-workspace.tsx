@@ -27,7 +27,7 @@ const money=(value:number)=>new Intl.NumberFormat("ko-KR",{maximumFractionDigits
 const pct=(value:number,total:number)=>total?Math.round(value/total*1000)/10:0;
 const newEntry=()=>({taskId:"",categoryCode:"",amount:0,occurredOn:new Date().toISOString().slice(0,10),vendor:"",note:""});
 const SUMMARY_ROWS=[
-  {key:"MATERIAL_BOM",label:"원재료비",description:"BOM 기준 재료비",group:"MATERIAL" as GroupCode,auto:true},
+  {key:"SUMMARY_MATERIAL_BOM",label:"원재료비",description:"BOM 기준 재료비",group:"MATERIAL" as GroupCode,auto:true},
   {key:"SUMMARY_MATERIAL_OTHER",label:"기타 재료비",description:"시제품, 기타 재료비성 지출",group:"MATERIAL" as GroupCode},
   {key:"SUMMARY_EXPENSE",label:"경비",description:"출장, 운송, 시험, 인증, 소모품 등 경비성 지출",group:"EXPENSE" as GroupCode},
   {key:"SUMMARY_OUTSOURCE",label:"외주비",description:"외주설계, 외주가공, 외주 설치·시공, 기술용역비 등 지출",group:"OUTSOURCE" as GroupCode},
@@ -57,7 +57,7 @@ export function ProjectCostWorkspace(){
   const actualByGroup=useMemo(()=>{const map=new Map<GroupCode,number>();for(const group of data.groups)map.set(group.code,manualCategories.filter(c=>c.groupCode===group.code).reduce((sum,c)=>sum+(actualByCategory.get(c.code)||0),0));return map},[data.groups,manualCategories,actualByCategory]);
   const bomTarget=rootCosts.reduce((sum,root)=>sum+root.targetMaterial,0),bomActual=rootCosts.reduce((sum,root)=>sum+root.actualMaterial,0);
   const costUnits=rootCosts.flatMap(root=>root.rows.filter(row=>!row.hasChildren||row.costMode==="DIRECT")),coveredUnits=costUnits.filter(row=>row.actualCost>0).length,bomCoverage=costUnits.length?Math.round(coveredUnits/costUnits.length*100):0;
-  const summaryRows=SUMMARY_ROWS.map(row=>{const budget=row.auto?bomTarget:(budgets.get(row.key)||0);const actual=row.auto?(bomCoverage>0?bomActual:0):(actualByGroup.get(row.group)||0);return {...row,budget,actual}});
+  const summaryRows=SUMMARY_ROWS.map(row=>{const budget=budgets.get(row.key)??(row.auto?bomTarget:0);const actual=row.auto?(bomCoverage>0?bomActual:0):(actualByGroup.get(row.group)||0);return {...row,budget,actual}});
 
   const post=async(body:any)=>{const response=await fetch("/api/project-costs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const result=await response.json();if(!response.ok)throw new Error(result.error||"저장하지 못했습니다.");return result};
   const rootPost=async(body:any)=>{const response=await fetch("/api/project-costs/bom-roots",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({projectId,...body})});const result=await response.json();if(!response.ok)throw new Error(result.error||"프로젝트 BOM을 저장하지 못했습니다.");return result};
@@ -94,7 +94,7 @@ function SummaryView({rows,onSaveBudget}:{rows:Array<(typeof SUMMARY_ROWS)[numbe
       <div className="th"><span>구분</span><span>비용항목</span><span>예산</span>{!editing&&<><span>집행실적</span><span>잔여</span><span>집행률</span></>}</div>
       {rows.map(row=><div className="tr" key={row.key}>
         <b>{row.label}</b><span>{row.description}</span>
-        <span>{onSaveBudget&&!row.auto?<BudgetEditor initial={row.budget} onSave={value=>onSaveBudget(row.key,value)}/>:<strong>₩ {money(row.budget)}</strong>}</span>
+        <span>{onSaveBudget?<BudgetEditor initial={row.budget} onSave={value=>onSaveBudget(row.key,value)}/>:<strong>₩ {money(row.budget)}</strong>}</span>
         {!editing&&<><span>₩ {money(row.actual)}</span><span>₩ {money(row.budget-row.actual)}</span><span>{pct(row.actual,row.budget)}%</span></>}
       </div>)}
       <div className="tr total"><b>합계</b><span>총 프로젝트 원가</span><strong>₩ {money(totalBudget)}</strong>{!editing&&<><strong>₩ {money(totalActual)}</strong><strong>₩ {money(totalBudget-totalActual)}</strong><strong>{pct(totalActual,totalBudget)}%</strong></>}</div>
