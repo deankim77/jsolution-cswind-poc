@@ -23,3 +23,5 @@
 
 .pcw-entries{align-content:start;grid-template-rows:max-content max-content}
 .pcw-entries>header span{font-size:var(--v2-font-size-card-title);color:var(--ink);font-weight:var(--v2-font-weight-bold)}
+
+.pcw-budget-registration .rows>.th,.pcw-budget-registration .rows>.tr{grid-template-columns:120px minmax(300px,1fr) 180px}
