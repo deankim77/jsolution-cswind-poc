@@ -37,6 +37,7 @@ const columns=[
  {key:'customerReply',label:'고객 회신'},
 ] as const;
 export type ColumnKey=typeof columns[number]['key'];
+const reviewStatusKeys:readonly ColumnKey[]=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision'];
 const reviewResultKeys:readonly ColumnKey[]=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision','remark','customerReply'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
 const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
@@ -54,9 +55,9 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
  const options=columns.map(column=>({...column,group:reviewResultKeys.includes(column.key)?'검토 결과':'BOM 정보',label:review&&column.key==='status'?'품목 구분':column.label}));
  const shown=supplied?suppliedKeys.map(key=>({...options.find(c=>c.key===key)!,label:key==='part'?'내부품번':key==='quantity'?'BOM 수량':key==='description'?'품명':key==='unit'?'단위':options.find(c=>c.key===key)!.label})):options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
- const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source'];
+ const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source',...reviewStatusKeys];
  const nodeText=(node:ReactNode):string=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(nodeText).join(' '):isValidElement<{children?:ReactNode}>(node)?nodeText(node.props.children):'';
- const filterValue=(row:BomRow,key:ColumnKey):string=>key==='procurement'?(row.procurement==='supplied'?'사급':row.procurement==='own'?'자체 조달':'미확인'):key==='part'?row.internalPartNumber??'':key==='status'?labels[row.match??'NEED_REVIEW']:key==='section'?bomSectionName(row,rows):key==='description'?row.bom.itemDescription:key==='source'?(renderSource?nodeText(renderSource(row.sourceRecordIds??[row.recordId])):(row.sourceRecordIds??[row.recordId]).join(', ')):key==='item'?row.bom.customerItemNumber:key==='drawing'?row.bom.drawingNumber:key==='revision'?row.bom.componentRevision:key==='unit'?row.bom.unit:key==='availability'?DRAWING_AVAILABILITY_LABELS[row.bom.drawingAvailability]:'';
+ const filterValue=(row:BomRow,key:ColumnKey):string=>reviewStatusKeys.includes(key)?(row.confirmationId?'OK':'미확정'):key==='procurement'?(row.procurement==='supplied'?'사급':row.procurement==='own'?'자체 조달':'미확인'):key==='part'?row.internalPartNumber??'':key==='status'?labels[row.match??'NEED_REVIEW']:key==='section'?bomSectionName(row,rows):key==='description'?row.bom.itemDescription:key==='source'?(renderSource?nodeText(renderSource(row.sourceRecordIds??[row.recordId])):(row.sourceRecordIds??[row.recordId]).join(', ')):key==='item'?row.bom.customerItemNumber:key==='drawing'?row.bom.drawingNumber:key==='revision'?row.bom.componentRevision:key==='unit'?row.bom.unit:key==='availability'?DRAWING_AVAILABILITY_LABELS[row.bom.drawingAvailability]:'';
  const filtering=shown.some(c=>Boolean(columnFilters[c.key]));
  const matching=rows.filter(row=>shown.every(c=>!columnFilters[c.key]||JSON.stringify(filterValue(row,c.key).trim())===columnFilters[c.key]));
  const included=new Set(matching.map(row=>row.id));
@@ -111,7 +112,7 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
   <div className="pbom-table-scroll cswind-data-table"><table className={`production-table pbom-tree-table${supplied?" pbom-supplied-review":""}`} style={compact?{tableLayout:"fixed",width:shown.reduce((sum,c)=>sum+compactWidths[c.key],0),minWidth:0}:undefined}>
    {supplied&&<colgroup>{[16,22,30,12,8,12].map((width,index)=><col key={index} style={{width:`${width}%`}}/>)}</colgroup>}
    {compact&&<colgroup>{shown.map(c=><col key={c.key} style={{width:compactWidths[c.key]}}/>)}</colgroup>}
-   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{!supplied&&filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}{extraColumn&&<th>{extraColumn.label}</th>}</tr></thead>
+   <thead><tr>{shown.map(c=><th key={c.key}>{c.label}{!supplied&&filterKeys.includes(c.key)&&<ColumnValueFilter label={c.label} values={reviewStatusKeys.includes(c.key)?['OK','미확정']:rows.map(row=>filterValue(row,c.key))} value={columnFilters[c.key]??''} onChange={value=>setColumnFilters(current=>({...current,[c.key]:value}))}/>}</th>)}{editable&&<th>검토</th>}{extraColumn&&<th>{extraColumn.label}</th>}</tr></thead>
    <tbody>
     {root&&!review&&<tr>{shown.map(c=><td key={c.key}>{rootCell(c.key)}</td>)}{editable&&<td/>}{extraColumn&&<td>—</td>}</tr>}
     {displayed.map(row=>{const children=rows.some(r=>r.bom.parentId===row.id);return <tr key={row.id}>
