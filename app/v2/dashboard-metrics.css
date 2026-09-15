@@ -11,3 +11,6 @@
 .wv2-dashboard-metrics>button>span:first-child,.wv2-dashboard-metrics>article>span:first-child,.wv2-project-gate-panel>header>div>.wv2-dashboard-card-title{font-size:var(--v2-font-size-panel-title);font-weight:var(--v2-font-weight-bold);color:var(--v2-color-ink)}
 
 .wv2-portfolio-dashboard .wv2-ai-metrics-panel>.cswind-data-table{margin-top:12px}
+
+.wv2-portfolio-dashboard>.wv2-ai-metrics-panel{background:transparent}
+.wv2-portfolio-dashboard>.wv2-ai-metrics-panel>header{background:var(--v2-surface-content)}
