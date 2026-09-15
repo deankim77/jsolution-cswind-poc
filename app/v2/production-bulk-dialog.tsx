@@ -59,9 +59,9 @@ export default function ProductionBulkDialog({projectId,projectName,area,onClose
  if(r<0||c<0)return null;
  const common={value:cells[row.id]?.[key]??'',readOnly:!editing||busy,'aria-label':`${r+1}행 ${label}`,onChange:(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>put(row.id,key,e.target.value),onKeyDown:(e:React.KeyboardEvent<HTMLInputElement|HTMLTextAreaElement>)=>keyDown(e,r,c),onPaste:(e:React.ClipboardEvent)=>paste(e,r,c),onFocus:(e:React.FocusEvent<HTMLInputElement|HTMLTextAreaElement>)=>e.currentTarget.select(),className:cells[row.id]?.[key]!==baseline.current[row.id]?.[key]?'production-bulk-changed':undefined};
  const ref=(el:HTMLInputElement|HTMLTextAreaElement|null)=>{if(el)inputs.current.set(`${r}:${c}`,el);else inputs.current.delete(`${r}:${c}`)};
- return (key==='detail'||key==='useTargets')?<textarea {...common} rows={1} ref={ref}/>:<input {...common} ref={ref}/>;
+ return (key==='detail'||key==='useTargets'||key==='remark'||key==='customerReply')?<textarea {...common} rows={1} ref={ref}/>:<input {...common} ref={ref}/>;
  };
- const fields:Partial<Record<ColumnKey,string>>={description:'itemDescription',position:'position',item:'customerItemNumber',drawing:'drawingNumber',revision:'componentRevision',quantity:'quantity',unit:'unit',weight:'weight'};
+ const fields:Partial<Record<ColumnKey,string>>={description:'itemDescription',position:'position',item:'customerItemNumber',drawing:'drawingNumber',revision:'componentRevision',quantity:'quantity',unit:'unit',weight:'weight',remark:'remark',customerReply:'customerReply'};
  return <main className="production-bulk-window" aria-labelledby="production-bulk-title">
  <header className="production-bulk-heading"><h2 id="production-bulk-title">{area==='pbom'?'PBOM':'AI 추출사항'} 전체수정</h2><span>{projectName}</span></header>
  <div className="production-bulk-toolbar">

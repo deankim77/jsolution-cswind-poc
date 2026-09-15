@@ -22,6 +22,7 @@ export default function PbomEditDialog({row,rows,onSave,onClose}:{row:BomRow;row
  <label><span>직접 표기 중량</span><input type="number" min="0" step="any" value={form.weight??''} onChange={e=>change('weight',e.target.value===''?null:Number(e.target.value))}/></label>
  <label><span>중량 근거</span><select value={form.weightSource} onChange={e=>change('weightSource',e.target.value as BomFact['weightSource'])}>{WEIGHT_SOURCES.map(v=><option key={v}>{v}</option>)}</select></label>
  <label><span>도면 확보 상태</span><select value={form.drawingAvailability} onChange={e=>change('drawingAvailability',e.target.value as BomFact['drawingAvailability'])}>{DRAWING_AVAILABILITY.map(v=><option key={v} value={v}>{DRAWING_AVAILABILITY_LABELS[v]}</option>)}</select></label>
+ {(['remark','customerReply'] as const).map(key=><label key={key}><span>{key==='remark'?'Remark':'고객 회신'}</span><textarea rows={2} maxLength={4000} value={form[key]??''} onChange={e=>change(key,e.target.value)}/></label>)}
  <label className="pbom-edit-complete"><input type="checkbox" checked={form.childrenComplete} onChange={e=>change('childrenComplete',e.target.checked)}/>하위 부품 목록 전체 확인</label>
  </fieldset>
  {error&&<p role="alert" className="wv2-form-error">{error}</p>}

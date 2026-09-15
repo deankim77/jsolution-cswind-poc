@@ -1,10 +1,12 @@
 "use client";
-import {useId,useRef,useEffect} from "react";
+import {Fragment,useId,useRef,useEffect,useState} from "react";
 import {Columns3,ChevronsUp,ChevronsDown} from "lucide-react";
 import "./table-view-controls.css";
 
-export function ColumnVisibilityMenu<K extends string>({options,visible,onChange,onReset,open,onOpenChange,disabled=false}:{disabled?:boolean;options:ReadonlyArray<{key:K;label:string;locked?:boolean}>;visible:ReadonlySet<K>;onChange:(next:Set<K>)=>void;onReset:()=>void;open:boolean;onOpenChange:(open:boolean)=>void}){
+export function ColumnVisibilityMenu<K extends string>({options,visible,onChange,onReset,open,onOpenChange,disabled=false,compact=false}:{compact?:boolean;disabled?:boolean;options:ReadonlyArray<{key:K;label:string;locked?:boolean;group?:string}>;visible:ReadonlySet<K>;onChange:(next:Set<K>)=>void;onReset:()=>void;open:boolean;onOpenChange:(open:boolean)=>void}){
  const id=useId(),menuRef=useRef<HTMLDivElement>(null);
+ const [availableHeight,setAvailableHeight]=useState(720);
+ useEffect(()=>{if(!open||!compact)return;const measure=()=>setAvailableHeight(Math.max(120,window.innerHeight-(menuRef.current?.getBoundingClientRect().bottom??0)-16));measure();window.addEventListener("resize",measure);return()=>window.removeEventListener("resize",measure)},[open,compact]);
  useEffect(()=>{
   if(!open)return;
   const closeOutside=(event:PointerEvent)=>{if(event.target instanceof Node&&!menuRef.current?.contains(event.target))onOpenChange(false);};
@@ -13,8 +15,8 @@ export function ColumnVisibilityMenu<K extends string>({options,visible,onChange
  },[open,onOpenChange]);
  return <div ref={menuRef} className="wv2-toolbar-menu table-column-menu" onKeyDown={event=>{if(event.key==="Escape"){onOpenChange(false);event.stopPropagation();}}} onBlur={event=>{if(event.relatedTarget&&!event.currentTarget.contains(event.relatedTarget))onOpenChange(false);}}>
   <button type="button" className="table-view-action" disabled={disabled} aria-expanded={open} aria-controls={id} onClick={()=>onOpenChange(!open)}><Columns3 size={18}/>표시 열</button>
-  {open&&<div id={id} className="table-column-popover" role="group" aria-label="표시할 열"><b>표시할 열</b>
-   {options.map(({key,label,locked})=><label key={key}><input type="checkbox" checked={Boolean(locked)||visible.has(key)} disabled={disabled||locked} onChange={event=>{const next=new Set(visible);if(event.currentTarget.checked)next.add(key);else next.delete(key);onChange(next);}}/><span>{label}</span></label>)}
+  {open&&<div id={id} className={`table-column-popover${compact?" table-column-popover-compact":""}`} style={compact?{maxHeight:availableHeight}:undefined} role="group" aria-label="표시할 열"><b>표시할 열</b>
+   {options.map(({key,label,locked,group},index)=><Fragment key={key}>{group&&group!==options[index-1]?.group&&<b className="table-column-group-title">{group}</b>}<label><input type="checkbox" checked={Boolean(locked)||visible.has(key)} disabled={disabled||locked} onChange={event=>{const next=new Set(visible);if(event.currentTarget.checked)next.add(key);else next.delete(key);onChange(next);}}/><span title={label}>{label}</span></label></Fragment>)}
    <button type="button" onClick={onReset}>기본값 복원</button>
   </div>}
  </div>;

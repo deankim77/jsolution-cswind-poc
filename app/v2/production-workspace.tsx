@@ -74,6 +74,7 @@ export default function ProductionWorkspace({project,tab,onCloseAi,onOpenFilter,
  const close=()=>{if(busy)return;if(dirty&&!window.confirm('저장하지 않은 초안을 버리고 닫을까요?'))return;setSelected('');setDirty(false);};
  const popup=(id:string)=>{window.open(`${url}/${id}?preview=1&popup=1`,'_blank','popup,width=1200,height=900,noopener,noreferrer');};
  let bomRows:BomRow[]=[],bomError='';try{bomRows=buildBomRows(draft?.items.filter(i=>i.area==='pbom')??[],pbom?.identities??[])}catch(e){bomError=(e as Error).message;bomRows=(draft?.items.filter(i=>i.area==='pbom'&&i.bom)??[]).map(i=>({...i,bom:i.bom!,level:1,path:'구조 확인 필요',totalQuantity:null,calculatedWeight:null,calculatedWeightSource:'Not Available',match:'NEED_REVIEW'}));}
+ bomRows=bomRows.map(row=>({...row,confirmationId:confirmed.find(c=>c.recordId===selected&&c.item.area==='pbom'&&c.item.id===row.id&&c.version===current?.version)?.id}));
  const areaItems=draft?.items.filter(i=>i.area===reviewTab)??[];
  const areaConfirmed=confirmed.filter(c=>c.recordId===selected&&c.item.area===reviewTab);
  const latestApprovalVersion=Math.max(0,...areaConfirmed.map(c=>c.version));

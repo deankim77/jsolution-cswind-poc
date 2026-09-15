@@ -28,3 +28,10 @@
 .pbom-toolbar-slot .pbom-view-controls { padding: 0; }
 
 .table-value-filter { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 240px; margin-top: 2px; padding: 2px 4px; border: 1px solid var(--v2-border-color); border-radius: var(--v2-radius-sm); background: var(--v2-surface-content); color: var(--v2-color-ink); font: inherit; }
+
+.table-column-popover.table-column-popover-compact{width:420px;gap:0;padding:6px}
+.table-column-menu .table-column-popover-compact>label{min-height:22px;padding:1px 6px;line-height:20px}
+.table-column-popover-compact>label>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.table-column-popover-compact>.table-column-group-title{padding:5px 6px;font-size:var(--v2-font-size-caption);color:var(--v2-color-primary-dark)}
+.table-column-popover-compact>label+.table-column-group-title{border-top:1px solid var(--v2-border-color);margin-top:4px}
+.table-column-popover-compact>button{padding:4px 6px}

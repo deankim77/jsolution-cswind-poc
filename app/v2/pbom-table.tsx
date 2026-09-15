@@ -28,13 +28,21 @@ const columns=[
  {key:'weightSource',label:'Weight Source / Calculation Basis'},
  {key:'availability',label:'Drawing Availability'},
  {key:'source',label:'출처 자료'},
+ {key:'reviewDescription',label:'Item Description 검토'},
+ {key:'reviewTotal',label:'Total Qty / Section 검토'},
+ {key:'reviewDrawing',label:'Drawing No. 검토'},
+ {key:'reviewPosition',label:'POS 검토'},
+ {key:'reviewRevision',label:'CompRev 검토'},
+ {key:'remark',label:'Remark'},
+ {key:'customerReply',label:'고객 회신'},
 ] as const;
 export type ColumnKey=typeof columns[number]['key'];
+const reviewResultKeys:readonly ColumnKey[]=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision','remark','customerReply'];
 const defaultColumnKeys:readonly ColumnKey[]=columns.map(c=>c.key);
 const reviewDefaultColumnKeys:readonly ColumnKey[]=['part','status','description','item','drawing','revision','quantity','unit'];
 const lockedColumnKeys:readonly ColumnKey[]=['part','unit'];
 
-const compactWidths:Record<ColumnKey,number>={part:170,status:120,procurement:100,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110};
+const compactWidths:Record<ColumnKey,number>={part:170,status:120,procurement:100,section:190,level:60,description:260,position:60,item:200,drawing:200,revision:80,quantity:110,unit:80,total:150,weight:100,weightSource:240,availability:180,source:110,reviewDescription:180,reviewTotal:190,reviewDrawing:150,reviewPosition:120,reviewRevision:130,remark:300,customerReply:300};
 
 export default function PbomTable({rows,root,compact=false,toolbarContainer,variant="full",editable=false,onEdit,onOpenEditor,renderSource,renderCell,extraColumn}:{extraColumn?:{label:string;render:(row:BomRow)=>ReactNode};compact?:boolean;renderCell?:(key:ColumnKey,row:BomRow,fallback:ReactNode)=>ReactNode;toolbarContainer?:HTMLElement|null;rows:BomRow[];renderSource?:(recordIds:string[])=>ReactNode;variant?:"full"|"review"|"supplied";root?:{id:string;partNumber:string;name:string}|null;editable?:boolean;onEdit?:(id:string,fact:BomFact)=>void|Promise<void>;onOpenEditor?:(id:string)=>void}){
  const [collapsed,setCollapsed]=useState<string[]>([]),[editing,setEditing]=useState(''),[rootCollapsed,setRootCollapsed]=useState(false);
@@ -43,7 +51,7 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
  const suppliedKeys:ColumnKey[]=['part','item','description','quantity','unit'];
  const initialColumns=review?reviewDefaultColumnKeys:defaultColumnKeys;
  const {visible:visibleColumns,change:setVisibleColumns,ready:columnsReady,error:columnsError,retry:retryColumns}=useColumnPreferences(`v2-pbom-columns:${variant}`,initialColumns,lockedColumnKeys,defaultColumnKeys);
- const options=columns.map(column=>({...column,label:review&&column.key==='status'?'품목 구분':column.label}));
+ const options=columns.map(column=>({...column,group:reviewResultKeys.includes(column.key)?'검토 결과':'BOM 정보',label:review&&column.key==='status'?'품목 구분':column.label}));
  const shown=supplied?suppliedKeys.map(key=>({...options.find(c=>c.key===key)!,label:key==='part'?'내부품번':key==='quantity'?'BOM 수량':key==='description'?'품명':key==='unit'?'단위':options.find(c=>c.key===key)!.label})):options.filter(c=>c.key==='part'||visibleColumns.has(c.key));
  const [columnFilters,setColumnFilters]=useState<Partial<Record<ColumnKey,string>>>({});
  const filterKeys:ColumnKey[]=['part','status','procurement','section','description','item','drawing','revision','unit','availability','source'];
@@ -87,11 +95,14 @@ export default function PbomTable({rows,root,compact=false,toolbarContainer,vari
    case 'weight':return `${show(review?b.weight:row.calculatedWeight)} ${b.weightUnit}`;
    case 'weightSource':return row.calculatedWeightSource;
    case 'availability':return DRAWING_AVAILABILITY_LABELS[b.drawingAvailability];
+   case 'reviewDescription':case 'reviewTotal':case 'reviewDrawing':case 'reviewPosition':case 'reviewRevision':return <span title={row.confirmationId?'사용자 검토·확정 완료':'사용자 확정 대기'}>{row.confirmationId?'OK':'미확정'}</span>;
+   case 'remark':return b.remark||'—';
+   case 'customerReply':return b.customerReply||'—';
    case 'source':return renderSource?.(row.sourceRecordIds??[row.recordId])??(row.sourceRecordIds??[row.recordId]).join(', ');
   }
  };
  const controls=<div className="pbom-view-controls" role="group" aria-label={review?"문서 BOM 보기 설정":"프로젝트 BOM 보기 설정"}>
-   <ColumnVisibilityMenu disabled={!columnsReady} options={options} visible={visibleColumns} onChange={setVisibleColumns} onReset={()=>setVisibleColumns(new Set(initialColumns))} open={columnMenuOpen} onOpenChange={setColumnMenuOpen}/>
+   <ColumnVisibilityMenu compact disabled={!columnsReady} options={options} visible={visibleColumns} onChange={setVisibleColumns} onReset={()=>setVisibleColumns(new Set(initialColumns))} open={columnMenuOpen} onOpenChange={setColumnMenuOpen}/>
    <HierarchyActions disabled={!rows.length} onCollapseAll={()=>{setRootCollapsed(Boolean(root&&!review));setCollapsed(collapsedBomIdsAtDepth(rows,1));}} onExpandAll={()=>{setRootCollapsed(false);setCollapsed([]);}}/>
   </div>;
  return <>
