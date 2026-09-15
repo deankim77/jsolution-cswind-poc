@@ -39,9 +39,9 @@
 .pcw-root-quick-cost>button{height:var(--v2-action-height);border:1px solid #b9d8d4;border-radius:5px;background:#eff9f7;color:var(--teal-dark);font-size:var(--v2-font-size-control);font-weight:800;cursor:pointer}
 
 .pcw-entries>header{padding:9px 11px!important}
-.pcw-entries>header>div{display:flex!important;align-items:center;gap:12px!important;min-width:0}
+.pcw-entries>header>div{display:flex!important;flex-wrap:wrap;align-items:center;gap:12px!important;min-width:0}
 .pcw-entries>header>div>b{white-space:nowrap}
-.pcw-entries>header>div>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcw-entries>header>div>span{white-space:normal}
 
 @media(max-width:1100px){
   .pcw-bom-toolbar>div:first-child{display:grid;gap:2px}
