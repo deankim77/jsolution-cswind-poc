@@ -5,7 +5,7 @@ import {contextErrorResponse,resolveRequestContext} from "../../../../db/request
 type D1={prepare:(sql:string)=>any};
 async function runtimeDb():Promise<D1>{return getLegacyDbCompat() as D1;}
 const ADMIN_ROLES=new Set(["SUPER_ADMIN","ADMIN","SYSTEM_ADMIN"]);
-const KEYS=new Set(["MATERIAL_OTHER","EXPENSE","OUTSOURCE","OTHER"]);
+const KEYS=new Set(["MATERIAL_BOM","MATERIAL_OTHER","EXPENSE","OUTSOURCE","OTHER"]);
 
 async function requireAccess(db:D1,context:any,projectId:string){
   const project=await db.prepare("SELECT id FROM projects WHERE id=? AND company_id=?").bind(projectId,context.companyId).first();
