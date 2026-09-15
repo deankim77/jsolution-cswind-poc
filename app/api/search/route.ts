@@ -61,11 +61,11 @@ const labelFor=(target:SearchKind|"",status:StatusIntent,mine:boolean)=>{
 
 async function searchProject(args:SearchArgs):Promise<SearchGroup>{
   const {db,context,status,mine,today}=args;
-  const text=`COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE(p.customer_name,'')||' '||COALESCE(partner.name,'')||' '||COALESCE(pt.name,'')||' '||COALESCE(profile.description,'')||' '||COALESCE(profile.reference_code,'')||' '||COALESCE((SELECT GROUP_CONCAT(u.name,' ') FROM project_members pm2 JOIN users u ON u.id=pm2.user_id WHERE pm2.project_id=p.id AND pm2.project_role IN ('PM','PL')),'')||' '||COALESCE((SELECT GROUP_CONCAT(REPLACE(g.wbs_code,'-REVIEW',''),' ') FROM wbs_tasks g WHERE g.project_id=p.id AND g.task_type='gate'),'')`;
+  const text=`COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE(p.customer_name,'')||' '||COALESCE(partner.name,'')||' '||COALESCE(pt.name,'')||' '||COALESCE(profile.description,'')||' '||COALESCE(profile.reference_code,'')||' '||COALESCE((SELECT string_agg(u.name,' ') FROM project_members pm2 JOIN users u ON u.id=pm2.user_id WHERE pm2.project_id=p.id AND pm2.project_role IN ('PM','PL')),'')||' '||COALESCE((SELECT string_agg(REPLACE(g.wbs_code,'-REVIEW',''),' ') FROM wbs_tasks g WHERE g.project_id=p.id AND g.task_type='gate'),'')`;
   const filters=["p.company_id=?",textMatch(text)],binds:any[]=[context.companyId,...textBinds(args)];
   if(mine){filters.push("EXISTS(SELECT 1 FROM project_members mypm WHERE mypm.project_id=p.id AND mypm.user_id=?)");binds.push(context.userId)}
   if(status==="active")filters.push("p.status='active'");else if(status==="completed")filters.push("p.status='completed'");else if(status==="unprocessed")filters.push("p.status<>'completed'");else if(status==="delayed"){filters.push("EXISTS(SELECT 1 FROM wbs_tasks dx WHERE dx.project_id=p.id AND dx.kind='task' AND dx.status<>'completed' AND COALESCE(dx.progress,0)<100 AND dx.planned_end<?)");binds.push(today)}else if(status==="approval_pending")filters.push("EXISTS(SELECT 1 FROM wbs_tasks gx WHERE gx.project_id=p.id AND gx.task_type='gate' AND gx.status='review')");
-  const rows=await db.prepare(`SELECT p.id,'project' AS kind,p.id AS projectId,p.code AS eyebrow,p.name AS title,COALESCE(partner.name,p.customer_name,'거래처 미지정')||' · '||COALESCE(pt.name,'유형 미지정')||' · PM '||COALESCE((SELECT GROUP_CONCAT(u.name,', ') FROM project_members pm JOIN users u ON u.id=pm.user_id WHERE pm.project_id=p.id AND pm.project_role='PM'),'미지정')||' · '||p.status AS meta FROM projects p LEFT JOIN partners partner ON partner.id=p.partner_id LEFT JOIN project_types pt ON pt.id=p.project_type_id LEFT JOIN project_profiles profile ON profile.project_id=p.id WHERE ${filters.join(" AND ")} ORDER BY p.updated_at DESC LIMIT 25`).bind(...binds).all();
+  const rows=await db.prepare(`SELECT p.id,'project' AS kind,p.id AS projectId,p.code AS eyebrow,p.name AS title,COALESCE(partner.name,p.customer_name,'거래처 미지정')||' · '||COALESCE(pt.name,'유형 미지정')||' · PM '||COALESCE((SELECT string_agg(u.name,', ') FROM project_members pm JOIN users u ON u.id=pm.user_id WHERE pm.project_id=p.id AND pm.project_role='PM'),'미지정')||' · '||p.status AS meta FROM projects p LEFT JOIN partners partner ON partner.id=p.partner_id LEFT JOIN project_types pt ON pt.id=p.project_type_id LEFT JOIN project_profiles profile ON profile.project_id=p.id WHERE ${filters.join(" AND ")} ORDER BY p.updated_at DESC LIMIT 25`).bind(...binds).all();
   return {kind:"project",items:rows.results||[],reason:mine?"내가 참여한 프로젝트":status==="delayed"?"지연 Task가 있는 프로젝트":undefined};
 }
 
@@ -82,7 +82,7 @@ async function searchTask(args:SearchArgs):Promise<SearchGroup>{
 
 async function searchDocument(args:SearchArgs):Promise<SearchGroup>{
   const {db,context,status,mine}=args;
-  const text=`COALESCE(d.name,'')||' '||COALESCE(d.category,'')||' '||COALESCE(d.drawing_code,'')||' '||COALESCE(d.internal_drawing_number,'')||' '||COALESCE(d.customer_drawing_number,'')||' '||COALESCE(w.wbs_code,'')||' '||COALESCE(w.name,'')||' '||COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE((SELECT GROUP_CONCAT(v.file_name,' ') FROM deliverable_versions v WHERE v.deliverable_id=d.id AND v.deleted_at IS NULL),'')`;
+  const text=`COALESCE(d.name,'')||' '||COALESCE(d.category,'')||' '||COALESCE(d.drawing_code,'')||' '||COALESCE(d.internal_drawing_number,'')||' '||COALESCE(d.customer_drawing_number,'')||' '||COALESCE(w.wbs_code,'')||' '||COALESCE(w.name,'')||' '||COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE((SELECT string_agg(v.file_name,' ') FROM deliverable_versions v WHERE v.deliverable_id=d.id AND v.deleted_at IS NULL),'')`;
   const filters=["p.company_id=?",textMatch(text)],binds:any[]=[context.companyId,...textBinds(args)];
   if(mine){filters.push("(d.owner_user_id=? OR d.created_by=? OR w.assignee_user_id=?)");binds.push(context.userId,context.userId,context.userId)}
   if(status==="unregistered")filters.push("(d.status='planned' OR NOT EXISTS(SELECT 1 FROM deliverable_versions vx WHERE vx.deliverable_id=d.id AND vx.deleted_at IS NULL))");else if(status==="approval_pending")filters.push("d.status IN ('submitted','review')");else if(status==="rejected")filters.push("d.status='rejected'");else if(status==="completed")filters.push("d.status IN ('approved','completed')");else if(status==="unprocessed")filters.push("d.status NOT IN ('approved','completed')");
@@ -102,7 +102,7 @@ async function searchIssue(args:SearchArgs):Promise<SearchGroup>{
 
 async function searchWorkflow(args:SearchArgs):Promise<SearchGroup>{
   const {db,context,status,mine,today}=args;
-  const text=`COALESCE(w.workflow_number,'')||' '||COALESCE(w.title,'')||' '||COALESCE(w.request_content,'')||' '||COALESCE(t.code,'')||' '||COALESCE(t.name,'')||' '||COALESCE(req.name,'')||' '||COALESCE(st.name,'')||' '||COALESCE(assignee.name,'')||' '||COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE((SELECT GROUP_CONCAT(d.name,' ') FROM workflow_instance_deliverables wl JOIN deliverables d ON d.id=wl.deliverable_id WHERE wl.workflow_id=w.id),'')||' '||COALESCE((SELECT d2.name FROM deliverables d2 WHERE d2.id=w.main_deliverable_id),'')`;
+  const text=`COALESCE(w.workflow_number,'')||' '||COALESCE(w.title,'')||' '||COALESCE(w.request_content,'')||' '||COALESCE(t.code,'')||' '||COALESCE(t.name,'')||' '||COALESCE(req.name,'')||' '||COALESCE(st.name,'')||' '||COALESCE(assignee.name,'')||' '||COALESCE(p.code,'')||' '||COALESCE(p.name,'')||' '||COALESCE((SELECT string_agg(d.name,' ') FROM workflow_instance_deliverables wl JOIN deliverables d ON d.id=wl.deliverable_id WHERE wl.workflow_id=w.id),'')||' '||COALESCE((SELECT d2.name FROM deliverables d2 WHERE d2.id=w.main_deliverable_id),'')`;
   const filters=["w.company_id=?","COALESCE(w.source_type,'GENERAL') NOT IN ('ECR','QUALITY')",textMatch(text)],binds:any[]=[context.companyId,...textBinds(args)];
   if(mine){filters.push("(w.requester_user_id=? OR EXISTS(SELECT 1 FROM workflow_instance_steps mineStep WHERE mineStep.workflow_id=w.id AND mineStep.assignee_user_id=?))");binds.push(context.userId,context.userId)}
   if(status==="active")filters.push("w.status IN ('in_progress','supplement')");else if(status==="completed")filters.push("w.status IN ('approved','completed','closed')");else if(status==="unprocessed")filters.push("w.status NOT IN ('approved','completed','closed','cancelled')");else if(status==="approval_pending")filters.push("w.status IN ('in_progress','supplement') AND st.action_type='APPROVAL'");else if(status==="rejected")filters.push("w.status='rejected'");else if(status==="delayed"){filters.push("w.status NOT IN ('approved','completed','closed','cancelled') AND w.due_date<?");binds.push(today)}
@@ -132,16 +132,16 @@ async function searchQuality(args:SearchArgs):Promise<SearchGroup>{
 
 async function searchPerson(args:SearchArgs):Promise<SearchGroup>{
   const {db,context,mine}=args;
-  const text=`COALESCE(u.name,'')||' '||COALESCE(u.email,'')||' '||COALESCE((SELECT GROUP_CONCAT(p.name,' ') FROM project_members pm JOIN projects p ON p.id=pm.project_id WHERE pm.user_id=u.id),'')`;
+  const text=`COALESCE(u.name,'')||' '||COALESCE(u.email,'')||' '||COALESCE((SELECT string_agg(p.name,' ') FROM project_members pm JOIN projects p ON p.id=pm.project_id WHERE pm.user_id=u.id),'')`;
   const filters=["u.company_id=?","u.status='active'",textMatch(text)],binds:any[]=[context.companyId,...textBinds(args)];if(mine){filters.push("u.id=?");binds.push(context.userId)}
-  const rows=await db.prepare(`SELECT u.id,'person' AS kind,'' AS projectId,u.email AS eyebrow,u.name AS title,COALESCE((SELECT GROUP_CONCAT(DISTINCT p.name) FROM project_members pm JOIN projects p ON p.id=pm.project_id WHERE pm.user_id=u.id),'프로젝트 미배정') AS meta FROM users u WHERE ${filters.join(" AND ")} ORDER BY u.name LIMIT 25`).bind(...binds).all();
+  const rows=await db.prepare(`SELECT u.id,'person' AS kind,'' AS projectId,u.email AS eyebrow,u.name AS title,COALESCE((SELECT string_agg(DISTINCT p.name, ',') FROM project_members pm JOIN projects p ON p.id=pm.project_id WHERE pm.user_id=u.id),'프로젝트 미배정') AS meta FROM users u WHERE ${filters.join(" AND ")} ORDER BY u.name LIMIT 25`).bind(...binds).all();
   return {kind:"person",items:rows.results||[],reason:mine?"현재 로그인 사용자":undefined};
 }
 
 const searchers:Record<SearchKind,(args:SearchArgs)=>Promise<SearchGroup>>={project:searchProject,task:searchTask,document:searchDocument,issue:searchIssue,workflow:searchWorkflow,ecr:searchEcr,quality:searchQuality,person:searchPerson};
 const priority:Record<SearchKind,number>={project:0,task:1,document:2,issue:3,workflow:4,ecr:5,quality:6,person:7};
 
-export async function GET(request:Request){
+async function search(request:Request){
   const db=await runtimeDb();await ensureProjectDataFoundation(db);
   let context;try{context=await resolveRequestContext(request,db)}catch(reason){return contextErrorResponse(reason)??Response.json({error:"로그인이 필요합니다."},{status:401})}
   const url=new URL(request.url),query=(url.searchParams.get("q")||"").trim(),scope=url.searchParams.get("scope")||"all";
@@ -155,4 +155,11 @@ export async function GET(request:Request){
   for(const group of groups)for(const item of group.items){if(results.some(existing=>existing.kind===item.kind&&existing.id===item.id))continue;results.push(group.reason?{...item,intentReason:group.reason}:item)}
   results.sort((a,b)=>(priority[a.kind as SearchKind]??9)-(priority[b.kind as SearchKind]??9));
   return Response.json({results:results.slice(0,120),intent:target||"general",intentLabel:labelFor(target,status,mine),term,status,target,severity,mine,actionRequired,top});
+}
+
+export async function GET(request:Request){
+  try{return await search(request)}catch(reason){
+    console.error("[integrated-search]",reason);
+    return Response.json({error:"검색 중 오류가 발생했습니다."},{status:500});
+  }
 }
