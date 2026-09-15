@@ -377,7 +377,7 @@ function ContextNav({project,projects,user,active,onView,onProject,onClose}:{pro
   const [groups,setGroups]=useState({project:true,personal:true});
   const toggle=(key:"project"|"personal")=>setGroups(current=>({...current,[key]:!current[key]}));
   return <aside className="wv2-context">
-    <header><div><small>WORKSPACE</small><b>J SOLUTION AI PLM</b></div><button onClick={onClose}><ChevronsLeft size={18}/></button></header>
+    <header><div><small>WORKSPACE</small><b>JSOLUTION AI PLM</b></div><button onClick={onClose}><ChevronsLeft size={18}/></button></header>
     <CommonProjectSelector projects={projects} value={project?.id??""} allLabel={projects.length?"프로젝트 선택":"프로젝트 없음"} onChange={id=>{const next=projects.find(item=>item.id===id);if(next)onProject(next)}}/>
     <nav>
       <button className="wv2-context-group" onClick={()=>toggle("project")}><span>프로젝트</span><ChevronDown size={18} className={groups.project?"open":""}/></button>
