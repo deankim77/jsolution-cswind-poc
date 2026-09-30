@@ -24,7 +24,11 @@ export function pbomExcelValue(key:ColumnKey,row:BomRow,rows:BomRow[],sources:Re
  case 'weightSource':return row.calculatedWeightSource;
  case 'availability':return DRAWING_AVAILABILITY_LABELS[b.drawingAvailability];
  case 'source':return (row.sourceRecordIds??[row.recordId]).map(id=>sources[id]??id).join(', ');
- case 'reviewDescription':case 'reviewTotal':case 'reviewDrawing':case 'reviewPosition':case 'reviewRevision':return row.confirmationId?'OK':'미확정';
+ case 'reviewDescription':return row.bom.reviewDescription??(row.confirmationId?'OK':'미확정');
+ case 'reviewTotal':return row.bom.reviewTotal??(row.confirmationId?'OK':'미확정');
+ case 'reviewDrawing':return row.bom.reviewDrawing??(row.confirmationId?'OK':'미확정');
+ case 'reviewPosition':return row.bom.reviewPosition??(row.confirmationId?'OK':'미확정');
+ case 'reviewRevision':return row.bom.reviewRevision??(row.confirmationId?'OK':'미확정');
  case 'remark':return b.remark??'';
  case 'customerReply':return b.customerReply??'';
  }
