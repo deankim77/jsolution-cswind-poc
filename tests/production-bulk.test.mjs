@@ -30,6 +30,15 @@ test('bulk edits preserve provenance and hierarchy, accept blanks, and reject in
  assert.throws(()=>mergeBulkEdits(base,[],'extract'));
  assert.throws(()=>mergeBulkEdits(base,[{...source(),item:{...item(),useTargets:['INVALID']}}],'extract'));
 });
+test('PBOM bulk review statuses are independently editable and default old confirmed rows to OK',()=>{
+ const base={...source(),item:{...item(),area:'pbom',bom:{parentId:null,section:'',itemDescription:'Bracket',position:'1',customerItemNumber:'BR-1',drawingNumber:'D-1',componentRevision:'R00',quantity:1,unit:'PCS',weight:18.5,weightUnit:'kg',weightSource:'Direct from Drawing',drawingAvailability:'Drawing Found',partType:'ASSEMBLY',childrenComplete:false}}};
+ assert.equal(bulkCell(base,'pbom','reviewDescription'),'OK');
+ let next=updateBulkCell(base,'pbom','reviewDescription','미확정');
+ next=updateBulkCell(next,'pbom','reviewDrawing','OK');
+ assert.equal(next.item.bom.reviewDescription,'미확정');
+ assert.equal(next.item.bom.reviewDrawing,'OK');
+ assert.throws(()=>updateBulkCell(base,'pbom','reviewTotal','임의값'));
+});
 test('PBOM rows retain parent-first hierarchy and latest conditional snapshot',()=>{
  const root={...source(),id:'root-row',item:{...item('root'),area:'pbom',bom:{parentId:null,position:''}}};
  const child={...source(),id:'child-row',item:{...item('child'),area:'pbom',bom:{parentId:'root',position:'1'}}};
