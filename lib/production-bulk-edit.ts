@@ -1,7 +1,7 @@
 import {REVIEW_USE_TARGETS,type BulkReviewArea as ReviewArea,type ReviewItem,type ConfirmedReview} from './customer-review-contract';
 export type BulkRow={id:string;recordId:string;version:number;item:ReviewItem;partNumber?:string;level?:number};
 export type BulkState={rows:BulkRow[];canEdit:boolean;lock:null|{mine:boolean;token?:string;owner:string}};
-export const bulkFields={pbom:[['section','SECTION'],['itemDescription','Item Description'],['position','POS'],['customerItemNumber','Item No.'],['drawingNumber','Drawing No.'],['componentRevision','CompRev'],['quantity','Qty Per Unit'],['unit','수량 단위'],['weight','Weight'],['weightUnit','중량 단위'],['material','Material'],['remark','Remark'],['customerReply','고객 회신']],extract:[['useTargets','활용 대상'],['assy','ASSY'],['part','PART'],['itemNumber','품번'],['itemName','추출 항목'],['detail','AI 추출 내용']]} as const;
+export const bulkFields={pbom:[['section','SECTION'],['itemDescription','Item Description'],['position','POS'],['customerItemNumber','Item No.'],['drawingNumber','Drawing No.'],['componentRevision','CompRev'],['quantity','Qty Per Unit'],['unit','수량 단위'],['weight','Weight'],['weightUnit','중량 단위'],['material','Material'],['reviewDescription','Item Description 검토'],['reviewTotal','Total Qty / Section 검토'],['reviewDrawing','Drawing No. 검토'],['reviewPosition','POS 검토'],['reviewRevision','CompRev 검토'],['remark','Remark'],['customerReply','고객 회신']],extract:[['useTargets','활용 대상'],['assy','ASSY'],['part','PART'],['itemNumber','품번'],['itemName','추출 항목'],['detail','AI 추출 내용']]} as const;
 export function activeBulkRows(rows:ConfirmedReview[],area:ReviewArea):BulkRow[]{
  const scoped=rows.filter(r=>r.item.area===area),latest=new Map<string,number>();
  for(const r of scoped)latest.set(r.recordId,Math.max(latest.get(r.recordId)??0,r.version));
@@ -14,11 +14,13 @@ export function activeBulkRows(rows:ConfirmedReview[],area:ReviewArea):BulkRow[]
  const visit=(row:BulkRow,level:number)=>{if(visited.has(row.id))return;visited.add(row.id);ordered.push({...row,level});result.filter(child=>child.recordId===row.recordId&&child.item.bom?.parentId===row.item.id).sort(order).forEach(child=>visit(child,level+1));};
  result.filter(row=>!row.item.bom?.parentId).sort(order).forEach(row=>visit(row,1));result.sort(order).forEach(row=>visit(row,1));return ordered;
 }
-export function bulkCell(row:BulkRow,area:ReviewArea,key:string){const value=(area==='pbom'?row.item.bom:row.item) as unknown as Record<string,unknown>;const v=value?.[key];return Array.isArray(v)?v.map(entry=>key==='useTargets'&&entry==='TTR'?'TRR':entry).join(' / '):v==null?'':String(v);}
+const PBOM_REVIEW_FIELDS=['reviewDescription','reviewTotal','reviewDrawing','reviewPosition','reviewRevision'] as const;
+export function bulkCell(row:BulkRow,area:ReviewArea,key:string){const value=(area==='pbom'?row.item.bom:row.item) as unknown as Record<string,unknown>;const v=value?.[key];if(area==='pbom'&&(PBOM_REVIEW_FIELDS as readonly string[]).includes(key))return v==null?'OK':String(v);return Array.isArray(v)?v.map(entry=>key==='useTargets'&&entry==='TTR'?'TRR':entry).join(' / '):v==null?'':String(v);}
 export function updateBulkCell(row:BulkRow,area:ReviewArea,key:string,text:string):BulkRow{
  if(!bulkFields[area].some(([field])=>field===key))throw Error('편집할 수 없는 컬럼입니다.');
  let value:unknown=text;
  if(area==='pbom'&&['quantity','weight'].includes(key)){const normalized=text.trim().replaceAll(',','');value=normalized===''?null:Number(normalized);if(value!==null&&(!Number.isFinite(value)||Number(value)<0||(key==='quantity'&&Number(value)===0)))throw Error('수량은 양수, 중량은 0 이상으로 입력하세요. 미확인은 빈칸으로 두세요.');}
+ if(area==='pbom'&&(PBOM_REVIEW_FIELDS as readonly string[]).includes(key)){value=text.trim();if(value!=='OK'&&value!=='미확정')throw Error('검토 상태는 OK 또는 미확정만 선택할 수 있습니다.');}
  if(key==='useTargets'){value=[...new Set(text.split(/[,/\n]/).map(v=>v.trim()==='TRR'?'TTR':v.trim()).filter(Boolean))];if(!(value as string[]).length||(value as string[]).some(v=>!(REVIEW_USE_TARGETS as readonly string[]).includes(v)))throw Error('활용 대상: TRR / 조립기준 / 검사기준 / 작업방법 / 기타');}
  return area==='pbom'?{...row,item:{...row.item,bom:{...row.item.bom!,[key]:value}}}:{...row,item:{...row.item,[key]:value}};
 }
